@@ -19,7 +19,7 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall)
 			-Wno-deprecated-gpu-targets )
 
 		# Specify the binary name and the source files to build
-		cuda_add_executable(wos src/clock.h src/wos.cu)
+		cuda_add_executable(wos src/clock.h src/wos.cu src/wos_kernel.cuh src/reduce_kernel.cuh)
 		target_link_libraries(wos ${CUDA_LIBARIES} )
 
 	else()
