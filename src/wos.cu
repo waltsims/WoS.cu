@@ -50,8 +50,6 @@ void outputConvergence(const char *filename, T *vals, int runs) {
 }
 
 int main(int argc, char *argv[]) {
-  bool debug = true;
-
   // cuda status inits
   cudaError_t cudaStat;
 
@@ -145,7 +143,7 @@ int main(int argc, char *argv[]) {
   // Calling WoS kernel
   computationTime.start();
   WoS<T><<<runs, len, (4 * len + 1) * sizeof(T)>>>(d_x0, d_runs, d_eps, dim,
-                                                   len, debug);
+                                                   len);
   cudaDeviceSynchronize();
   computationTime.end();
 

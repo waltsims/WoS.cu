@@ -1,4 +1,5 @@
 #include <curand_kernel.h>
+#include <iostream>
 
 #include "reduce_kernel.cuh"
 
@@ -8,10 +9,6 @@ extern "C" bool isPow2(unsigned int x);
 
 // Finds the next largest power 2 number
 extern "C" size_t nextPow2(size_t x);
-
-#ifdef DEBUG
-bool debug = true;
-#endif
 
 template <typename T>
 __device__ void minReduce(T *s_radius, size_t dim, size_t tid) {
@@ -67,8 +64,10 @@ __device__ void sumReduce(T *s_cache, int tid) {
     }
     i /= 2;
   }
-  // if (tid == 0)
-  //   printf("%f\n", s_cache[tid]);
+#ifdef DEBUG
+  if (tid == 0)
+    printf("%f\n", s_cache[tid]);
+#endif
 }
 
 template <typename T>
@@ -81,7 +80,9 @@ __device__ void norm2(T *s_radius, int tid) {
 
   if (threadIdx.x == 0) {
     s_radius[0] = sqrt(s_radius[0]);
-    //  printf("the 2norm of the value r is %f\n", s_radius[0]);
+#ifdef DEBUG
+    printf("the 2norm of the value r is %f\n", s_radius[0]);
+#endif
   }
   __syncthreads();
 }
@@ -95,8 +96,10 @@ __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
   norm2(cache, tid);
   if (tid < dim)
     s_radius[tid] = s_radius[tid] / cache[0];
-  //  printf("normalized value on thread %d after normilization: %f \n",
-  //       threadIdx.x, s_radius[tid]);
+#ifdef DEBUG
+  printf("normalized value on thread %d after normilization: %f \n",
+         threadIdx.x, s_radius[tid]);
+#endif
 }
 
 template <typename T>
@@ -120,8 +123,11 @@ __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
 }
 
 template <typename T>
-__global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
-                    bool debug) {
+__global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len) {
+
+#ifdef DEBUG
+  printf("Wos called!\n");
+#endif
 
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
@@ -153,8 +159,9 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
     s_radius[tid] = INFINITY;
     s_x[tid] = d_x0[tid];
 
-    // if (debug)
-    //   printf("d_x0 on thread %d: %f \n", threadIdx.x, s_x[threadIdx.x]);
+#ifdef DEBUG
+    printf("d_x0 on thread %d: %f \n", threadIdx.x, s_x[threadIdx.x]);
+#endif
 
     T r = INFINITY;
     // max step size
@@ -162,8 +169,9 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
       s_radius[tid] = boundaryDistance<T>(s_x[tid], dim, tid);
 
-      // if (debug)
-      //   printf("s_radius on thread %d: %f \n", threadIdx.x, s_radius[tid]);
+#ifdef DEBUG
+      printf("s_radius on thread %d: %f \n", threadIdx.x, s_radius[tid]);
+#endif
 
       // TODO working minReduce or s_radius value!
       minReduce<T>(s_radius, dim, tid);
@@ -184,9 +192,10 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
       s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
 
-      // if (debug)
-      //   printf("s_direction on thread %d after randomization: %f \n",
-      //          threadIdx.x, s_direction[tid]);
+#ifdef DEBUG
+      printf("s_direction on thread %d after randomization: %f \n", threadIdx.x,
+             s_direction[tid]);
+#endif
 
       // normalize direction with L2 norm
       normalize<T>(s_direction, s_cache, dim, tid);
@@ -194,33 +203,31 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
       // next x point
       s_x[tid] += r * s_direction[tid];
 
-      // if (debug)
-
-      //  printf("next x on thread %d after step: %f \n", threadIdx.x,
-      //  s_x[tid]);
+#ifdef DEBUG
+      printf("next x on thread %d after step: %f \n", threadIdx.x, s_x[tid]);
+#endif
     }
 
     // find closest boundary point
     round2Boundary<T>(s_x, s_cache, dim, tid);
-    // if (debug)
-    //   printf("x on thread %d after rounding: %f \n", threadIdx.x,
-    //   s_x[tid]);
+#ifdef DEBUG
+    printf("x on thread %d after rounding: %f \n", threadIdx.x, s_x[tid]);
+#endif
     // boundary eval
     evaluateBoundary<T>(s_x, s_cache, s_result, dim, tid);
 
     // return boundary value
     if (threadIdx.x == 0) {
 
-      // if (debug)
-      // printf("end %d with result %f on Block %d \n", runCount, s_result[0],
-      //            blockIdx.x);
+#ifdef DEBUG
+// printf("end %d with result %f on Block %d \n", runCount, s_result[0],
+//        blockIdx.x);
+#endif
 
-      // atomicAdd(d_global, s_result[0]); //Float alternative
       d_global[blockIdx.x] = s_result[0];
       // TODO for runcount indipendent of number of blocks
       // atomicAdd(d_runs, 1);
     }
     __syncthreads();
   }
-  // TODO reduce d_global
 }
