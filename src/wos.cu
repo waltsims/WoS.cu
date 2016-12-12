@@ -1,4 +1,4 @@
-#include "helper.h"
+#include "clock.h"
 
 #include <curand_kernel.h>
 #include <fstream>

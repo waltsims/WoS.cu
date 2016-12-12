@@ -1,5 +1,5 @@
-#ifndef HELPER_H
-#define HELPER_H
+#ifndef CLOCK_H
+#define CLOCK_H
 
 #include <cuda_runtime.h>
 #endif
