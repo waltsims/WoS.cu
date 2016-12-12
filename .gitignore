@@ -1,0 +1,11 @@
+#macos stuff
+	.DS_Store
+	._.DS_Store
+#cmake leftovers
+	CMakeCache.txt
+	CMakeFiles/
+	Makefile
+	cmake_install.cmake
+#binary
+	wos
+
