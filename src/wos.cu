@@ -32,18 +32,30 @@ template <class T> T reduceCPU(T *data, int size) {
 
   return sum;
 }
-
+// this is the cumsum devided by number of relative runs (insitu)
+template <typename T> void eval2result(T *vals, int runs) {
+  for (int i = 1; i < runs; i++) {
+    vals[i] += vals[i - 1];
+    vals[i - 1] /= i;
+  }
+  vals[runs - 1] /= runs;
+}
+// callculate the relative error (insitu)
+template <typename T> void getRelativeError(T *vals, int runs) {
+  T end = vals[runs - 1];
+  for (int i = 0; i < runs; i++) {
+    vals[i] = abs((vals[i] - end) / end);
+  }
+}
 template <typename T>
 void outputConvergence(const char *filename, T *vals, int runs) {
 
   std::ofstream file(filename);
-  file << "run [pow 10]\t"
+  file << "run\t"
        << "solution val\t" << std::endl;
-
-  float partSum = 0;
-  for (int i = 1; i < runs; i++) {
-    partSum += vals[i];
-    file << i << "\t" << partSum / i << "\t" << std::endl;
+  // only export every 10th val reduce file size
+  for (int i = 0; i < runs; i += 10) {
+    file << i << "\t" << vals[i] / i << "\t" << std::endl;
   }
   file.close();
 }
@@ -70,7 +82,7 @@ int main(int argc, char *argv[]) {
   int blocks = 256;
   int threads = 512;
   typedef double T;
-  const unsigned int runs = 1024 * 10;
+  const unsigned int runs = 1024 * 50;
   // TODO for runcount indipendent of number of blocks
   // int *d_runs;
 
@@ -80,6 +92,7 @@ int main(int argc, char *argv[]) {
   T *d_x0;
   T *d_runs;
   T *d_results;
+  // TODO: what effect does the d_eps have on practical convergence?
   T d_eps = 0.01; // 1 / sqrt(dim);
   Timer computationTime;
   Timer totalTime;
@@ -141,6 +154,7 @@ int main(int argc, char *argv[]) {
 
   // Calling WoS kernel
   computationTime.start();
+  // TODO cudastat return value for kernel calls
   WoS<T><<<runs, len, (4 * len + 1) * sizeof(T)>>>(d_x0, d_runs, d_eps, dim,
                                                    len);
   cudaDeviceSynchronize();
@@ -149,9 +163,12 @@ int main(int argc, char *argv[]) {
   // convergence plot export
   cudaStat =
       cudaMemcpy(&h_runs, d_runs, runs * sizeof(T), cudaMemcpyDeviceToHost);
-  outputConvergence("cuWos_convergence.dat", h_runs, runs);
-
-  ///////
+#ifdef PLOT
+  printf("exporting convergences data\n");
+  eval2result(h_runs, runs);
+  getRelativeError(h_runs, runs);
+  outputConvergence("docs/data/cuWos_convergence.dat", h_runs, runs);
+#endif
 
   reduce(runs, threads, blocks, d_runs, d_results);
 
@@ -161,7 +178,6 @@ int main(int argc, char *argv[]) {
     printf(" device memory download failed\n");
     return EXIT_FAILURE;
   }
-
   reduceCPU(h_results, blocks);
 
   totalTime.end();
@@ -171,7 +187,5 @@ int main(int argc, char *argv[]) {
   cudaFree(d_results);
   cudaFree(d_x0);
 
-  for (int i = 0; i < argc; i++)
-    printf("Argument %d:  %s\n", i, argv[i]);
   return (0);
 }

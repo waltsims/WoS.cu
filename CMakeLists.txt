@@ -3,9 +3,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(WoS.cu)
 
-option(GPU "compile for lightning GPU speeds" ON)
-option(DEBUG "compiling with debuging output" ON)
-option(PLOT "compiling for plot output" ON)
+option(DEBUG "compiling with debuging output" OFF)
+option(PLOT "compiling for plot output" OFF)
 
 set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall)
 
@@ -22,6 +21,10 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall)
 		if(DEBUG)
 			message( "Debugging flag being set")
 			add_definitions(-DDEBUG)
+		endif()
+		if(PLOT)
+			message( "Plot flag being set")
+			add_definitions(-DPLOT)
 		endif()
 		# Specify the binary name and the source files to build
 		cuda_add_executable(wos src/clock.h src/wos.cu src/wos_kernel.cuh src/reduce_kernel.cuh)
