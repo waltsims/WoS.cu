@@ -10,4 +10,9 @@ cmake_install.cmake
 wos
 #data files
 *.dat
+#latex to pdf helper files
+*.pdf
+*.aux
+*.log
+*.pdf
 

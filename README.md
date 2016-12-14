@@ -30,7 +30,13 @@ Once the Makefile is generated, you can build the project:
 To compile with Debugging:
 
 ```sh
-    cmake DEBUG=ON .
+    cmake -DDEBUG=ON .
+```
+
+To compile with convergence plot data active:
+
+```sh
+    cmake -DPLOT=ON .
 ```
 
 **WARNING** this will create many print outputs and greatly reduce performance: only for basic examples
