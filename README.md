@@ -33,13 +33,14 @@ To compile with Debugging:
     cmake -DDEBUG=ON .
 ```
 
+**WARNING** this will create many print outputs and greatly reduce performance: only for basic examples
+
+
 To compile with convergence plot data active:
 
 ```sh
     cmake -DPLOT=ON .
 ```
-
-**WARNING** this will create many print outputs and greatly reduce performance: only for basic examples
 
 *more usage coming soon*
 
