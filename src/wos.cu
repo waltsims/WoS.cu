@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
   int blocks = 256;
   int threads = 512;
   typedef double T;
-  const unsigned int runs = 1024 * 50;
+  const unsigned int runs = 65535;
   // TODO for runcount indipendent of number of blocks
   // int *d_runs;
 
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
     printf(" device memory download failed\n");
     return EXIT_FAILURE;
   }
-  reduceCPU(h_results, blocks);
+  h_results[0] = reduceCPU(h_results, blocks);
 
   totalTime.end();
 
