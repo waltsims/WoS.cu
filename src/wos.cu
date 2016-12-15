@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
   // init our point on host
   for (unsigned int i = 0; i < dim; i++)
     // x0[i] = i == 1 ? 0.22 : 0;
-    x0[i] = 0.0;
+    x0[i] = 1.0;
   for (unsigned int i = dim; i < len; i++)
     x0[i] = 0.0;
 

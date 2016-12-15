@@ -159,19 +159,11 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
       s_radius[tid] = INFINITY;
       s_x[tid] = d_x0[tid];
 
-#ifdef DEBUG
-      printf("d_x0 on thread %d: %f \n", threadIdx.x, s_x[threadIdx.x]);
-#endif
-
       T r = INFINITY;
       // max step size
       while (d_eps < r) {
 
         s_radius[tid] = boundaryDistance<T>(s_x[tid], dim, tid);
-
-#ifdef DEBUG
-        printf("s_radius on thread %d: %f \n", threadIdx.x, s_radius[tid]);
-#endif
 
         // TODO working minReduce or s_radius value!
         minReduce<T>(s_radius, dim, tid);
@@ -192,37 +184,20 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
         s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
 
-#ifdef DEBUG
-        printf("s_direction on thread %d after randomization: %f \n",
-               threadIdx.x, s_direction[tid]);
-#endif
-
         // normalize direction with L2 norm
         normalize<T>(s_direction, s_cache, dim, tid);
 
         // next x point
         s_x[tid] += r * s_direction[tid];
-
-#ifdef DEBUG
-        printf("next x on thread %d after step: %f \n", threadIdx.x, s_x[tid]);
-#endif
       }
 
       // find closest boundary point
       round2Boundary<T>(s_x, s_cache, dim, tid);
-#ifdef DEBUG
-      printf("x on thread %d after rounding: %f \n", threadIdx.x, s_x[tid]);
-#endif
       // boundary eval
       evaluateBoundary<T>(s_x, s_cache, s_result, dim, tid);
 
       // return boundary value
       if (threadIdx.x == 0) {
-
-#ifdef DEBUG
-// printf("end %d with result %f on Block %d \n", runCount, s_result[0],
-//        blockIdx.x);
-#endif
 
         d_global[blockIdx.x + blockDim.x * i] += s_result[0];
         // TODO for runcount indipendent of number of blocks
