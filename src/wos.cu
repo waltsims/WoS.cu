@@ -69,6 +69,15 @@ void outputConvergence(const char *filename, T *vals, int runs) {
   }
   file.close();
 }
+template <typename T>
+void initX0(T *x0, size_t dim, size_t len, T val) {
+  // init our point on host
+  for (unsigned int i = 0; i < dim; i++)
+    // x0[i] = i == 1 ? 0.22 : 0;
+    x0[i] = val;
+  for (unsigned int i = dim; i < len; i++)
+    x0[i] = 0.0;
+}
 
 int main(int argc, char *argv[]) {
   // cuda status inits
@@ -154,6 +163,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+  initX0(x0, dim, len, 1.0);
   // init our point on host
   for (unsigned int i = 0; i < dim; i++)
     // x0[i] = i == 1 ? 0.22 : 0;
