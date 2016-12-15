@@ -141,12 +141,12 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
   s_x[tid] = 0.0;
   s_cache[tid] = 0.0;
-
   s_radius[tid] = INFINITY;
   s_x[tid] = d_x0[tid];
   if (tid == 0)
     s_result[0] = 0.0;
   __syncthreads();
+
   for (int i = 0; i < runsperblock; i++) {
     if (tid < len) {
       // seed for random number generation
@@ -175,22 +175,21 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
         //          s_radius[0]);
         // }
 
-        // if (debug)
-        //   printf("s_radius on thread %d after broadcast: %f \n", threadIdx.x,
-        //   r);
-
         // random next step_direction
-
-        // s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
+        s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
+        __syncthreads();
 
         // normalize direction with L2 norm
-        // normalize<T>(s_direction, s_cache, dim, tid);
+        normalize<T>(s_direction, s_cache, dim, tid);
 
         // next x point
-        // s_x[tid] += r * s_direction[tid];
+        s_x[tid] += r * s_direction[tid];
+        __syncthreads();
       }
+
       // find closest boundary point
-      // round2Boundary<T>(s_x, s_cache, dim, tid);
+      round2Boundary<T>(s_x, s_cache, dim, tid);
+      __syncthreads();
 
       // boundary eval
       evaluateBoundary<T>(s_x, s_cache, s_result, dim, tid);
@@ -199,9 +198,10 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
         d_global[blockIdx.x + blockDim.x * i] += s_result[0];
 
-        if (s_result[0] != 0.5)
-          printf("d_runs on block %i before write: %f\n", blockIdx.x,
-                 s_result[0]);
+        // test case for origin
+        // if (s_result[0] != 0.5)
+        //   printf("d_runs on block %i before write: %f\n", blockIdx.x,
+        //          s_result[0]);
 
         // d_global[blockIdx.x] = s_x[0];
         // TODO for runcount indipendent of number of blocks
