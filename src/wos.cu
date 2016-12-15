@@ -8,6 +8,12 @@
 #include <math_functions.h>
 #include <stdio.h>
 
+#ifndef MAX_THREADS
+#define MAX_THREADS 1024
+#endif
+#ifndef MAX_BLOCKS
+#define MAX_BLOCKS 65535
+#endif
 //#include <cublas_v2.h>
 
 // Source: CUDA reduction documentation
@@ -49,7 +55,8 @@ template <typename T> void getRelativeError(T *vals, int runs) {
 }
 template <typename T>
 void outputConvergence(const char *filename, T *vals, int runs) {
-
+  // BUG
+  // TODO impliment for run numbers greater than MAX_BLOCKS
   std::ofstream file(filename);
   file << "run\t"
        << "solution val\t" << std::endl;
@@ -66,8 +73,8 @@ int main(int argc, char *argv[]) {
 
   // TODO differentiate between dim and len to optimally use warp size
 
-  const size_t dim = 3; // dimension of the problem
-  size_t len;           // length of the storage vector
+  const size_t dim = 256; // dimension of the problem
+  size_t len;             // length of the storage vector
 
   if (isPow2(dim)) {
     printf("dimension is power of 2\n");
@@ -79,11 +86,25 @@ int main(int argc, char *argv[]) {
   printf("value of len is: \t%lu \n", len);
   printf("value of dim is: \t%lu \n", dim);
 
+  typedef double T;
+  const unsigned int runs = MAX_BLOCKS;
+
+  // TODO for runcount indipendent of number of blocks
+
+  unsigned int number_blocks = runs;
+  int runsperblock = 1;
+  if (runs > MAX_BLOCKS) {
+    while (MAX_BLOCKS < number_blocks) {
+      runsperblock++;
+      number_blocks /= runsperblock;
+    }
+    printf("runs: %d\nnumber of blocks: %d \n runs per block: %d\n", runs,
+           number_blocks, runsperblock);
+  }
+
+  // variables for reduction
   int blocks = 256;
   int threads = 512;
-  typedef double T;
-  const unsigned int runs = 65535;
-  // TODO for runcount indipendent of number of blocks
   // int *d_runs;
 
   T x0[len];
@@ -111,13 +132,6 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  // 256 bloks in global reduce
-  cudaStat = cudaMalloc((void **)&d_results, blocks * sizeof(T));
-  if (cudaStat != cudaSuccess) {
-    printf(" device memory allocation failed for d_sum\n");
-    return EXIT_FAILURE;
-  }
-
   // TODO for runcount indipendent of number of blocks
   // cudaStat = cudaMalloc((void **)&d_runs, sizeof(unsigned int));
   // if (cudaStat != cudaSuccess) {
@@ -138,10 +152,10 @@ int main(int argc, char *argv[]) {
   }
 
   // init our point on host
-  for (int i = 0; i < dim; i++)
+  for (unsigned int i = 0; i < dim; i++)
     // x0[i] = i == 1 ? 0.22 : 0;
     x0[i] = 0.0;
-  for (int i = dim; i < len; i++)
+  for (unsigned int i = dim; i < len; i++)
     x0[i] = 0.0;
 
   // Let's bing our data to the Device
@@ -154,20 +168,41 @@ int main(int argc, char *argv[]) {
 
   // Calling WoS kernel
   computationTime.start();
-  // TODO cudastat return value for kernel calls
-  WoS<T><<<runs, len, (4 * len + 1) * sizeof(T)>>>(d_x0, d_runs, d_eps, dim,
-                                                   len);
+  // TODO better define size of sharedmemory
+  WoS<T><<<number_blocks, len, (4 * len + 1) * sizeof(T)>>>(
+      d_x0, d_runs, d_eps, dim, len, runsperblock);
   cudaDeviceSynchronize();
   computationTime.end();
+  cudaError err = cudaGetLastError();
+  if (cudaSuccess != err) {
+    printf("Wos Kernel returned an error:\n %s\n", cudaGetErrorString(err));
+  }
 
-  // convergence plot export
-  cudaStat =
-      cudaMemcpy(&h_runs, d_runs, runs * sizeof(T), cudaMemcpyDeviceToHost);
+  // We don't need d_x0 anymore, only to reduce solution data
+  cudaFree(d_x0);
+
+  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, runs * sizeof(T),
+                             cudaMemcpyDeviceToHost);
+  if (cudaStat != cudaSuccess) {
+    printf(" device memory download failed\n");
+    return EXIT_FAILURE;
+  }
+
+  // 256 blocks in global reduce
+  cudaStat = cudaMalloc((void **)&d_results, blocks * sizeof(T));
+  if (cudaStat != cudaSuccess) {
+    printf(" device memory allocation failed for d_sum\n");
+    return EXIT_FAILURE;
+  }
+
+// convergence plot export
+
 #ifdef PLOT
   printf("exporting convergences data\n");
   eval2result(h_runs, runs);
   getRelativeError(h_runs, runs);
   outputConvergence("docs/data/cuWos_convergence.dat", h_runs, runs);
+// outputRuntime();
 #endif
 
   reduce(runs, threads, blocks, d_runs, d_results);
@@ -185,7 +220,6 @@ int main(int argc, char *argv[]) {
   printf("average: %f  \nrunning time: %f sec  \ntotal time: %f sec \n",
          h_results[0] / runs, computationTime.get(), totalTime.get());
   cudaFree(d_results);
-  cudaFree(d_x0);
 
   return (0);
 }
