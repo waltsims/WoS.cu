@@ -198,7 +198,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
         d_global[blockIdx.x + blockDim.x * i] += s_result[0];
 
-        // test case for origin
+        // test case for race condition
         // if (s_result[0] != 0.5)
         //   printf("d_runs on block %i before write: %f\n", blockIdx.x,
         //          s_result[0]);
