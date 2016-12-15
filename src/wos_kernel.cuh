@@ -61,6 +61,7 @@ template <typename T> __device__ void sumReduce(T *s_cache, int tid) {
     if (tid < i) {
       s_cache[tid] += s_cache[tid + i];
     }
+    __syncthreads();
     i /= 2;
   }
 #ifdef DEBUG
@@ -124,10 +125,6 @@ template <typename T>
 __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
                     int runsperblock) {
 
-#ifdef DEBUG
-  printf("Wos called!\n");
-#endif
-
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
 
@@ -137,27 +134,28 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
   // TODO make this into struct for data coelecing?
   T *s_radius = buff;
-  T *s_direction = len + buff;
+  T *s_direction = len + s_radius;
   T *s_cache = len + s_direction;
   T *s_x = len + s_cache;
-
-  // Put this last because long term goal is constant memory.
   T *s_result = len + s_x;
+
+  s_x[tid] = 0.0;
+  s_cache[tid] = 0.0;
+
+  s_radius[tid] = INFINITY;
+  s_x[tid] = d_x0[tid];
   if (tid == 0)
     s_result[0] = 0.0;
   __syncthreads();
-
-  if (tid < len) {
-    // seed for random number generation
-    for (int i = 0; i < runsperblock; i++) {
+  for (int i = 0; i < runsperblock; i++) {
+    if (tid < len) {
+      // seed for random number generation
       unsigned int seed = index;
       curandState s;
       curand_init(seed, 0, 0, &s);
 
       // copy x0 to local __shared__"moveable" x
       // TODO: x0 in constmem
-      s_radius[tid] = INFINITY;
-      s_x[tid] = d_x0[tid];
 
       T r = INFINITY;
       // max step size
@@ -167,6 +165,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
         // TODO working minReduce or s_radius value!
         minReduce<T>(s_radius, dim, tid);
+        __syncthreads();
         // local register copy of radius
         r = s_radius[0];
 
@@ -182,28 +181,32 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
         // random next step_direction
 
-        s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
+        // s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
 
         // normalize direction with L2 norm
-        normalize<T>(s_direction, s_cache, dim, tid);
+        // normalize<T>(s_direction, s_cache, dim, tid);
 
         // next x point
-        s_x[tid] += r * s_direction[tid];
+        // s_x[tid] += r * s_direction[tid];
       }
-
       // find closest boundary point
-      round2Boundary<T>(s_x, s_cache, dim, tid);
+      // round2Boundary<T>(s_x, s_cache, dim, tid);
+
       // boundary eval
       evaluateBoundary<T>(s_x, s_cache, s_result, dim, tid);
-
       // return boundary value
       if (threadIdx.x == 0) {
 
         d_global[blockIdx.x + blockDim.x * i] += s_result[0];
+
+        if (s_result[0] != 0.5)
+          printf("d_runs on block %i before write: %f\n", blockIdx.x,
+                 s_result[0]);
+
+        // d_global[blockIdx.x] = s_x[0];
         // TODO for runcount indipendent of number of blocks
         // atomicAdd(d_runs, 1);
       }
-
       __syncthreads();
     }
   }
