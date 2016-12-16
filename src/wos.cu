@@ -136,11 +136,13 @@ int main(int argc, char *argv[]) {
 
   // Calling WoS kernel
   computationTime.start();
-  // TODO better define size of sharedmemory
-  WoS<T><<<number_blocks, len, (4 * len + 1) * sizeof(T)>>>(
+
+  WoS<T><<<number_blocks, len, getSizeSharedMem<T>(len)>>>(
       d_x0, d_runs, d_eps, dim, len, runsperblock);
+
   cudaDeviceSynchronize();
   computationTime.end();
+
   cudaError err = cudaGetLastError();
   if (cudaSuccess != err) {
     printf("Wos Kernel returned an error:\n %s\n", cudaGetErrorString(err));
