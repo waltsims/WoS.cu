@@ -36,6 +36,31 @@ template <typename T>
 __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
                                  const size_t dim, int tid);
 
+// TODO ask stack exchange question
+// why can't this structure template be a device structure?
+template <typename T>
+struct BlockVariablePointers {
+  T *s_radius, *s_direction, *s_cache, *s_x, *s_result;
+};
+
+// TODO make class that holds both structure and function
+template <typename T>
+__device__ void calcSubPointers(BlockVariablePointers<T> *bvp, size_t len,
+                                T *buff) {
+  bvp->s_radius = buff;
+  bvp->s_direction = len + buff;
+  bvp->s_cache = 2 * len + buff;
+  bvp->s_x = 3 * len + buff;
+  bvp->s_result = 4 * len + buff;
+}
+
+template <typename T>
+size_t getSizeSharedMem(size_t len) {
+  // definition of total size needed for variable in buffer dependent on the
+  // length of the data transefered
+  return (4 * len + 1) * sizeof(T);
+}
+
 template <typename T>
 __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
                     int runsperblock) {
@@ -44,22 +69,20 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   int tid = threadIdx.x;
 
   // shared buff should currently be 4 * problem size + 1
-  // TODO reduce the number of shared variabls
   extern __shared__ T buff[];
+  BlockVariablePointers<T> bvp;
+  calcSubPointers(&bvp, len, buff);
 
-  // TODO make this into struct for data coelecing?
-  T *s_radius = buff;
-  T *s_direction = len + s_radius;
-  T *s_cache = len + s_direction;
-  T *s_x = len + s_cache;
-  T *s_result = len + s_x;
+  bvp.s_radius[tid] = 1.0;
 
-  s_x[tid] = 0.0;
-  s_cache[tid] = 0.0;
-  s_radius[tid] = INFINITY;
-  s_x[tid] = d_x0[tid];
+  // initlialize shared memroy
+  bvp.s_x[tid] = 0.0;
+  bvp.s_cache[tid] = 0.0;
+  bvp.s_radius[tid] = INFINITY;
+  // copy x0 to local __shared__"moveable" x
+  bvp.s_x[tid] = d_x0[tid];
   if (tid == 0)
-    s_result[0] = 0.0;
+    bvp.s_result[0] = 0.0;
   __syncthreads();
 
   for (int i = 0; i < runsperblock; i++) {
@@ -69,54 +92,48 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
       curandState s;
       curand_init(seed, 0, 0, &s);
 
-      // copy x0 to local __shared__"moveable" x
       // TODO: x0 in constmem
 
       T r = INFINITY;
       // max step size
       while (d_eps < r) {
 
-        s_radius[tid] = boundaryDistance<T>(s_x[tid], dim, tid);
+        bvp.s_radius[tid] = boundaryDistance<T>(bvp.s_x[tid], dim, tid);
 
         // TODO working minReduce or s_radius value!
-        minReduce<T>(s_radius, dim, tid);
+        minReduce<T>(bvp.s_radius, dim, tid);
         __syncthreads();
         // local register copy of radius
-        r = s_radius[0];
-
-        // if (threadIdx.x == 0 && debug) {
-        //   printf("the minimum of the value r on itteration %d is %f\n",
-        //   runCount,
-        //          s_radius[0]);
-        // }
+        r = bvp.s_radius[0];
 
         // random next step_direction
-        s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
+        bvp.s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
         __syncthreads();
 
         // normalize direction with L2 norm
-        normalize<T>(s_direction, s_cache, dim, tid);
+        normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
 
         // next x point
-        s_x[tid] += r * s_direction[tid];
+        bvp.s_x[tid] += r * bvp.s_direction[tid];
         __syncthreads();
       }
 
       // find closest boundary point
-      round2Boundary<T>(s_x, s_cache, dim, tid);
+      round2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
       __syncthreads();
 
+      // TODO eliminate s_reslt variable?
       // boundary eval
-      evaluateBoundary<T>(s_x, s_cache, s_result, dim, tid);
+      evaluateBoundary<T>(bvp.s_x, bvp.s_cache, bvp.s_result, dim, tid);
       // return boundary value
       if (threadIdx.x == 0) {
 
-        d_global[blockIdx.x + blockDim.x * i] += s_result[0];
+        d_global[blockIdx.x + blockDim.x * i] += bvp.s_result[0];
 
         // test case for race condition
-        // if (s_result[0] != 0.5)
+        // if (bvp.s_result[0] != 0.5)
         //   printf("d_runs on block %i before write: %f\n", blockIdx.x,
-        //          s_result[0]);
+        //          bvp.s_result[0]);
 
         // d_global[blockIdx.x] = s_x[0];
         // TODO for runcount indipendent of number of blocks
