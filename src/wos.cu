@@ -34,13 +34,15 @@ void outputConvergence(const char *filename, T *vals, int runs);
 template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
 
+unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks);
+
 int main(int argc, char *argv[]) {
   // cuda status inits
   cudaError_t cudaStat;
 
   // TODO differentiate between dim and len to optimally use warp size
 
-  const size_t dim = 256; // dimension of the problem
+  const size_t dim = 250; // dimension of the problem
   size_t len;             // length of the storage vector
 
   if (isPow2(dim)) {
@@ -57,17 +59,8 @@ int main(int argc, char *argv[]) {
   const unsigned int runs = MAX_BLOCKS;
 
   // TODO for runcount indipendent of number of blocks
-
-  unsigned int number_blocks = runs;
-  int runsperblock = 1;
-  if (runs > MAX_BLOCKS) {
-    while (MAX_BLOCKS < number_blocks) {
-      runsperblock++;
-      number_blocks /= runsperblock;
-    }
-    printf("runs: %d\nnumber of blocks: %d \n runs per block: %d\n", runs,
-           number_blocks, runsperblock);
-  }
+  unsigned int number_blocks;
+  unsigned int runsperblock = getRunsPerBlock(runs, number_blocks);
 
   // variables for reduction
   int blocks = 256;
@@ -80,8 +73,10 @@ int main(int argc, char *argv[]) {
   T *d_x0;
   T *d_runs;
   T *d_results;
-  // TODO: what effect does the d_eps have on practical convergence?
+  // TODO: Question: what effect does the d_eps have on practical convergence?
   T d_eps = 0.01; // 1 / sqrt(dim);
+
+  // instantiate timers
   Timer computationTime;
   Timer totalTime;
 
@@ -118,13 +113,8 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  initX0(x0, dim, len, 1.0);
   // init our point on host
-  for (unsigned int i = 0; i < dim; i++)
-    // x0[i] = i == 1 ? 0.22 : 0;
-    x0[i] = 1.0;
-  for (unsigned int i = dim; i < len; i++)
-    x0[i] = 0.0;
+  initX0(x0, dim, len, 1.0);
 
   // Let's bing our data to the Device
   cudaStat = cudaMemcpyAsync(d_x0, x0, len * sizeof(T), cudaMemcpyHostToDevice);
@@ -192,6 +182,20 @@ int main(int argc, char *argv[]) {
   cudaFree(d_results);
 
   return (0);
+}
+
+unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks) {
+  unsigned int runsperblock = 1;
+  number_blocks = runs;
+  if (runs > MAX_BLOCKS) {
+    while (MAX_BLOCKS < number_blocks) {
+      runsperblock++;
+      number_blocks /= runsperblock;
+    }
+    printf("runs: %d\nnumber of blocks: %d \n runs per block: %d\n", runs,
+           number_blocks, runsperblock);
+  }
+  return runsperblock;
 }
 
 // Source: CUDA reduction documentation
