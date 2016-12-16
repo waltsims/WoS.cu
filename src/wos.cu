@@ -31,10 +31,12 @@ void getRelativeError(T *vals, int runs);
 template <typename T>
 void outputConvergence(const char *filename, T *vals, int runs);
 
+// initialize x0 vector of size dim and fill with val
 template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
 
 unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks);
+size_t getLength(size_t dim);
 
 int main(int argc, char *argv[]) {
   // cuda status inits
@@ -42,21 +44,10 @@ int main(int argc, char *argv[]) {
 
   // TODO differentiate between dim and len to optimally use warp size
 
-  const size_t dim = 250; // dimension of the problem
-  size_t len;             // length of the storage vector
-
-  if (isPow2(dim)) {
-    printf("dimension is power of 2\n");
-    len = dim;
-  } else {
-    printf("dimensions length should be expanded to next pow2\n");
-    len = nextPow2(dim);
-  }
-  printf("value of len is: \t%lu \n", len);
-  printf("value of dim is: \t%lu \n", dim);
-
-  typedef double T;
-  const unsigned int runs = MAX_BLOCKS;
+  const size_t dim = 250;               // dimension of the problem
+  size_t len = getLength(dim);          // length of the storage vector
+  typedef double T;                     // Type for problem
+  const unsigned int runs = MAX_BLOCKS; // number it alg itterations
 
   // TODO for runcount indipendent of number of blocks
   unsigned int number_blocks;
@@ -67,9 +58,11 @@ int main(int argc, char *argv[]) {
   int threads = 512;
   // int *d_runs;
 
+  // declare local variabls
   T x0[len];
   T h_results[blocks];
   T h_runs[runs];
+  // declare pointers for device variables
   T *d_x0;
   T *d_runs;
   T *d_results;
@@ -81,6 +74,10 @@ int main(int argc, char *argv[]) {
   Timer totalTime;
 
   totalTime.start();
+
+  // init our point on host
+  initX0(x0, dim, len, 1.0);
+
   // maloc device memory
   cudaStat = cudaMalloc((void **)&d_x0, len * sizeof(T));
   if (cudaStat != cudaSuccess) {
@@ -113,9 +110,6 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  // init our point on host
-  initX0(x0, dim, len, 1.0);
-
   // Let's bing our data to the Device
   cudaStat = cudaMemcpyAsync(d_x0, x0, len * sizeof(T), cudaMemcpyHostToDevice);
   if (cudaStat != cudaSuccess) {
@@ -124,9 +118,9 @@ int main(int argc, char *argv[]) {
   }
   // TODO make dim power of 2 and min 1 warp for reductions
 
-  // Calling WoS kernel
   computationTime.start();
 
+  // Calling WoS kernel
   WoS<T><<<number_blocks, len, getSizeSharedMem<T>(len)>>>(
       d_x0, d_runs, d_eps, dim, len, runsperblock);
 
@@ -165,6 +159,7 @@ int main(int argc, char *argv[]) {
 // outputRuntime();
 #endif
 
+  // perform local reducion on CPU
   reduce(runs, threads, blocks, d_runs, d_results);
 
   cudaStat = cudaMemcpy(&h_results, d_results, blocks * sizeof(T),
@@ -184,6 +179,20 @@ int main(int argc, char *argv[]) {
   return (0);
 }
 
+size_t getLength(size_t dim) {
+  size_t len;
+  if (isPow2(dim)) {
+    printf("dimension is power of 2\n");
+    len = dim;
+  } else {
+    printf("dimensions length should be expanded to next pow2\n");
+    len = nextPow2(dim);
+  }
+  printf("value of len is: \t%lu \n", len);
+  printf("value of dim is: \t%lu \n", dim);
+  return len;
+}
+
 unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks) {
   unsigned int runsperblock = 1;
   number_blocks = runs;
@@ -198,29 +207,6 @@ unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks) {
   return runsperblock;
 }
 
-// Source: CUDA reduction documentation
-////////////////////////////////////////////////////////////////////////////////
-//! Compute sum reduction on CPU
-//! We use Kahan summation for an accurate sum of large arrays.
-//! http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-//!
-//! @param data       pointer to input data
-//! @param size       number of input data elements
-////////////////////////////////////////////////////////////////////////////////
-template <class T>
-T reduceCPU(T *data, int size) {
-  T sum = data[0];
-  T c = (T)0.0;
-
-  for (int i = 1; i < size; i++) {
-    T y = data[i] - c;
-    T t = sum + y;
-    c = (t - sum) - y;
-    sum = t;
-  }
-
-  return sum;
-}
 // this is the cumsum devided by number of relative runs (insitu)
 template <typename T>
 void eval2result(T *vals, int runs) {

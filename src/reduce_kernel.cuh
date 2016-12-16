@@ -13,6 +13,29 @@ extern "C" size_t nextPow2(size_t x) {
   return ++x;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//! Compute sum reduction on CPU
+//! We use Kahan summation for an accurate sum of large arrays.
+//! http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+//!
+//! @param data       pointer to input data
+//! @param size       number of input data elements
+////////////////////////////////////////////////////////////////////////////////
+template <class T>
+T reduceCPU(T *data, int size) {
+  T sum = data[0];
+  T c = (T)0.0;
+
+  for (int i = 1; i < size; i++) {
+    T y = data[i] - c;
+    T t = sum + y;
+    c = (t - sum) - y;
+    sum = t;
+  }
+
+  return sum;
+}
+
 // Utility class used to avoid linker errors with extern
 // unsized shared memory arrays with templated type
 template <class T>
