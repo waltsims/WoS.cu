@@ -17,63 +17,22 @@
 //#include <cublas_v2.h>
 
 // Source: CUDA reduction documentation
-////////////////////////////////////////////////////////////////////////////////
-//! Compute sum reduction on CPU
-//! We use Kahan summation for an accurate sum of large arrays.
-//! http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-//!
-//! @param data       pointer to input data
-//! @param size       number of input data elements
-////////////////////////////////////////////////////////////////////////////////
-template <class T> T reduceCPU(T *data, int size) {
-  T sum = data[0];
-  T c = (T)0.0;
+template <class T>
+T reduceCPU(T *data, int size);
 
-  for (int i = 1; i < size; i++) {
-    T y = data[i] - c;
-    T t = sum + y;
-    c = (t - sum) - y;
-    sum = t;
-  }
-
-  return sum;
-}
 // this is the cumsum devided by number of relative runs (insitu)
-template <typename T> void eval2result(T *vals, int runs) {
-  for (int i = 1; i < runs; i++) {
-    vals[i] += vals[i - 1];
-    vals[i - 1] /= i;
-  }
-  vals[runs - 1] /= runs;
-}
-// callculate the relative error (insitu)
-template <typename T> void getRelativeError(T *vals, int runs) {
-  T end = vals[runs - 1];
-  for (int i = 0; i < runs; i++) {
-    vals[i] = abs((vals[i] - end) / end);
-  }
-}
 template <typename T>
-void outputConvergence(const char *filename, T *vals, int runs) {
-  // BUG
-  // TODO impliment for run numbers greater than MAX_BLOCKS
-  std::ofstream file(filename);
-  file << "run\t"
-       << "solution val\t" << std::endl;
-  // only export every 10th val reduce file size
-  for (int i = 0; i < runs; i += 10) {
-    file << i << "\t" << vals[i] / i << "\t" << std::endl;
-  }
-  file.close();
-}
-template <typename T> void initX0(T *x0, size_t dim, size_t len, T val) {
-  // init our point on host
-  for (unsigned int i = 0; i < dim; i++)
-    // x0[i] = i == 1 ? 0.22 : 0;
-    x0[i] = val;
-  for (unsigned int i = dim; i < len; i++)
-    x0[i] = 0.0;
-}
+void eval2result(T *vals, int runs);
+
+// callculate the relative error (insitu)
+template <typename T>
+void getRelativeError(T *vals, int runs);
+
+template <typename T>
+void outputConvergence(const char *filename, T *vals, int runs);
+
+template <typename T>
+void initX0(T *x0, size_t dim, size_t len, T val);
 
 int main(int argc, char *argv[]) {
   // cuda status inits
@@ -231,4 +190,67 @@ int main(int argc, char *argv[]) {
   cudaFree(d_results);
 
   return (0);
+}
+
+// Source: CUDA reduction documentation
+////////////////////////////////////////////////////////////////////////////////
+//! Compute sum reduction on CPU
+//! We use Kahan summation for an accurate sum of large arrays.
+//! http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+//!
+//! @param data       pointer to input data
+//! @param size       number of input data elements
+////////////////////////////////////////////////////////////////////////////////
+template <class T>
+T reduceCPU(T *data, int size) {
+  T sum = data[0];
+  T c = (T)0.0;
+
+  for (int i = 1; i < size; i++) {
+    T y = data[i] - c;
+    T t = sum + y;
+    c = (t - sum) - y;
+    sum = t;
+  }
+
+  return sum;
+}
+// this is the cumsum devided by number of relative runs (insitu)
+template <typename T>
+void eval2result(T *vals, int runs) {
+  for (int i = 1; i < runs; i++) {
+    vals[i] += vals[i - 1];
+    vals[i - 1] /= i;
+  }
+  vals[runs - 1] /= runs;
+}
+// callculate the relative error (insitu)
+template <typename T>
+void getRelativeError(T *vals, int runs) {
+  T end = vals[runs - 1];
+  for (int i = 0; i < runs; i++) {
+    vals[i] = abs((vals[i] - end) / end);
+  }
+}
+template <typename T>
+void outputConvergence(const char *filename, T *vals, int runs) {
+  // BUG
+  // TODO impliment for run numbers greater than MAX_BLOCKS
+  std::ofstream file(filename);
+  file << "run\t"
+       << "solution val\t" << std::endl;
+  // only export every 10th val reduce file size
+  for (int i = 0; i < runs; i += 10) {
+    file << i << "\t" << vals[i] / i << "\t" << std::endl;
+  }
+  file.close();
+}
+template <typename T>
+void initX0(T *x0, size_t dim, size_t len, T val) {
+  // init our point on host
+  for (unsigned int i = 0; i < dim; i++)
+    // x0[i] = i == 1 ? 0.22 : 0;
+    x0[i] = val;
+  for (unsigned int i = dim; i < len; i++)
+    x0[i] = 0.0;
 }

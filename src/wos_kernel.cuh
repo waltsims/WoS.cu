@@ -12,114 +12,29 @@ extern "C" bool isPow2(unsigned int x);
 extern "C" size_t nextPow2(size_t x);
 
 template <typename T>
-__device__ void minReduce(T *s_radius, size_t dim, size_t tid) {
-  int i = blockDim.x / 2;
-  while (i != 0) {
-    if (tid < i) {
-      if (tid + i < dim) {
-        s_radius[tid] = (abs(s_radius[tid]) < abs(s_radius[tid + i]))
-                            ? s_radius[tid]
-                            : s_radius[tid + i];
-      } else {
-        s_radius[tid] = s_radius[tid];
-      }
-    }
-    __syncthreads();
-    i /= 2;
-  }
-}
-
-template <typename T> __device__ void broadcast(T *s_radius, int tid) {
-
-  // TODO: this doesn't need to look like this:
-  // solution idea s_radius[tid] = s_radius[0]
-  int i = 1;
-  while (i < blockDim.x) {
-    if (threadIdx.x < i) {
-      s_radius[tid + i] = s_radius[tid];
-    }
-    __syncthreads();
-    i *= 2;
-  }
-}
+__device__ void minReduce(T *s_radius, size_t dim, size_t tid);
 
 template <typename T>
-__device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
-  cache[tid] = 1 - abs(s_x[tid]);
-  minReduce(cache, dim, tid);
-  broadcast(cache, tid);
-
-  s_x[tid] = ((1 - (s_x[tid])) == cache[tid]) ? 1 : s_x[tid];
-}
-
-template <typename T> __device__ void sumReduce(T *s_cache, int tid) {
-
-  // TODO optimize reduce unwraping etc....
-
-  int i = blockDim.x / 2;
-  while (i != 0) {
-    if (tid < i) {
-      s_cache[tid] += s_cache[tid + i];
-    }
-    __syncthreads();
-    i /= 2;
-  }
-#ifdef DEBUG
-  if (tid == 0)
-    printf("%f\n", s_cache[tid]);
-#endif
-}
-
-template <typename T> __device__ void norm2(T *s_radius, int tid) {
-
-  // square vals
-  s_radius[tid] *= s_radius[tid];
-
-  sumReduce(s_radius, tid);
-
-  if (threadIdx.x == 0) {
-    s_radius[0] = sqrt(s_radius[0]);
-#ifdef DEBUG
-    printf("the 2norm of the value r is %f\n", s_radius[0]);
-#endif
-  }
-  __syncthreads();
-}
+__device__ void broadcast(T *s_radius, int tid);
 
 template <typename T>
-__device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
-
-  // TODO: does every thread need to do this calculation?
-  // or are device calls per thread basis
-  cache[tid] = s_radius[tid];
-  norm2(cache, tid);
-  if (tid < dim)
-    s_radius[tid] = s_radius[tid] / cache[0];
-#ifdef DEBUG
-  printf("normalized value on thread %d after normilization: %f \n",
-         threadIdx.x, s_radius[tid]);
-#endif
-}
+__device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid);
 
 template <typename T>
-__device__ T boundaryDistance(T d_x, size_t dim, int tid) {
+__device__ void sumReduce(T *s_cache, int tid);
 
-  return (tid < dim) ? 1.0 - abs(d_x) : 0.0;
-}
+template <typename T>
+__device__ void norm2(T *s_radius, int tid);
+
+template <typename T>
+__device__ void normalize(T *s_radius, T *cache, size_t dim, int tid);
+
+template <typename T>
+__device__ T boundaryDistance(T d_x, size_t dim, int tid);
 
 template <typename T>
 __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
-                                 const size_t dim, int tid) {
-
-  // TODO: better implimentation of sum reduce would be better
-  s_cache[tid] = s_x[tid] * s_x[tid];
-
-  sumReduce(s_cache, tid);
-  if (tid == 0) {
-    s_result[0] = s_cache[0] / (2 * dim);
-  }
-  __syncthreads();
-}
+                                 const size_t dim, int tid);
 
 template <typename T>
 __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
@@ -210,4 +125,117 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
       __syncthreads();
     }
   }
+}
+
+template <typename T>
+__device__ void minReduce(T *s_radius, size_t dim, size_t tid) {
+  int i = blockDim.x / 2;
+  while (i != 0) {
+    if (tid < i) {
+      if (tid + i < dim) {
+        s_radius[tid] = (abs(s_radius[tid]) < abs(s_radius[tid + i]))
+                            ? s_radius[tid]
+                            : s_radius[tid + i];
+      } else {
+        s_radius[tid] = s_radius[tid];
+      }
+    }
+    __syncthreads();
+    i /= 2;
+  }
+}
+
+template <typename T>
+__device__ void broadcast(T *s_radius, int tid) {
+
+  // TODO: this doesn't need to look like this:
+  // solution idea s_radius[tid] = s_radius[0]
+  int i = 1;
+  while (i < blockDim.x) {
+    if (threadIdx.x < i) {
+      s_radius[tid + i] = s_radius[tid];
+    }
+    __syncthreads();
+    i *= 2;
+  }
+}
+
+template <typename T>
+__device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
+  cache[tid] = 1 - abs(s_x[tid]);
+  minReduce(cache, dim, tid);
+  broadcast(cache, tid);
+
+  s_x[tid] = ((1 - (s_x[tid])) == cache[tid]) ? 1 : s_x[tid];
+}
+
+template <typename T>
+__device__ void sumReduce(T *s_cache, int tid) {
+
+  // TODO optimize reduce unwraping etc....
+
+  int i = blockDim.x / 2;
+  while (i != 0) {
+    if (tid < i) {
+      s_cache[tid] += s_cache[tid + i];
+    }
+    __syncthreads();
+    i /= 2;
+  }
+#ifdef DEBUG
+  if (tid == 0)
+    printf("%f\n", s_cache[tid]);
+#endif
+}
+
+template <typename T>
+__device__ void norm2(T *s_radius, int tid) {
+
+  // square vals
+  s_radius[tid] *= s_radius[tid];
+
+  sumReduce(s_radius, tid);
+
+  if (threadIdx.x == 0) {
+    s_radius[0] = sqrt(s_radius[0]);
+#ifdef DEBUG
+    printf("the 2norm of the value r is %f\n", s_radius[0]);
+#endif
+  }
+  __syncthreads();
+}
+
+template <typename T>
+__device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
+
+  // TODO: does every thread need to do this calculation?
+  // or are device calls per thread basis
+  cache[tid] = s_radius[tid];
+  norm2(cache, tid);
+  if (tid < dim)
+    s_radius[tid] = s_radius[tid] / cache[0];
+#ifdef DEBUG
+  printf("normalized value on thread %d after normilization: %f \n",
+         threadIdx.x, s_radius[tid]);
+#endif
+}
+
+template <typename T>
+__device__ T boundaryDistance(T d_x, size_t dim, int tid) {
+
+  return (tid < dim) ? 1.0 - abs(d_x) : 0.0;
+}
+
+template <typename T>
+__device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
+                                 const size_t dim, int tid) {
+
+  // TODO: better implimentation of sum reduce would be better
+  s_cache[tid] = s_x[tid] * s_x[tid];
+
+  sumReduce(s_cache, tid);
+  if (tid == 0) {
+    s_result[0] = s_cache[0] / (2 * dim);
+  }
+  __syncthreads();
 }
