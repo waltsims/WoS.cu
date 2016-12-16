@@ -167,14 +167,7 @@ __device__ void broadcast(T *s_radius, int tid) {
 
   // TODO: this doesn't need to look like this:
   // solution idea s_radius[tid] = s_radius[0]
-  int i = 1;
-  while (i < blockDim.x) {
-    if (threadIdx.x < i) {
-      s_radius[tid + i] = s_radius[tid];
-    }
-    __syncthreads();
-    i *= 2;
-  }
+  s_radius[tid] = s_radius[0];
 }
 
 template <typename T>
