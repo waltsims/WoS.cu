@@ -165,9 +165,9 @@ __device__ void minReduce(T *s_radius, size_t dim, size_t tid) {
 template <typename T>
 __device__ void broadcast(T *s_radius, int tid) {
 
-  // TODO: this doesn't need to look like this:
-  // solution idea s_radius[tid] = s_radius[0]
-  s_radius[tid] = s_radius[0];
+  if (tid != 0)
+    s_radius[tid] = s_radius[0];
+  __syncthreads();
 }
 
 template <typename T>
