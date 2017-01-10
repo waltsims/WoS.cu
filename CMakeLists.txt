@@ -6,7 +6,7 @@ project(WoS.cu)
 option(DEBUG "compiling with debuging output" OFF)
 option(PLOT "compiling for plot output" OFF)
 
-set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall)
+set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -lineinfo)
 
 
 # Check if CUDA is available
