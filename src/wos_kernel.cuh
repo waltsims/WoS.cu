@@ -62,6 +62,21 @@ size_t getSizeSharedMem(size_t len) {
 }
 
 template <typename T>
+__device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
+                                             T *d_x0, int tid) {
+  // initialize shared memory
+  bvp.s_x[tid] = 0.0;
+  bvp.s_cache[tid] = 0.0;
+  bvp.s_radius[tid] = INFINITY;
+  // copy x0 to local __shared__"moveable" x
+  bvp.s_x[tid] = d_x0[tid];
+  if (tid == 0)
+    bvp.s_result[0] = 0.0;
+  __syncthreads();
+  return bvp;
+}
+
+template <typename T>
 __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
                     int runsperblock) {
 
@@ -73,18 +88,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   // bvp WARP variable
   BlockVariablePointers<T> bvp;
   calcSubPointers(&bvp, len, buff);
-
-  bvp.s_radius[tid] = 1.0;
-
-  // initlialize shared memroy
-  bvp.s_x[tid] = 0.0;
-  bvp.s_cache[tid] = 0.0;
-  bvp.s_radius[tid] = INFINITY;
-  // copy x0 to local __shared__"moveable" x
-  bvp.s_x[tid] = d_x0[tid];
-  if (tid == 0)
-    bvp.s_result[0] = 0.0;
-  __syncthreads();
+  smemInit(bvp, d_x0, tid);
 
   for (int i = 0; i < runsperblock; i++) {
     if (tid < len) {
@@ -233,7 +237,6 @@ template <typename T>
 __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
                                  const size_t dim, int tid) {
 
-  // TODO: better implimentation of sum reduce would be better
   s_cache[tid] = s_x[tid] * s_x[tid];
 
   sumReduce(s_cache, tid);
