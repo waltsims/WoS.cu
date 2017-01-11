@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
   unsigned int number_blocks;
   unsigned int runsperblock = getRunsPerBlock(runs, number_blocks);
 
-  // variables for reduction
+  // size variables for reduction
   int blocks = 256;
   int threads = 512;
   // int *d_runs;
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
 
   totalTime.end();
 
-  printf("average: %f  \nrunning time: %f sec  \ntotal time: %f sec \n",
+  printf("average: %f \nrunning time: %f sec  \ntotal time: %f sec \n",
          h_results[0] / runs, computationTime.get(), totalTime.get());
   cudaFree(d_results);
 
@@ -185,11 +185,13 @@ size_t getLength(size_t dim) {
     printf("dimension is power of 2\n");
     len = dim;
   } else {
-    printf("dimensions length should be expanded to next pow2\n");
+    printf("dimensions length expanded to next pow2\n");
     len = nextPow2(dim);
   }
+#ifdef DEBUG
   printf("value of len is: \t%lu \n", len);
   printf("value of dim is: \t%lu \n", dim);
+#endif
   return len;
 }
 
