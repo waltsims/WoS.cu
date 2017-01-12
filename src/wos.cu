@@ -1,4 +1,5 @@
 #include "clock.h"
+#include "parse.h"
 #include "wos_kernel.cuh"
 
 #include <fstream>
@@ -54,8 +55,9 @@ int main(int argc, char *argv[]) {
   unsigned int runsperblock = getRunsPerBlock(runs, number_blocks);
 
   // size variables for reduction
-  int blocks = 256;
-  int threads = 512;
+  parseParams(argc, argv, clp);
+  int blocks = clp.reductionBlocks;
+  int threads = clp.reductionThreads;
   // int *d_runs;
 
   // declare local variabls
