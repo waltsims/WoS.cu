@@ -20,10 +20,10 @@ static void show_usage(char *argv[]) {
       << std::endl;
 }
 
-int parseParams(int argc, char *argv[], commandlineParams &clp) {
+int parseParams(int argc, char *argv[], Parameters &p) {
   // set default values
-  clp.reductionThreads = 512;
-  clp.reductionBlocks = 256;
+  p.reduction.threads = 512;
+  p.reduction.blocks = 256;
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -33,7 +33,7 @@ int parseParams(int argc, char *argv[], commandlineParams &clp) {
     } else if ((arg == "-nbr") || (arg == "--numBlocks")) {
       if (i + 1 < argc) {
         i++;
-        clp.reductionBlocks = atoi(argv[i]);
+        p.reduction.blocks = atoi(argv[i]);
       } else {
         std::cerr << "--numBlocks option requires one argument." << std::endl;
         return 1;
@@ -41,7 +41,7 @@ int parseParams(int argc, char *argv[], commandlineParams &clp) {
     } else if ((arg == "-ntr") || (arg == "--numThreads")) {
       if (i + 1 < argc) {
         i++;
-        clp.reductionThreads = atoi(argv[i]);
+        p.reduction.threads = atoi(argv[i]);
       } else {
         std::cerr << "--numThreads option requires one argument." << std::endl;
         return 1;
