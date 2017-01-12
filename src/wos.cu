@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
   unsigned int runsperblock = getRunsPerBlock(runs, number_blocks);
 
   // size variables for reduction
+  commandlineParams clp;
   parseParams(argc, argv, clp);
   int blocks = clp.reductionBlocks;
   int threads = clp.reductionThreads;

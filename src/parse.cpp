@@ -32,10 +32,8 @@ int parseParams(int argc, char *argv[], commandlineParams &clp) {
       return 0;
     } else if ((arg == "-nbr") || (arg == "--numBlocks")) {
       if (i + 1 < argc) {
-        printf("%i\n", atoi(argv[i + 1]));
         i++;
         clp.reductionBlocks = atoi(argv[i]);
-        printf("%i\n", clp.reductionBlocks);
       } else {
         std::cerr << "--numBlocks option requires one argument." << std::endl;
         return 1;
