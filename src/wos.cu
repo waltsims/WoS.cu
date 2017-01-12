@@ -37,6 +37,7 @@ template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
 
 unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks);
+
 size_t getLength(size_t dim);
 
 int main(int argc, char *argv[]) {
@@ -55,10 +56,10 @@ int main(int argc, char *argv[]) {
   unsigned int runsperblock = getRunsPerBlock(runs, number_blocks);
 
   // size variables for reduction
-  commandlineParams clp;
-  parseParams(argc, argv, clp);
-  int blocks = clp.reductionBlocks;
-  int threads = clp.reductionThreads;
+  Parameters p;
+  parseParams(argc, argv, p);
+  int blocks = p.reduction.blocks;
+  int threads = p.reduction.threads;
   // int *d_runs;
 
   // declare local variabls
