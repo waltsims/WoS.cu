@@ -43,33 +43,35 @@ size_t getLength(size_t dim);
 int main(int argc, char *argv[]) {
   // cuda status inits
   cudaError_t cudaStat;
+  Parameters p;
+  parseParams(argc, argv, p);
+  // for testing
+  // p.wos.itterations = MAX_BLOCKS;
+  // p.wos.x0.dimension = 512;
 
-  // TODO differentiate between dim and len to optimally use warp size
-
-  const size_t dim = 250;         // dimension of the problem
-  size_t len = getLength(dim);    // length of the storage vector
-  typedef double T;               // Type for problem
-  const unsigned int runs = 1000; // number it alg itterations
+  // const size_t dim = 250;         // dimension of the problem
+  p.wos.x0.length =
+      getLength(p.wos.x0.dimension); // length of the storage vector
+  typedef double T;                  // Type for problem
 
   // TODO for runcount indipendent of number of blocks
   unsigned int number_blocks;
-  unsigned int runsperblock = getRunsPerBlock(runs, number_blocks);
+  unsigned int runsperblock = getRunsPerBlock(p.wos.itterations, number_blocks);
 
   // size variables for reduction
-  Parameters p;
-  parseParams(argc, argv, p);
+
   // int *d_runs;
 
   // declare local variabls
-  T x0[len];
+  T x0[p.wos.x0.length];
   T h_results[p.reduction.blocks];
-  T h_runs[runs];
+  T h_runs[p.wos.itterations];
   // declare pointers for device variables
   T *d_x0;
   T *d_runs;
   T *d_results;
   // TODO: Question: what effect does the d_eps have on practical convergence?
-  T d_eps = 0.01; // 1 / sqrt(dim);
+  T d_eps = 0.01; // 1 / sqrt(p.wos.x0.dimension);
 
   // instantiate timers
   Timer computationTime;
@@ -78,16 +80,17 @@ int main(int argc, char *argv[]) {
   totalTime.start();
 
   // init our point on host
-  initX0(x0, dim, len, 0.0);
+  // cast to T hotfix until class is templated
+  initX0(x0, p.wos.x0.dimension, p.wos.x0.length, (T)p.wos.x0.value);
 
   // maloc device memory
-  cudaStat = cudaMalloc((void **)&d_x0, len * sizeof(T));
+  cudaStat = cudaMalloc((void **)&d_x0, p.wos.x0.length * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printf(" device memory allocation failed for d_x0\n");
     return EXIT_FAILURE;
   }
 
-  cudaStat = cudaMalloc((void **)&d_runs, runs * sizeof(T));
+  cudaStat = cudaMalloc((void **)&d_runs, p.wos.itterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printf(" device memory allocation failed for d_sum\n");
     return EXIT_FAILURE;
@@ -106,14 +109,15 @@ int main(int argc, char *argv[]) {
   //   return EXIT_FAILURE;
   // }
 
-  cudaStat = cudaMemsetAsync(d_runs, 0.0, runs * sizeof(T));
+  cudaStat = cudaMemsetAsync(d_runs, 0.0, p.wos.itterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printf(" device memory set failed for d_runs\n");
     return EXIT_FAILURE;
   }
 
   // Let's bing our data to the Device
-  cudaStat = cudaMemcpyAsync(d_x0, x0, len * sizeof(T), cudaMemcpyHostToDevice);
+  cudaStat = cudaMemcpyAsync(d_x0, x0, p.wos.x0.length * sizeof(T),
+                             cudaMemcpyHostToDevice);
   if (cudaStat != cudaSuccess) {
     printf(" device memory upload failed\n");
     return EXIT_FAILURE;
@@ -123,8 +127,9 @@ int main(int argc, char *argv[]) {
   computationTime.start();
 
   // Calling WoS kernel
-  wos<T>(number_blocks, len, d_x0, d_runs, d_eps, dim, runsperblock,
-         getSizeSharedMem<T>(len));
+  wos<T>(number_blocks, p.wos.x0.length, d_x0, d_runs, d_eps,
+         p.wos.x0.dimension, runsperblock,
+         getSizeSharedMem<T>(p.wos.x0.length));
 
   cudaDeviceSynchronize();
   computationTime.end();
@@ -132,7 +137,7 @@ int main(int argc, char *argv[]) {
   // We don't need d_x0 anymore, only to reduce solution data
   cudaFree(d_x0);
 
-  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, runs * sizeof(T),
+  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.itterations * sizeof(T),
                              cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
     printf(" device memory download failed\n");
@@ -157,7 +162,8 @@ int main(int argc, char *argv[]) {
 #endif
 
   // perform local reducion on CPU
-  reduce(runs, p.reduction.threads, p.reduction.blocks, d_runs, d_results);
+  reduce(p.wos.itterations, p.reduction.threads, p.reduction.blocks, d_runs,
+         d_results);
 
   cudaStat = cudaMemcpy(&h_results, d_results, p.reduction.blocks * sizeof(T),
                         cudaMemcpyDeviceToHost);
@@ -170,27 +176,14 @@ int main(int argc, char *argv[]) {
   totalTime.end();
 
   printf("average: %f \nrunning time: %f sec  \ntotal time: %f sec \n",
-         h_results[0] / runs, computationTime.get(), totalTime.get());
+         h_results[0] / p.wos.itterations, computationTime.get(),
+         totalTime.get());
   cudaFree(d_results);
 
   return (0);
 }
 
-size_t getLength(size_t dim) {
-  size_t len;
-  if (isPow2(dim)) {
-    printf("dimension is power of 2\n");
-    len = dim;
-  } else {
-    printf("dimensions length expanded to next pow2\n");
-    len = nextPow2(dim);
-  }
-#ifdef DEBUG
-  printf("value of len is: \t%lu \n", len);
-  printf("value of dim is: \t%lu \n", dim);
-#endif
-  return len;
-}
+size_t getLength(size_t dim) { return (isPow2(dim)) ? dim : nextPow2(dim); }
 
 unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks) {
   unsigned int runsperblock = 1;

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string>
 
+#include "helper.hpp"
+
 // TODO make class that holds both structure and function
 
 template <typename T>
@@ -20,9 +22,24 @@ public:
   int threads;
 };
 
+class WoSParameters {
+public:
+  struct X0 {
+    size_t dimension;
+    size_t length;
+
+    // TODO: should be a template param. hard to impiment
+
+    float value;
+  };
+  X0 x0;
+  int itterations;
+};
+
 class Parameters {
 public:
   ReductionParameters reduction;
+  WoSParameters wos;
 };
 
 #endif // PARAMS_H
