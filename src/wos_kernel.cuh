@@ -32,8 +32,7 @@ template <typename T>
 __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
                                  const size_t dim, int tid);
 
-// TODO ask stack exchange question
-// why can't this structure template be a device structure?
+// BUG: pointer structer is currently in local memory and ruining performance
 template <typename T>
 struct BlockVariablePointers {
   T *s_radius, *s_direction, *s_cache, *s_x, *s_result;
@@ -120,7 +119,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
         d_global[blockIdx.x + blockDim.x * i] += bvp.s_result[0];
 
         // d_global[blockIdx.x] = s_x[0];
-        // TODO for runcount indipendent of number of blocks
+        // TODO for runcount independant of number of blocks
         // atomicAdd(d_runs, 1);
       }
       //      __syncthreads(); // doesn't seem neccisarry
@@ -238,140 +237,12 @@ void wos(unsigned int blocks, size_t threads, T *d_x0, T *d_runs, T d_eps,
   dim3 dimBlock(threads, 1, 1);
   dim3 dimGrid(blocks, 1, 1);
 
-  // cudaError err;
+  cudaError err;
 
   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
                                           runsperblock);
-
-  // switch (threads) {
-  // case 1024:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   printf("%lu\n", threads);
-  //   break;
-  // case 512:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 256:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 128:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 64:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 32:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 16:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 8:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 4:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 2:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  //
-  // case 1:
-  //   printf("case: %lu\n", threads);
-  //   WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim,
-  //   threads,
-  //                                           runsperblock);
-  //   err = cudaGetLastError();
-  //   if (cudaSuccess != err) {
-  //     printf("Wos Kernel returned an error:\n %s\n",
-  //     cudaGetErrorString(err));
-  //   }
-  //   break;
-  // }
-
-  // WoS<T><<<blocks, len, smemSize>>>(d_x0, d_runs, d_eps, dim, len,
-  //                                          runsperblock);
+  err = cudaGetLastError();
+  if (cudaSuccess != err) {
+    printf("Wos Kernel returned an error:\n %s\n", cudaGetErrorString(err));
+  }
 }

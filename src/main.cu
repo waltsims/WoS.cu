@@ -49,7 +49,6 @@ int main(int argc, char *argv[]) {
   // p.wos.itterations = MAX_BLOCKS;
   // p.wos.x0.dimension = 512;
 
-  // const size_t dim = 250;         // dimension of the problem
   p.wos.x0.length =
       getLength(p.wos.x0.dimension); // length of the storage vector
   typedef double T;                  // Type for problem
@@ -58,11 +57,7 @@ int main(int argc, char *argv[]) {
   unsigned int number_blocks;
   unsigned int runsperblock = getRunsPerBlock(p.wos.itterations, number_blocks);
 
-  // size variables for reduction
-
-  // int *d_runs;
-
-  // declare local variabls
+  // declare local array variabls
   T x0[p.wos.x0.length];
   T h_results[p.reduction.blocks];
   T h_runs[p.wos.itterations];
@@ -96,18 +91,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  // TODO for runcount indipendent of number of blocks
-  // cudaStat = cudaMalloc((void **)&d_runs, sizeof(unsigned int));
-  // if (cudaStat != cudaSuccess) {
-  //   printf(" device memory allocation failed for d_sum\n");
-  //   return EXIT_FAILURE;
-  // }
-  //
-  // cudaStat = cudaMemsetAsync(d_runs, 0, sizeof(unsigned int));
-  // if (cudaStat != cudaSuccess) {
-  //   printf(" device memory set failed for d_runs\n");
-  //   return EXIT_FAILURE;
-  // }
+  // TODO for runcount independant of number of blocks
 
   cudaStat = cudaMemsetAsync(d_runs, 0.0, p.wos.itterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
@@ -115,14 +99,13 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  // Let's bing our data to the Device
+  // Let's bring our data to the Device
   cudaStat = cudaMemcpyAsync(d_x0, x0, p.wos.x0.length * sizeof(T),
                              cudaMemcpyHostToDevice);
   if (cudaStat != cudaSuccess) {
     printf(" device memory upload failed\n");
     return EXIT_FAILURE;
   }
-  // TODO make dim power of 2 and min 1 warp for reductions
 
   computationTime.start();
 
