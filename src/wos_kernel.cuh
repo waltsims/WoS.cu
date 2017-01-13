@@ -73,6 +73,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   // shared buff should currently be 4 * problem size + 1
   extern __shared__ T buff[];
   // bvp WARP variable
+  // is this global or Register var?
   BlockVariablePointers<T> bvp;
   calcSubPointers(&bvp, len, buff);
   smemInit(bvp, d_x0, tid);
@@ -155,7 +156,7 @@ template <typename T>
 __device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
   cache[tid] = 1 - abs(s_x[tid]);
   __syncthreads(); // no noticable effect on accuracy but leads to race
-                   // condition
+  // condition
   minReduce(cache, dim, tid);
   broadcast(cache, tid);
 
@@ -182,17 +183,17 @@ __device__ void sumReduce(T *s_cache, int tid) {
 }
 
 template <typename T>
-__device__ void norm2(T *s_radius, int tid) {
+__device__ void norm2(T *s_radius, T *s_cache, int tid) {
 
-  // square vals
-  s_radius[tid] *= s_radius[tid];
+  // square vals and copy to cache
+  s_cache[tid] = s_radius[tid] * s_radius[tid];
   __syncthreads();
-  sumReduce(s_radius, tid);
+  sumReduce(s_cache, tid);
 
   if (threadIdx.x == 0) {
-    s_radius[0] = sqrt(s_radius[0]);
+    s_cache[0] = sqrt(s_cache[0]);
 #ifdef DEBUG
-    printf("the 2norm of the value r is %f\n", s_radius[0]);
+    printf("the 2norm of the value r is %f\n", s_cache[0]);
 #endif
   }
   __syncthreads();
@@ -201,10 +202,7 @@ __device__ void norm2(T *s_radius, int tid) {
 template <typename T>
 __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
 
-  // TODO: does every thread need to do this calculation?
-  // or are device calls per thread basis
-  cache[tid] = s_radius[tid];
-  norm2(cache, tid);
+  norm2(s_radius, cache, tid);
   if (tid < dim)
     s_radius[tid] = s_radius[tid] / cache[0];
   __syncthreads();
