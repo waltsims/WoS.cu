@@ -69,7 +69,6 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
 
-  // printf("...\n");
   // shared buff should currently be 4 * problem size + 1
   extern __shared__ T buff[];
   // bvp WARP variable

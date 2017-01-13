@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
   // TODO differentiate between dim and len to optimally use warp size
 
-  const size_t dim = 512;         // dimension of the problem
+  const size_t dim = 250;         // dimension of the problem
   size_t len = getLength(dim);    // length of the storage vector
   typedef double T;               // Type for problem
   const unsigned int runs = 1000; // number it alg itterations
@@ -58,13 +58,11 @@ int main(int argc, char *argv[]) {
   // size variables for reduction
   Parameters p;
   parseParams(argc, argv, p);
-  int blocks = p.reduction.blocks;
-  int threads = p.reduction.threads;
   // int *d_runs;
 
   // declare local variabls
   T x0[len];
-  T h_results[blocks];
+  T h_results[p.reduction.blocks];
   T h_runs[runs];
   // declare pointers for device variables
   T *d_x0;
@@ -142,7 +140,7 @@ int main(int argc, char *argv[]) {
   }
 
   // 256 blocks in global reduce
-  cudaStat = cudaMalloc((void **)&d_results, blocks * sizeof(T));
+  cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printf(" device memory allocation failed for d_sum\n");
     return EXIT_FAILURE;
@@ -159,15 +157,15 @@ int main(int argc, char *argv[]) {
 #endif
 
   // perform local reducion on CPU
-  reduce(runs, threads, blocks, d_runs, d_results);
+  reduce(runs, p.reduction.threads, p.reduction.blocks, d_runs, d_results);
 
-  cudaStat = cudaMemcpy(&h_results, d_results, blocks * sizeof(T),
+  cudaStat = cudaMemcpy(&h_results, d_results, p.reduction.blocks * sizeof(T),
                         cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
     printf(" device memory download failed\n");
     return EXIT_FAILURE;
   }
-  h_results[0] = reduceCPU(h_results, blocks);
+  h_results[0] = reduceCPU(h_results, p.reduction.blocks);
 
   totalTime.end();
 
