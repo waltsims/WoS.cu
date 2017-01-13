@@ -1,4 +1,4 @@
-#include "helper.cuh"
+#include "helper.hpp"
 // source: cuda reduction documentation
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +20,6 @@ T reduceCPU(T *data, int size) {
     c = (t - sum) - y;
     sum = t;
   }
-
   return sum;
 }
 

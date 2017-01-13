@@ -46,10 +46,10 @@ int main(int argc, char *argv[]) {
 
   // TODO differentiate between dim and len to optimally use warp size
 
-  const size_t dim = 512;               // dimension of the problem
-  size_t len = getLength(dim);          // length of the storage vector
-  typedef double T;                     // Type for problem
-  const unsigned int runs = MAX_BLOCKS; // number it alg itterations
+  const size_t dim = 512;         // dimension of the problem
+  size_t len = getLength(dim);    // length of the storage vector
+  typedef double T;               // Type for problem
+  const unsigned int runs = 1000; // number it alg itterations
 
   // TODO for runcount indipendent of number of blocks
   unsigned int number_blocks;
@@ -130,11 +130,6 @@ int main(int argc, char *argv[]) {
 
   cudaDeviceSynchronize();
   computationTime.end();
-
-  cudaError err = cudaGetLastError();
-  if (cudaSuccess != err) {
-    printf("Wos Kernel returned an error:\n %s\n", cudaGetErrorString(err));
-  }
 
   // We don't need d_x0 anymore, only to reduce solution data
   cudaFree(d_x0);
