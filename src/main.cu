@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
   // TODO differentiate between dim and len to optimally use warp size
 
-  const size_t dim = 250;               // dimension of the problem
+  const size_t dim = 512;               // dimension of the problem
   size_t len = getLength(dim);          // length of the storage vector
   typedef double T;                     // Type for problem
   const unsigned int runs = MAX_BLOCKS; // number it alg itterations
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
   totalTime.start();
 
   // init our point on host
-  initX0(x0, dim, len, 1.0);
+  initX0(x0, dim, len, 0.0);
 
   // maloc device memory
   cudaStat = cudaMalloc((void **)&d_x0, len * sizeof(T));
@@ -125,8 +125,8 @@ int main(int argc, char *argv[]) {
   computationTime.start();
 
   // Calling WoS kernel
-  WoS<T><<<number_blocks, len, getSizeSharedMem<T>(len)>>>(
-      d_x0, d_runs, d_eps, dim, len, runsperblock);
+  wos<T>(number_blocks, len, d_x0, d_runs, d_eps, dim, runsperblock,
+         getSizeSharedMem<T>(len));
 
   cudaDeviceSynchronize();
   computationTime.end();

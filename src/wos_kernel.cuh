@@ -21,7 +21,7 @@ template <typename T>
 __device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid);
 
 template <typename T>
-__device__ void sumReduce(T *s_cache, int tid);
+__device__ void WoS(T *s_cache, int tid);
 
 template <typename T>
 __device__ void norm2(T *s_radius, int tid);
@@ -177,7 +177,7 @@ __device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
 }
 
 template <typename T>
-__device__ void sumReduce(T *s_cache, int tid) {
+__device__ void WoS(T *s_cache, int tid) {
 
   // TODO optimize reduce unwraping etc....
   __syncthreads();
@@ -201,7 +201,7 @@ __device__ void norm2(T *s_radius, int tid) {
   // square vals
   s_radius[tid] *= s_radius[tid];
   __syncthreads();
-  sumReduce(s_radius, tid);
+  WoS(s_radius, tid);
 
   if (threadIdx.x == 0) {
     s_radius[0] = sqrt(s_radius[0]);
@@ -239,9 +239,73 @@ __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
 
   s_cache[tid] = s_x[tid] * s_x[tid];
 
-  sumReduce(s_cache, tid);
+  WoS(s_cache, tid);
   if (tid == 0) {
     s_result[0] = s_cache[0] / (2 * dim);
   }
   __syncthreads();
+}
+
+//==============================================================================
+template <typename T>
+void wos(unsigned int blocks, size_t threads, T *d_x0, T *d_runs, T d_eps,
+         const int dim, unsigned int runsperblock, size_t smemSize) {
+
+  dim3 dimBlock(threads, 1, 1);
+  dim3 dimGrid(blocks, 1, 1);
+
+  switch (threads) {
+  case 512:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 256:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 128:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 64:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 32:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 16:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 8:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 4:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 2:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+
+  case 1:
+    WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
+                                            runsperblock);
+    break;
+  }
+
+  // WoS<T><<<blocks, len, smemSize>>>(d_x0, d_runs, d_eps, dim, len,
+  //                                          runsperblock);
 }
