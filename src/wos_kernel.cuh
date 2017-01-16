@@ -30,7 +30,7 @@ template <typename T>
 __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid);
 
 template <typename T>
-__device__ T boundaryDistance(T d_x, size_t dim, int tid);
+__device__ void boundaryDistance(T *s_radius, T *d_x, size_t dim, int tid);
 
 template <typename T>
 __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
@@ -103,7 +103,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
       // max step size
       while (d_eps < r) {
 
-        bvp.s_radius[tid] = boundaryDistance<T>(bvp.s_x[tid], dim, tid);
+        boundaryDistance<T>(bvp.s_radius, bvp.s_x, dim, tid);
         __syncthreads();
 
         minReduce<T>(bvp.s_radius, dim, tid);
@@ -229,8 +229,8 @@ __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
 }
 
 template <typename T>
-__device__ T boundaryDistance(T d_x, size_t dim, int tid) {
-  return (tid < dim) ? 1.0 - abs(d_x) : 0.0;
+__device__ void boundaryDistance(T *s_radius, T *d_x, size_t dim, int tid) {
+  s_radius[tid] = (tid < dim) ? 1.0 - abs(d_x[tid]) : 0.0;
 }
 
 template <typename T>
