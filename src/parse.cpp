@@ -13,11 +13,16 @@ static void show_usage(char *argv[]) {
   std::cerr
       << "Usage: " << argv[0] << " <option(s)> SOURCES"
       << "Options:\n"
-      << "\t-h,\t--help\tShow this help message\n"
-      << "\t-nbr,\t--numBlocks NUMBLOCKS \t specify number of blocks for \n"
-         "reduction"
-      << "\t-ntr,\t--numThreads NUMTHREADS \t specify number of Threads for "
-         "reduction"
+      << "\t-h,\t--help\t\t\t\tShow this help message\n"
+      << "\t-nbr,\t--numBlocks <NUMBLOCKS>\t\tspecify number of blocks for "
+         "reduction\n"
+      << "\t-ntr,\t--numThreads <NUMTHREADS>\tspecify number of threads "
+         "for reduction\n"
+      << "\t-x0,\t--x0Value\t\t\tdefine consant value for x0\n"
+      << "\t-dim,\t--dimension\t\t\tdefine the dimension of the problem. "
+         "(ergo length of vector x0)\n"
+      << "\t-it,\t--itterations\t\t\tdefine the number of itterations for the "
+         "algorithm.\n"
       << std::endl;
 }
 
@@ -26,8 +31,8 @@ int parseParams(int argc, char *argv[], Parameters &p) {
   p.reduction.threads = 512;
   p.reduction.blocks = 256;
   p.wos.x0.value = 0.0; // another option for default val is 1.0
-  p.wos.x0.dimension = 250;
-  p.wos.itterations = 1000;
+  p.wos.x0.dimension = 512;
+  p.wos.itterations = 65535;
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -77,6 +82,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
     } else {
       // set default
       show_usage(argv);
+      return 0;
     }
   }
 }

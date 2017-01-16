@@ -44,10 +44,10 @@ int main(int argc, char *argv[]) {
   // cuda status inits
   cudaError_t cudaStat;
   Parameters p;
-  parseParams(argc, argv, p);
-  // for testing
-  // p.wos.itterations = MAX_BLOCKS;
-  // p.wos.x0.dimension = 512;
+
+  int parseStatus = parseParams(argc, argv, p);
+  if (parseStatus != 1)
+    return 0;
 
   p.wos.x0.length =
       getLength(p.wos.x0.dimension); // length of the storage vector
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   T *d_runs;
   T *d_results;
   // TODO: Question: what effect does the d_eps have on practical convergence?
-  T d_eps = 0.01; // 1 / sqrt(p.wos.x0.dimension);
+  T d_eps = 1 / sqrt(p.wos.x0.dimension); // or 0.01
 
   // instantiate timers
   Timer computationTime;
@@ -148,8 +148,9 @@ int main(int argc, char *argv[]) {
   reduce(p.wos.itterations, p.reduction.threads, p.reduction.blocks, d_runs,
          d_results);
 
-  cudaStat = cudaMemcpy(&h_results, d_results, p.reduction.blocks * sizeof(T),
-                        cudaMemcpyDeviceToHost);
+  cudaStat =
+      cudaMemcpyAsync(&h_results, d_results, p.reduction.blocks * sizeof(T),
+                      cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
     printf(" device memory download failed\n");
     return EXIT_FAILURE;
