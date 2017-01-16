@@ -1,3 +1,3 @@
 #include "params.h"
 
-void parseParams(int argc, char *argv[], Parameters &clp);
+int parseParams(int argc, char *argv[], Parameters &clp);
