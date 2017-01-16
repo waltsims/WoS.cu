@@ -28,8 +28,9 @@ static void show_usage(char *argv[]) {
 
 int parseParams(int argc, char *argv[], Parameters &p) {
   // set default values
+  unsigned int count = 0;
   p.reduction.threads = 512;
-  p.reduction.blocks = 256;
+  p.reduction.blocks = 512;
   p.wos.x0.value = 0.0; // another option for default val is 1.0
   p.wos.x0.dimension = 512;
   p.wos.itterations = 65535;
@@ -42,6 +43,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
     } else if ((arg == "-nbr") || (arg == "--numBlocks")) {
       if (i + 1 < argc) {
         i++;
+        count++;
         p.reduction.blocks = atoi(argv[i]);
       } else {
         std::cerr << "--numBlocks option requires one argument." << std::endl;
@@ -50,6 +52,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
     } else if ((arg == "-ntr") || (arg == "--numThreads")) {
       if (i + 1 < argc) {
         i++;
+        count++;
         p.reduction.threads = atoi(argv[i]);
       } else {
         std::cerr << "--numThreads option requires one argument." << std::endl;
@@ -58,6 +61,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
     } else if ((arg == "-x0") || (arg == "--x0Value")) {
       if (i + 1 < argc) {
         i++;
+        count++;
         p.wos.x0.value = atof(argv[i]);
       } else {
         std::cerr << "--x0Value option requires one argument." << std::endl;
@@ -66,6 +70,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
     } else if ((arg == "-dim") || (arg == "--dimension")) {
       if (i + 1 < argc) {
         i++;
+        count++;
         p.wos.x0.dimension = atoi(argv[i]);
       } else {
         std::cerr << "--dimension option requires one argument." << std::endl;
@@ -74,15 +79,14 @@ int parseParams(int argc, char *argv[], Parameters &p) {
     } else if ((arg == "-it") || (arg == "--itterations")) {
       if (i + 1 < argc) {
         i++;
+        count++;
         p.wos.itterations = atoi(argv[i]);
       } else {
         std::cerr << "--itterations option requires one argument." << std::endl;
         return 1;
       }
-    } else {
-      // set default
-      show_usage(argv);
-      return 0;
     }
   }
+  printf("Running Simulation with %d arguments\n", count);
+  return 0;
 }

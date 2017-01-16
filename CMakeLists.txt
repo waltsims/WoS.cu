@@ -16,7 +16,7 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 
 		# Set the compilation flags for CUDA
 		set ( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} ${STANDARD_FLAGS} --ptxas-options=-v --use_fast_math
-			-Wno-deprecated-gpu-targets )
+		-Wno-deprecated-gpu-targets -maxrregcount 64)
 
 		if(DEBUG)
 			message( "Debugging flag being set")
