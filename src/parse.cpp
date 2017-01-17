@@ -91,5 +91,5 @@ int parseParams(int argc, char *argv[], Parameters &p) {
     }
   }
   printf("Running Simulation with %d arguments\n", count);
-  return 0;
+  return 1;
 }

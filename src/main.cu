@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
   Parameters p;
 
   int parseStatus = parseParams(argc, argv, p);
-  if (parseStatus != 0)
+  if (parseStatus == 0)
     return 0;
 
   p.wos.x0.length =
