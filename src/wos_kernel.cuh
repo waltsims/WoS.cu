@@ -26,7 +26,7 @@ template <typename T>
 __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid);
 
 template <typename T>
-__device__ void boundaryDistance(T *s_radius, T *d_x, size_t dim, int tid);
+__device__ void boundaryDistance(T *s_cache, T *d_x, int tid);
 
 template <typename T>
 __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
@@ -50,7 +50,7 @@ template <typename T>
 __device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
                                              T *d_x0, int tid) {
   // initialize shared memory
-  bvp.s_x[tid] = 0.0;
+  bvp.s_direction[tid] = 0.0;
   bvp.s_cache[tid] = 0.0;
   bvp.s_radius[tid] = INFINITY;
   // copy x0 to local __shared__"moveable" x
@@ -77,58 +77,51 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   smemInit(bvp, d_x0, tid);
 
   for (int i = 0; i < runsperblock; i++) {
-    if (tid < len) {
-      // seed for random number generation
-      unsigned int seed = index;
-      curandState s;
-      curand_init(seed, 0, 0, &s);
+    // seed for random number generation
+    unsigned int seed = index;
+    curandState s;
+    curand_init(seed, 0, 0, &s);
 
-      // TODO: x0 in constmem
+    // TODO: x0 in constmem
 
-      T r = INFINITY;
-      // max step size
-      while (d_eps < r) {
+    T r = INFINITY;
+    // max step size
+    while (d_eps < r) {
 
-        boundaryDistance<T>(bvp.s_radius, bvp.s_x, dim, tid);
-        __syncthreads();
+      boundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
 
-        minReduce<T>(bvp.s_radius, dim, tid);
-        // local copy of radius
-        // TODO: convert local(GLOBAL) copy to register variable.
-        r = bvp.s_radius[0];
+      minReduce<T>(bvp.s_radius, dim, tid);
+      // local copy of radius
+      // TODO: convert local(GLOBAL) copy to register variable.
+      r = bvp.s_radius[0];
 
-        // random next step_direction
-        bvp.s_direction[tid] = (tid < dim) ? curand_normal(&s) : 0.0;
+      // random next step_direction
+      bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
 
-        // normalize direction with L2 norm
-        normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
+      // normalize direction with L2 norm
+      normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
 
-        // next x point
-        bvp.s_x[tid] += r * bvp.s_direction[tid];
-      }
+      // next x point
+      bvp.s_x[tid] += r * bvp.s_direction[tid];
+    }
 
-      // find closest boundary point
-      round2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
+    // find closest boundary point
+    round2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
 
-      // TODO eliminate s_reslt variable?
-      // boundary eval
-      evaluateBoundary<T>(bvp.s_x, bvp.s_cache, bvp.s_result, dim, tid);
-      // return boundary value
-      if (threadIdx.x == 0) {
+    // TODO eliminate s_result variable?
+    // boundary eval
+    evaluateBoundary<T>(bvp.s_x, bvp.s_cache, bvp.s_result, dim, tid);
+    // return boundary value
+    if (threadIdx.x == 0) {
 
-        d_global[blockIdx.x + blockDim.x * i] += bvp.s_result[0];
-
-        // d_global[blockIdx.x] = s_x[0];
-        // TODO for runcount independant of number of blocks
-        // atomicAdd(d_runs, 1);
-      }
-      //      __syncthreads(); // doesn't seem neccisarry
+      d_global[blockIdx.x + blockDim.x * i] += bvp.s_result[0];
     }
   }
 }
 
 template <typename T>
 __device__ void minReduce(T *s_radius, size_t dim, size_t tid) {
+  //__syncthreads(); // needed for race check
   int i = blockDim.x / 2;
   while (i != 0) {
     if (tid < i) {
@@ -143,29 +136,10 @@ __device__ void minReduce(T *s_radius, size_t dim, size_t tid) {
 }
 
 template <typename T>
-__device__ void broadcast(T *s_radius, int tid) {
-
-  if (tid != 0)
-    s_radius[tid] = s_radius[0];
-  __syncthreads();
-}
-
-template <typename T>
-__device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
-  cache[tid] = 1 - abs(s_x[tid]);
-  __syncthreads(); // no noticable effect on accuracy but leads to race
-  // condition
-  minReduce(cache, dim, tid);
-  broadcast(cache, tid);
-
-  s_x[tid] = ((1 - (s_x[tid])) == cache[tid]) ? 1 : s_x[tid];
-}
-
-template <typename T>
 __device__ void sumReduce(T *s_cache, int tid) {
 
   // TODO optimize reduce unwraping etc....
-  __syncthreads();
+  //__syncthreads(); // needed for racecheck
   int i = blockDim.x / 2;
   while (i != 0) {
     if (tid < i) {
@@ -177,7 +151,26 @@ __device__ void sumReduce(T *s_cache, int tid) {
 #ifdef DEBUG
   if (tid == 0)
     printf("%f\n", s_cache[tid]);
+  __syncthreads();
 #endif
+}
+
+template <typename T>
+__device__ void broadcast(T *s_radius, int tid) {
+
+  // if (tid != 0) // needed for race condition check
+  s_radius[tid] = s_radius[0];
+  //__syncthreads(); // needed for race condition check
+}
+
+template <typename T>
+__device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
+  boundaryDistance(cache, s_x, tid);
+  minReduce(cache, dim, tid);
+  broadcast(cache, tid);
+
+  s_x[tid] = ((1 - (s_x[tid])) == cache[tid]) ? 1 : s_x[tid];
+  __syncthreads();
 }
 
 template <typename T>
@@ -185,11 +178,10 @@ __device__ void norm2(T *s_radius, T *s_cache, int tid) {
 
   // square vals and copy to cache
   s_cache[tid] = s_radius[tid] * s_radius[tid];
-  __syncthreads();
   sumReduce(s_cache, tid);
 
-  if (threadIdx.x == 0) {
-    s_cache[0] = sqrt(s_cache[0]);
+  if (tid == 0) {
+    s_cache[tid] = sqrt(s_cache[tid]);
 #ifdef DEBUG
     printf("the 2norm of the value r is %f\n", s_cache[0]);
 #endif
@@ -201,18 +193,17 @@ template <typename T>
 __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
 
   norm2(s_radius, cache, tid);
-  if (tid < dim)
-    s_radius[tid] = s_radius[tid] / cache[0];
-  __syncthreads();
+  s_radius[tid] = s_radius[tid] / cache[0];
+//__syncthreads(); // needed for race check
 #ifdef DEBUG
-  printf("normalized value on thread %d after normilization: %f \n",
-         threadIdx.x, s_radius[tid]);
+  printf("normalized value on thread %d after normilization: %f \n", tid,
+         s_radius[tid]);
 #endif
 }
 
 template <typename T>
-__device__ void boundaryDistance(T *s_radius, T *d_x, size_t dim, int tid) {
-  s_radius[tid] = (tid < dim) ? 1.0 - abs(d_x[tid]) : 0.0;
+__device__ void boundaryDistance(T *s_cache, T *d_x, int tid) {
+  s_cache[tid] = 1.0 - abs(d_x[tid]);
 }
 
 template <typename T>
