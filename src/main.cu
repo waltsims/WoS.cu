@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   T *d_runs;
   T *d_results;
   // TODO: Question: what effect does the d_eps have on practical convergence?
-  T d_eps = 1 / sqrt(p.wos.x0.dimension); // or 0.01
+  T d_eps = 0.01; // 1 / sqrt(p.wos.x0.dimension); // or 0.01
 
   // instantiate timers
   Timer computationTime;
@@ -166,9 +166,11 @@ int main(int argc, char *argv[]) {
   // Basic testing
 
   T EPS = 0.00001;
+  T desired = 0.0;
 
   if (abs(x0[0] - 0.0) < EPS) {
-    T desired = 0.039760;
+    desired = (d_eps != 0.01) * 0.039760;
+    desired = (d_eps == 0.01) * 0.042535;
     // Julia value [0.0415682]
     if (abs(result - desired) < EPS) {
       printf("Test passed!\n");
