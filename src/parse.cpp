@@ -85,6 +85,9 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         std::cerr << "--itterations option requires one argument." << std::endl;
         return 1;
       }
+    } else {
+      show_usage(argv);
+      return 0;
     }
   }
   printf("Running Simulation with %d arguments\n", count);
