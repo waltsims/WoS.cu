@@ -158,11 +158,35 @@ int main(int argc, char *argv[]) {
   h_results[0] = reduceCPU(h_results, p.reduction.blocks);
 
   totalTime.end();
-
-  printf("average: %f \nrunning time: %f sec  \ntotal time: %f sec \n",
-         h_results[0] / p.wos.itterations, computationTime.get(),
-         totalTime.get());
+  T result = h_results[0] / p.wos.itterations;
+  printf("average: %lf \nrunning time: %f sec  \ntotal time: %f sec \n", result,
+         computationTime.get(), totalTime.get());
   cudaFree(d_results);
+
+  // Basic testing
+
+  T EPS = 0.00001;
+
+  if (abs(x0[0] - 0.0) < EPS) {
+    T desired = 0.039760;
+    // Julia value [0.0415682]
+    if (abs(result - desired) < EPS) {
+      printf("Test passed!\n");
+      printf("%lf\n", result);
+    } else {
+      printf("Test failed....\n");
+      printf("%lf\n", result);
+    }
+  } else if (abs(x0[0] - 1.0) < EPS) {
+    T desired = 0.5;
+    if (abs(result - desired) < EPS) {
+      printf("Test passed!\n");
+      printf("%lf\n", result);
+    } else {
+      printf("Test failed....\n");
+      printf("%lf\n", result);
+    }
+  }
 
   return (0);
 }
