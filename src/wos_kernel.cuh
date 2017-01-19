@@ -11,10 +11,13 @@ template <typename T>
 __device__ void minReduce(T *s_radius, size_t dim, size_t tid);
 
 template <typename T>
+__device__ void warpMinReduce(T *sdata, int tid);
+
+template <typename T>
 __device__ void warpReduce(T *sdata, int tid);
 
 template <typename T>
-__device__ void broadcast(T *s_radius, int tid);
+__device__ void broadcast(T *sdata, int tid);
 
 template <typename T>
 __device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid);
@@ -93,7 +96,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
       boundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
 
-      minReduce<T>(bvp.s_radius, dim, tid);
+      warpMinReduce<T>(bvp.s_radius, tid);
       // local copy of radius
       // TODO: convert local(GLOBAL) copy to register variable.
       r = bvp.s_radius[0];
@@ -121,7 +124,98 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
     }
   }
 }
+template <typename T>
+__device__ void warpMinReduce(T *sdata, int tid) {
+  // each thread puts its local value into warp variable
+  T myMin = sdata[tid];
+  unsigned int blockSize = blockDim.x;
 
+  __syncthreads();
+
+  // do reduction in shared mem
+  if ((blockSize >= 512) && (tid < 256)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 256])) ? myMin : sdata[tid + 256];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 256) && (tid < 128)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 128])) ? myMin : sdata[tid + 128];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 128) && (tid < 64)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 64])) ? myMin : sdata[tid + 64];
+  }
+
+  __syncthreads();
+
+#if (__CUDA_ARCH__ >= 300)
+  if (tid < 32) {
+    // Fetch final intermediate sum from 2nd warp
+    if (blockSize >= 64)
+      myMin = ((abs(myMin)) < abs(sdata[tid + 32])) ? myMin : sdata[tid + 32];
+    // Reduce final warp using shuffle
+    for (int offset = warpSize / 2; offset > 0; offset /= 2) {
+      T temp = __shfl_down(myMin, offset);
+      myMin = (abs(temp) < abs(myMin)) ? temp : myMin;
+    }
+  }
+#else
+  // fully unroll reduction within a single warp
+  if ((blockSize >= 64) && (tid < 32)) {
+
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 32])) ? myMin : sdata[tid + 32];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 32) && (tid < 16)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 16])) ? myMin : sdata[tid + 16];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 16) && (tid < 8)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 8])) ? myMin : sdata[tid + 8];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 8) && (tid < 4)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 4])) ? myMin : sdata[tid + 4];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 4) && (tid < 2)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 2])) ? myMin : sdata[tid + 2];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 2) && (tid < 1)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 1])) ? myMin : sdata[tid + 1];
+  }
+
+  __syncthreads();
+#endif
+
+  if (tid == 0)
+    sdata[0] = myMin;
+
+  __syncthreads();
+}
 template <typename T>
 __device__ void minReduce(T *s_radius, size_t dim, size_t tid) {
   //__syncthreads(); // needed for race check
@@ -167,6 +261,13 @@ __device__ void warpReduce(T *sdata, int tid) {
   __syncthreads();
 
   // do reduction in shared mem
+
+  if ((blockSize >= 1024) && (tid < 512)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 256];
+  }
+
+  __syncthreads();
+
   if ((blockSize >= 512) && (tid < 256)) {
     sdata[tid] = mySum = mySum + sdata[tid + 256];
   }
@@ -234,25 +335,23 @@ __device__ void warpReduce(T *sdata, int tid) {
   __syncthreads();
 #endif
 
-  // write result for this block to global mem
   if (tid == 0)
     sdata[0] = mySum;
 
   __syncthreads();
 }
-
 template <typename T>
-__device__ void broadcast(T *s_radius, int tid) {
+__device__ void broadcast(T *sdata, int tid) {
 
-  // if (tid != 0) // needed for race condition check
-  s_radius[tid] = s_radius[0];
-  //__syncthreads(); // needed for race condition check
+  if (tid != 0) // needed for race condition check
+    sdata[tid] = sdata[0];
+  __syncthreads(); // needed for race condition check
 }
 
 template <typename T>
 __device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
   boundaryDistance(cache, s_x, tid);
-  minReduce(cache, dim, tid);
+  warpMinReduce(cache, tid);
   broadcast(cache, tid);
 
   s_x[tid] = ((1 - (s_x[tid])) == cache[tid]) ? 1 : s_x[tid];
