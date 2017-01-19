@@ -11,6 +11,9 @@ template <typename T>
 __device__ void minReduce(T *s_radius, size_t dim, size_t tid);
 
 template <typename T>
+__device__ void warpReduce(T *sdata, int tid);
+
+template <typename T>
 __device__ void broadcast(T *s_radius, int tid);
 
 template <typename T>
@@ -156,6 +159,89 @@ __device__ void sumReduce(T *s_cache, int tid) {
 }
 
 template <typename T>
+__device__ void warpReduce(T *sdata, int tid) {
+  // each thread puts its local sum value into warp variable
+  T mySum = sdata[tid];
+  unsigned int blockSize = blockDim.x;
+
+  __syncthreads();
+
+  // do reduction in shared mem
+  if ((blockSize >= 512) && (tid < 256)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 256];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 256) && (tid < 128)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 128];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 128) && (tid < 64)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 64];
+  }
+
+  __syncthreads();
+
+#if (__CUDA_ARCH__ >= 300)
+  if (tid < 32) {
+    // Fetch final intermediate sum from 2nd warp
+    if (blockSize >= 64)
+      mySum += sdata[tid + 32];
+    // Reduce final warp using shuffle
+    for (int offset = warpSize / 2; offset > 0; offset /= 2) {
+      mySum += __shfl_down(mySum, offset);
+    }
+  }
+#else
+  // fully unroll reduction within a single warp
+  if ((blockSize >= 64) && (tid < 32)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 32];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 32) && (tid < 16)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 16];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 16) && (tid < 8)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 8];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 8) && (tid < 4)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 4];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 4) && (tid < 2)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 2];
+  }
+
+  __syncthreads();
+
+  if ((blockSize >= 2) && (tid < 1)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 1];
+  }
+
+  __syncthreads();
+#endif
+
+  // write result for this block to global mem
+  if (tid == 0)
+    sdata[0] = mySum;
+
+  __syncthreads();
+}
+
+template <typename T>
 __device__ void broadcast(T *s_radius, int tid) {
 
   // if (tid != 0) // needed for race condition check
@@ -178,7 +264,8 @@ __device__ void norm2(T *s_radius, T *s_cache, int tid) {
 
   // square vals and copy to cache
   s_cache[tid] = s_radius[tid] * s_radius[tid];
-  sumReduce(s_cache, tid);
+  // sumReduce(s_cache, tid);
+  warpReduce<T>(s_cache, tid);
 
   if (tid == 0) {
     s_cache[tid] = sqrt(s_cache[tid]);
@@ -212,7 +299,9 @@ __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
 
   s_cache[tid] = s_x[tid] * s_x[tid];
 
-  sumReduce(s_cache, tid);
+  // sumReduce(s_cache, tid);
+  warpReduce<T>(s_cache, tid);
+
   if (tid == 0) {
     s_result[0] = s_cache[0] / (2 * dim);
   }
