@@ -74,10 +74,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
 
-  // shared buff should currently be 4 * problem size + 1
   extern __shared__ T buff[];
-  // bvp WARP variable
-  // is this global or Register var?
   BlockVariablePointers<T> bvp;
   calcSubPointers(&bvp, len, buff);
   smemInit(bvp, d_x0, tid);
@@ -88,7 +85,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
     curandState s;
     curand_init(seed, 0, 0, &s);
 
-    // TODO: x0 in constmem
+    // TODO: x0 in texture meomry
 
     T r = INFINITY;
     // max step size
@@ -98,7 +95,6 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
       warpMinReduce<T>(bvp.s_radius, tid);
       // local copy of radius
-      // TODO: convert local(GLOBAL) copy to register variable.
       r = bvp.s_radius[0];
 
       // random next step_direction
@@ -114,16 +110,18 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
     // find closest boundary point
     round2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
 
-    // TODO eliminate s_result variable?
+    // TODO eliminate s_result variable? write direct to global and save mem.
     // boundary eval
     evaluateBoundary<T>(bvp.s_x, bvp.s_cache, bvp.s_result, dim, tid);
     // return boundary value
+
     if (threadIdx.x == 0) {
 
       d_global[blockIdx.x + blockDim.x * i] += bvp.s_result[0];
     }
   }
 }
+
 template <typename T>
 __device__ void warpMinReduce(T *sdata, int tid) {
   // each thread puts its local value into warp variable
@@ -216,49 +214,12 @@ __device__ void warpMinReduce(T *sdata, int tid) {
 
   __syncthreads();
 }
-template <typename T>
-__device__ void minReduce(T *s_radius, size_t dim, size_t tid) {
-  //__syncthreads(); // needed for race check
-  int i = blockDim.x / 2;
-  while (i != 0) {
-    if (tid < i) {
-      if (tid + i < dim) {
-        if (abs(s_radius[tid]) > abs(s_radius[tid + i]))
-          s_radius[tid] = s_radius[tid + i];
-      }
-    }
-    __syncthreads();
-    i /= 2;
-  }
-}
-
-template <typename T>
-__device__ void sumReduce(T *s_cache, int tid) {
-
-  // TODO optimize reduce unwraping etc....
-  //__syncthreads(); // needed for racecheck
-  int i = blockDim.x / 2;
-  while (i != 0) {
-    if (tid < i) {
-      s_cache[tid] += s_cache[tid + i];
-    }
-    __syncthreads();
-    i /= 2;
-  }
-#ifdef DEBUG
-  if (tid == 0)
-    printf("%f\n", s_cache[tid]);
-  __syncthreads();
-#endif
-}
 
 template <typename T>
 __device__ void warpReduce(T *sdata, int tid) {
   // each thread puts its local sum value into warp variable
   T mySum = sdata[tid];
   unsigned int blockSize = blockDim.x;
-
-  __syncthreads();
 
   // do reduction in shared mem
 
@@ -340,12 +301,13 @@ __device__ void warpReduce(T *sdata, int tid) {
 
   __syncthreads();
 }
+
 template <typename T>
 __device__ void broadcast(T *sdata, int tid) {
 
-  if (tid != 0) // needed for race condition check
-    sdata[tid] = sdata[0];
-  __syncthreads(); // needed for race condition check
+  // if (tid != 0) // needed for race condition check
+  sdata[tid] = sdata[0];
+  //__syncthreads(); // needed for race condition check
 }
 
 template <typename T>
@@ -354,7 +316,8 @@ __device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
   warpMinReduce(cache, tid);
   broadcast(cache, tid);
 
-  s_x[tid] = ((1 - (s_x[tid])) == cache[tid]) ? 1 : s_x[tid];
+  // TODO: could be faster if index of min was known
+  s_x[tid] = ((1.0 - abs(s_x[tid])) == cache[tid]) ? 1.0 : s_x[tid];
   __syncthreads();
 }
 
@@ -363,7 +326,7 @@ __device__ void norm2(T *s_radius, T *s_cache, int tid) {
 
   // square vals and copy to cache
   s_cache[tid] = s_radius[tid] * s_radius[tid];
-  // sumReduce(s_cache, tid);
+
   warpReduce<T>(s_cache, tid);
 
   if (tid == 0) {
@@ -379,7 +342,7 @@ template <typename T>
 __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
 
   norm2(s_radius, cache, tid);
-  s_radius[tid] = s_radius[tid] / cache[0];
+  s_radius[tid] /= cache[0];
 //__syncthreads(); // needed for race check
 #ifdef DEBUG
   printf("normalized value on thread %d after normilization: %f \n", tid,
@@ -398,7 +361,6 @@ __device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
 
   s_cache[tid] = s_x[tid] * s_x[tid];
 
-  // sumReduce(s_cache, tid);
   warpReduce<T>(s_cache, tid);
 
   if (tid == 0) {
