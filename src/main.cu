@@ -9,6 +9,15 @@
 #include <math_functions.h>
 #include <stdio.h>
 
+// Beautify outpt
+#define ANSI_RED "\x1b[31m"
+#define ANSI_GREEN "\x1b[32m"
+#define ANSI_YELLOW "\x1b[33m"
+#define ANSI_BLUE "\x1b[34m"
+#define ANSI_MAGENTA "\x1b[35m"
+#define ANSI_CYAN "\x1b[36m"
+#define ANSI_RESET "\x1b[0m"
+
 #ifndef MAX_THREADS
 #define MAX_THREADS 1024
 #endif
@@ -36,11 +45,14 @@ void outputConvergence(const char *filename, T *vals, int runs);
 template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
 
+void printTitle();
+
 unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks);
 
 size_t getLength(size_t dim);
 
 int main(int argc, char *argv[]) {
+  printTitle();
   // cuda status inits
   cudaError_t cudaStat;
   Parameters p;
@@ -60,7 +72,6 @@ int main(int argc, char *argv[]) {
   // declare local array variabls
   T x0[p.wos.x0.length];
   T h_results[p.reduction.blocks];
-  T h_runs[p.wos.itterations];
   // declare pointers for device variables
   T *d_x0;
   T *d_runs;
@@ -71,12 +82,15 @@ int main(int argc, char *argv[]) {
   // instantiate timers
   Timer computationTime;
   Timer totalTime;
+  Timer memoryTime;
 
   totalTime.start();
 
   // init our point on host
   // cast to T hotfix until class is templated
   initX0(x0, p.wos.x0.dimension, p.wos.x0.length, (T)p.wos.x0.value);
+
+  memoryTime.start();
 
   // maloc device memory
   cudaStat = cudaMalloc((void **)&d_x0, p.wos.x0.length * sizeof(T));
@@ -107,6 +121,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+  float prep = memoryTime.get();
   computationTime.start();
 
   // Calling WoS kernel
@@ -120,6 +135,10 @@ int main(int argc, char *argv[]) {
   // We don't need d_x0 anymore, only to reduce solution data
   cudaFree(d_x0);
 
+#ifdef PLOT
+  // create variable for Plot data
+  T h_runs[p.wos.itterations];
+  // convergence plot export
   cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.itterations * sizeof(T),
                              cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
@@ -127,26 +146,26 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  // 256 blocks in global reduce
-  cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
-  if (cudaStat != cudaSuccess) {
-    printf(" device memory allocation failed for d_sum\n");
-    return EXIT_FAILURE;
-  }
-
-// convergence plot export
-
-#ifdef PLOT
   printf("exporting convergences data\n");
   eval2result(h_runs, runs);
   getRelativeError(h_runs, runs);
   outputConvergence("docs/data/cuWos_convergence.dat", h_runs, runs);
 // outputRuntime();
 #endif
+  memoryTime.start();
 
+  cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
+  if (cudaStat != cudaSuccess) {
+    printf(" device memory allocation failed for d_sum\n");
+    return EXIT_FAILURE;
+  }
+
+  float mid = memoryTime.get() - prep;
   // perform local reducion on CPU
   reduce(p.wos.itterations, p.reduction.threads, p.reduction.blocks, d_runs,
          d_results);
+
+  memoryTime.start();
 
   cudaStat =
       cudaMemcpyAsync(&h_results, d_results, p.reduction.blocks * sizeof(T),
@@ -157,11 +176,11 @@ int main(int argc, char *argv[]) {
   }
   h_results[0] = reduceCPU(h_results, p.reduction.blocks);
 
-  totalTime.end();
   T result = h_results[0] / p.wos.itterations;
-  printf("average: %lf \nrunning time: %f sec  \ntotal time: %f sec \n", result,
-         computationTime.get(), totalTime.get());
-  cudaFree(d_results);
+
+  float finish = memoryTime.get() - mid - prep;
+
+  totalTime.end();
 
   // Basic testing
 
@@ -173,7 +192,7 @@ int main(int argc, char *argv[]) {
     desired = (d_eps == 0.01) * 0.042535;
     // Julia value [0.0415682]
     if (abs(result - desired) < EPS) {
-      printf("Test passed!\n");
+      printf(ANSI_GREEN "Test passed!\n" ANSI_RESET);
       printf("%lf\n", result);
     } else {
       printf("Test failed....\n");
@@ -189,6 +208,12 @@ int main(int argc, char *argv[]) {
       printf("%lf\n", result);
     }
   }
+
+  // Time output
+
+  printf("average: %lf \nrunning time: %f sec  \ntotal time: %f sec \n", result,
+         computationTime.get(), totalTime.get());
+  cudaFree(d_results);
 
   return (0);
 }
@@ -247,4 +272,21 @@ void initX0(T *x0, size_t dim, size_t len, T val) {
     x0[i] = val;
   for (unsigned int i = dim; i < len; i++)
     x0[i] = 0.0;
+}
+void printTitle() {
+  // More Beautification
+  // clang-format off
+std::cout << ANSI_MAGENTA "     __      __      "                   ANSI_MAGENTA "_________                   "                                                          ANSI_RESET
+          << std::endl;
+std::cout << ANSI_MAGENTA "    /  \\    /  \\" ANSI_CYAN "____"     ANSI_MAGENTA "/   _____/  "                     ANSI_CYAN  "    ____  "   ANSI_MAGENTA "__ __   "    ANSI_RESET
+          << std::endl;
+std::cout << ANSI_MAGENTA "    \\   \\/\\/   " ANSI_CYAN "/  _ \\"  ANSI_MAGENTA "_____   \\  "                     ANSI_CYAN "  _/ ___\\"    ANSI_MAGENTA "|  |  \\   " ANSI_RESET
+          << std::endl;
+std::cout << ANSI_MAGENTA "     \\        "    ANSI_CYAN "(  <_> )" ANSI_MAGENTA "        \\  "                     ANSI_CYAN   " \\  \\___"  ANSI_MAGENTA "|  |  /   "  ANSI_RESET
+          << std::endl;
+std::cout << ANSI_MAGENTA "      \\__/\\  / "  ANSI_CYAN "\\____/"  ANSI_MAGENTA "_______  / " ANSI_BLUE  "/\\ "    ANSI_CYAN    "\\___  >"   ANSI_MAGENTA  "____/   "   ANSI_RESET
+          << std::endl;
+std::cout << ANSI_MAGENTA  "           \\/               \\/ "                                 ANSI_BLUE " \\/   "  ANSI_CYAN       "  \\/         "                     ANSI_RESET
+          << std::endl;
+  // clang-format on
 }
