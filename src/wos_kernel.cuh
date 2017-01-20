@@ -374,7 +374,7 @@ template <typename T>
 void wos(unsigned int blocks, size_t threads, T *d_x0, T *d_runs, T d_eps,
          const int dim, unsigned int runsperblock, size_t smemSize) {
 
-  printf("setting up problem\n");
+  printInfo("setting up problem");
   dim3 dimBlock(threads, 1, 1);
   dim3 dimGrid(blocks, 1, 1);
 

@@ -1,22 +1,12 @@
 #include "clock.h"
+#include "helper.hpp"
 #include "parse.h"
 #include "wos_kernel.cuh"
 
 #include <fstream>
-#include <iostream>
 #include <limits>
 #include <math.h>
 #include <math_functions.h>
-#include <stdio.h>
-
-// Beautify outpt
-#define ANSI_RED "\x1b[31m"
-#define ANSI_GREEN "\x1b[32m"
-#define ANSI_YELLOW "\x1b[33m"
-#define ANSI_BLUE "\x1b[34m"
-#define ANSI_MAGENTA "\x1b[35m"
-#define ANSI_CYAN "\x1b[36m"
-#define ANSI_RESET "\x1b[0m"
 
 #ifndef MAX_THREADS
 #define MAX_THREADS 1024
@@ -46,6 +36,7 @@ template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
 
 void printTitle();
+void printInfo(const char *info);
 
 unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks);
 
@@ -54,6 +45,7 @@ size_t getLength(size_t dim);
 int main(int argc, char *argv[]) {
   printTitle();
   // cuda status inits
+  printInfo("initializing");
   cudaError_t cudaStat;
   Parameters p;
 
@@ -95,13 +87,13 @@ int main(int argc, char *argv[]) {
   // maloc device memory
   cudaStat = cudaMalloc((void **)&d_x0, p.wos.x0.length * sizeof(T));
   if (cudaStat != cudaSuccess) {
-    printf(" device memory allocation failed for d_x0\n");
+    printError("device memory allocation failed for d_x0");
     return EXIT_FAILURE;
   }
 
   cudaStat = cudaMalloc((void **)&d_runs, p.wos.itterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
-    printf(" device memory allocation failed for d_sum\n");
+    printError("device memory allocation failed for d_sum");
     return EXIT_FAILURE;
   }
 
@@ -109,7 +101,7 @@ int main(int argc, char *argv[]) {
 
   cudaStat = cudaMemsetAsync(d_runs, 0.0, p.wos.itterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
-    printf(" device memory set failed for d_runs\n");
+    printError("device memory set failed for d_runs");
     return EXIT_FAILURE;
   }
 
@@ -117,7 +109,7 @@ int main(int argc, char *argv[]) {
   cudaStat = cudaMemcpyAsync(d_x0, x0, p.wos.x0.length * sizeof(T),
                              cudaMemcpyHostToDevice);
   if (cudaStat != cudaSuccess) {
-    printf(" device memory upload failed\n");
+    printError("device memory upload failed");
     return EXIT_FAILURE;
   }
 
@@ -156,7 +148,7 @@ int main(int argc, char *argv[]) {
 
   cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
   if (cudaStat != cudaSuccess) {
-    printf(" device memory allocation failed for d_sum\n");
+    printError("device memory allocation failed for d_sum");
     return EXIT_FAILURE;
   }
 
@@ -171,7 +163,7 @@ int main(int argc, char *argv[]) {
       cudaMemcpyAsync(&h_results, d_results, p.reduction.blocks * sizeof(T),
                       cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
-    printf(" device memory download failed\n");
+    printError("device memory download failed");
     return EXIT_FAILURE;
   }
   h_results[0] = reduceCPU(h_results, p.reduction.blocks);
@@ -195,16 +187,16 @@ int main(int argc, char *argv[]) {
       printf(ANSI_GREEN "Test passed!\n" ANSI_RESET);
       printf("%lf\n", result);
     } else {
-      printf("Test failed....\n");
+      printf(ANSI_RED "Test failed....\n" ANSI_RESET);
       printf("%lf\n", result);
     }
   } else if (abs(x0[0] - 1.0) < EPS) {
     T desired = 0.5;
     if (abs(result - desired) < EPS) {
-      printf("Test passed!\n");
+      printf(ANSI_GREEN "Test passed!\n" ANSI_RESET);
       printf("%lf\n", result);
     } else {
-      printf("Test failed....\n");
+      printf(ANSI_RED "Test failed....\n" ANSI_RESET);
       printf("%lf\n", result);
     }
   }
@@ -272,21 +264,4 @@ void initX0(T *x0, size_t dim, size_t len, T val) {
     x0[i] = val;
   for (unsigned int i = dim; i < len; i++)
     x0[i] = 0.0;
-}
-void printTitle() {
-  // More Beautification
-  // clang-format off
-std::cout << ANSI_MAGENTA "     __      __      "                   ANSI_MAGENTA "_________                   "                                                          ANSI_RESET
-          << std::endl;
-std::cout << ANSI_MAGENTA "    /  \\    /  \\" ANSI_CYAN "____"     ANSI_MAGENTA "/   _____/  "                     ANSI_CYAN  "    ____  "   ANSI_MAGENTA "__ __   "    ANSI_RESET
-          << std::endl;
-std::cout << ANSI_MAGENTA "    \\   \\/\\/   " ANSI_CYAN "/  _ \\"  ANSI_MAGENTA "_____   \\  "                     ANSI_CYAN "  _/ ___\\"    ANSI_MAGENTA "|  |  \\   " ANSI_RESET
-          << std::endl;
-std::cout << ANSI_MAGENTA "     \\        "    ANSI_CYAN "(  <_> )" ANSI_MAGENTA "        \\  "                     ANSI_CYAN   " \\  \\___"  ANSI_MAGENTA "|  |  /   "  ANSI_RESET
-          << std::endl;
-std::cout << ANSI_MAGENTA "      \\__/\\  / "  ANSI_CYAN "\\____/"  ANSI_MAGENTA "_______  / " ANSI_BLUE  "/\\ "    ANSI_CYAN    "\\___  >"   ANSI_MAGENTA  "____/   "   ANSI_RESET
-          << std::endl;
-std::cout << ANSI_MAGENTA  "           \\/               \\/ "                                 ANSI_BLUE " \\/   "  ANSI_CYAN       "  \\/         "                     ANSI_RESET
-          << std::endl;
-  // clang-format on
 }
