@@ -35,13 +35,12 @@ template <typename T>
 __device__ void boundaryDistance(T *s_cache, T *d_x, int tid);
 
 template <typename T>
-__device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
-                                 const size_t dim, int tid);
+__device__ void evaluateBoundary(T *s_x, T *s_cache, T *d_result,
+                                 const size_t dim, int tid, int blockRun);
 
-// BUG: pointer structer is currently in local memory and ruining performance
 template <typename T>
 struct BlockVariablePointers {
-  T *s_radius, *s_direction, *s_cache, *s_x, *s_result;
+  T *s_radius, *s_direction, *s_cache, *s_x;
 };
 template <typename T>
 __device__ void calcSubPointers(BlockVariablePointers<T> *bvp, size_t len,
@@ -50,7 +49,6 @@ __device__ void calcSubPointers(BlockVariablePointers<T> *bvp, size_t len,
   bvp->s_direction = len + buff;
   bvp->s_cache = 2 * len + buff;
   bvp->s_x = 3 * len + buff;
-  bvp->s_result = 4 * len + buff;
 }
 template <typename T>
 __device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
@@ -61,9 +59,6 @@ __device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
   bvp.s_radius[tid] = INFINITY;
   // copy x0 to local __shared__"moveable" x
   bvp.s_x[tid] = d_x0[tid];
-  if (tid == 0)
-    bvp.s_result[0] = 0.0;
-  __syncthreads();
   return bvp;
 }
 
@@ -110,15 +105,8 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
     // find closest boundary point
     round2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
 
-    // TODO eliminate s_result variable? write direct to global and save mem.
-    // boundary eval
-    evaluateBoundary<T>(bvp.s_x, bvp.s_cache, bvp.s_result, dim, tid);
-    // return boundary value
-
-    if (threadIdx.x == 0) {
-
-      d_global[blockIdx.x + blockDim.x * i] += bvp.s_result[0];
-    }
+    // boundary eval and return do global memory
+    evaluateBoundary<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid, i);
   }
 }
 
@@ -356,15 +344,15 @@ __device__ void boundaryDistance(T *s_cache, T *d_x, int tid) {
 }
 
 template <typename T>
-__device__ void evaluateBoundary(T *s_x, T *s_cache, T *s_result,
-                                 const size_t dim, int tid) {
+__device__ void evaluateBoundary(T *s_x, T *s_cache, T *d_result,
+                                 const size_t dim, int tid, int blockRun) {
 
   s_cache[tid] = s_x[tid] * s_x[tid];
 
   warpReduce<T>(s_cache, tid);
 
   if (tid == 0) {
-    s_result[0] = s_cache[0] / (2 * dim);
+    d_result[blockIdx.x + blockDim.x * blockRun] = s_cache[0] / (2 * dim);
   }
   __syncthreads();
 }
