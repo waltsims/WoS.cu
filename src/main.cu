@@ -174,7 +174,20 @@ int main(int argc, char *argv[]) {
 
   totalTime.end();
 
+  // TODO: dynamic table output function
+  // this is a hot mess
+
   // Basic testing
+
+  printf("\nSIMULATION SUMMARY: \n\n");
+  printf("VALUES: \n");
+
+  printf(" ----------------------------------------------------------------"
+         "----------------\n");
+  printf("|%-15s|%-15s|%-15s|%-15s|%-15s|\n", "desired value",
+         "resulting value", "epsilon", "delta", "status");
+  printf(" ----------------------------------------------------------------"
+         "----------------\n");
 
   T EPS = 0.00001;
   T desired = 0.0;
@@ -184,27 +197,44 @@ int main(int argc, char *argv[]) {
     desired = (d_eps == 0.01) * 0.042535;
     // Julia value [0.0415682]
     if (abs(result - desired) < EPS) {
-      printf(ANSI_GREEN "Test passed!\n" ANSI_RESET);
-      printf("%lf\n", result);
+      printf("|%-15lf|%-15f|%-15f|%-15f|", desired, result, EPS,
+             abs(result - desired));
+      printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
+      printf("|\n");
     } else {
-      printf(ANSI_RED "Test failed....\n" ANSI_RESET);
-      printf("%lf\n", result);
+      printf("|%-15lf|%-15f|%-15f|%-15f| ", desired, result, EPS,
+             abs(result - desired));
+      printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
+      printf("|\n");
     }
   } else if (abs(x0[0] - 1.0) < EPS) {
     T desired = 0.5;
     if (abs(result - desired) < EPS) {
-      printf(ANSI_GREEN "Test passed!\n" ANSI_RESET);
-      printf("%lf\n", result);
+      printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
+      printf("|\n");
     } else {
-      printf(ANSI_RED "Test failed....\n" ANSI_RESET);
-      printf("%lf\n", result);
+      printf("|%-15lf|%-15f|%-15f|%-15f| ", desired, result, EPS,
+             abs(result - desired));
+      printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
+      printf("|\n");
     }
   }
-
+  printf(" ----------------------------------------------------------------"
+         "----------------\n\n");
   // Time output
+  printf("TIMING: \n");
 
-  printf("average: %lf \nrunning time: %f sec  \ntotal time: %f sec \n", result,
-         computationTime.get(), totalTime.get());
+  printf(" ----------------------------------------------------------------"
+         "----------------------------------------\n");
+  printf("|%-25s|%-25s|%-25s|%-25s|\n", "resulting value",
+         "memory transfer time[sec]", "GPU computation time[sec]",
+         "total exicution time[sec]");
+  printf(" ----------------------------------------------------------------"
+         "----------------------------------------\n");
+  printf("|%-25lf|%-25f|%-25f|%-25f|\n ", result, 0.0, computationTime.get(),
+         totalTime.get());
+  printf(" ----------------------------------------------------------------"
+         "---------------------------------------\n");
   cudaFree(d_results);
 
   return (0);
