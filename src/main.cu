@@ -228,13 +228,13 @@ int main(int argc, char *argv[]) {
 
   printf(" ----------------------------------------------------------------"
          "----------------------------------------\n");
-  printf("|%-25s|%-25s|%-25s|%-25s|\n", "resulting value",
-         "memory transfer time[sec]", "GPU computation time[sec]",
-         "total exicution time[sec]");
+  printf("|%-25s|%-25s|%-25s|%-25s|\n", "memory init time[sec]",
+         "GPU computation time[sec]", "total exicution time[sec]",
+         "memory finish time[sec]");
   printf(" ----------------------------------------------------------------"
          "----------------------------------------\n");
-  printf("|%-25lf|%-25f|%-25f|%-25f|\n ", result, 0.0, computationTime.get(),
-         totalTime.get());
+  printf("|%-25f|%-25f|%-25f|%-25f|\n ", prep, computationTime.get(),
+         totalTime.get(), finish);
   printf(" ----------------------------------------------------------------"
          "---------------------------------------\n");
   cudaFree(d_results);
