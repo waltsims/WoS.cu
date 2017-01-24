@@ -47,7 +47,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         p.reduction.blocks = atoi(argv[i]);
       } else {
         std::cerr << "--numBlocks option requires one argument." << std::endl;
-        return 1;
+        return 0;
       }
     } else if ((arg == "-ntr") || (arg == "--numThreads")) {
       if (i + 1 < argc) {
@@ -56,7 +56,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         p.reduction.threads = atoi(argv[i]);
       } else {
         std::cerr << "--numThreads option requires one argument." << std::endl;
-        return 1;
+        return 0;
       }
     } else if ((arg == "-x0") || (arg == "--x0Value")) {
       if (i + 1 < argc) {
@@ -65,7 +65,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         p.wos.x0.value = atof(argv[i]);
       } else {
         std::cerr << "--x0Value option requires one argument." << std::endl;
-        return 1;
+        return 0;
       }
     } else if ((arg == "-dim") || (arg == "--dimension")) {
       if (i + 1 < argc) {
@@ -74,7 +74,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         p.wos.x0.dimension = atoi(argv[i]);
       } else {
         std::cerr << "--dimension option requires one argument." << std::endl;
-        return 1;
+        return 0;
       }
     } else if ((arg == "-it") || (arg == "--itterations")) {
       if (i + 1 < argc) {
@@ -83,7 +83,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         p.wos.itterations = atoi(argv[i]);
       } else {
         std::cerr << "--itterations option requires one argument." << std::endl;
-        return 1;
+        return 0;
       }
     } else {
       show_usage(argv);
