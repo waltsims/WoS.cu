@@ -33,7 +33,7 @@ public:
     float value;
   };
   X0 x0;
-  int itterations;
+  int iterations;
 };
 
 class Parameters {

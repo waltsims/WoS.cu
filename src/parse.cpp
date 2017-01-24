@@ -21,7 +21,7 @@ static void show_usage(char *argv[]) {
       << "\t-x0,\t--x0Value\t\t\tdefine consant value for x0\n"
       << "\t-dim,\t--dimension\t\t\tdefine the dimension of the problem. "
          "(ergo length of vector x0)\n"
-      << "\t-it,\t--itterations\t\t\tdefine the number of itterations for the "
+      << "\t-it,\t--iterations\t\t\tdefine the number of iterations for the "
          "algorithm.\n"
       << std::endl;
 }
@@ -33,7 +33,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
   p.reduction.blocks = 512;
   p.wos.x0.value = 0.0; // another option for default val is 1.0
   p.wos.x0.dimension = 512;
-  p.wos.itterations = 65535;
+  p.wos.iterations = 65535;
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -76,11 +76,11 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         std::cerr << "--dimension option requires one argument." << std::endl;
         return 0;
       }
-    } else if ((arg == "-it") || (arg == "--itterations")) {
+    } else if ((arg == "-it") || (arg == "--iterations")) {
       if (i + 1 < argc) {
         i++;
         count++;
-        p.wos.itterations = atoi(argv[i]);
+        p.wos.iterations = atoi(argv[i]);
       } else {
         std::cerr << "--itterations option requires one argument." << std::endl;
         return 0;

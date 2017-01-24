@@ -107,6 +107,10 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
     // boundary eval and return do global memory
     evaluateBoundary<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid, i);
+#ifdef DEBUG
+    if (tid == 0)
+      printf("result on block %d:\t%f\n", blockIdx.x, d_global[blockIdx.x]);
+#endif
   }
 }
 
@@ -317,12 +321,8 @@ __device__ void norm2(T *s_radius, T *s_cache, int tid) {
 
   warpReduce<T>(s_cache, tid);
 
-  if (tid == 0) {
+  if (tid == 0)
     s_cache[tid] = sqrt(s_cache[tid]);
-#ifdef DEBUG
-    printf("the 2norm of the value r is %f\n", s_cache[0]);
-#endif
-  }
   __syncthreads();
 }
 
@@ -331,11 +331,7 @@ __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
 
   norm2(s_radius, cache, tid);
   s_radius[tid] /= cache[0];
-//__syncthreads(); // needed for race check
-#ifdef DEBUG
-  printf("normalized value on thread %d after normilization: %f \n", tid,
-         s_radius[tid]);
-#endif
+  //__syncthreads(); // needed for race check
 }
 
 template <typename T>

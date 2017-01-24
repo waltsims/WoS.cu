@@ -50,6 +50,10 @@ __global__ void sumReduce(T *g_idata, T *g_odata, unsigned int n) {
   unsigned int gridSize = blockSize * 2 * gridDim.x;
 
   T mySum = 0;
+#ifdef DEBUG
+  if (tid == 0)
+    printf("input on block %d:\t%f\n", blockIdx.x, g_idata[blockIdx.x]);
+#endif
 
   // we reduce multiple elements per thread.  The number is determined by the
   // number of active thread blocks (via gridDim).  More blocks will result
@@ -140,6 +144,11 @@ __global__ void sumReduce(T *g_idata, T *g_odata, unsigned int n) {
   // write result for this block to global mem
   if (tid == 0)
     g_odata[blockIdx.x] = mySum;
+
+#ifdef DEBUG
+  if (tid == 0)
+    printf("output on block %d:\t%f\n", blockIdx.x, g_idata[blockIdx.x]);
+#endif
 }
 
 template <typename T>

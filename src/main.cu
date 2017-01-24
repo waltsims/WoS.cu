@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 
   // TODO for runcount indipendent of number of blocks
   unsigned int number_blocks;
-  unsigned int runsperblock = getRunsPerBlock(p.wos.itterations, number_blocks);
+  unsigned int runsperblock = getRunsPerBlock(p.wos.iterations, number_blocks);
 
   // declare local array variabls
   T x0[p.wos.x0.length];
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  cudaStat = cudaMalloc((void **)&d_runs, p.wos.itterations * sizeof(T));
+  cudaStat = cudaMalloc((void **)&d_runs, p.wos.iterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory allocation failed for d_sum");
     return EXIT_FAILURE;
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
 
   // TODO for runcount independant of number of blocks
 
-  cudaStat = cudaMemsetAsync(d_runs, 0.0, p.wos.itterations * sizeof(T));
+  cudaStat = cudaMemsetAsync(d_runs, 0.0, p.wos.iterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory set failed for d_runs");
     return EXIT_FAILURE;
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
 
   float mid = memoryTime.get() - prep;
   // perform local reducion on CPU
-  reduce(p.wos.itterations, p.reduction.threads, p.reduction.blocks, d_runs,
+  reduce(p.wos.iterations, p.reduction.threads, p.reduction.blocks, d_runs,
          d_results);
 
   memoryTime.start();
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
   }
   h_results[0] = reduceCPU(h_results, p.reduction.blocks);
 
-  T result = h_results[0] / p.wos.itterations;
+  T result = h_results[0] / p.wos.iterations;
 
   float finish = memoryTime.get() - mid - prep;
 
@@ -183,11 +183,11 @@ int main(int argc, char *argv[]) {
   printf("VALUES: \n");
 
   printf(" ----------------------------------------------------------------"
-         "----------------\n");
-  printf("|%-15s|%-15s|%-15s|%-15s|%-15s|\n", "desired value",
-         "resulting value", "epsilon", "delta", "status");
+         "------------------------------\n");
+  printf("|%-15s|%-15s|%-15s|%-15s|%-15s|%-15s|\n", "iterations",
+         "desired value", "resulting value", "epsilon", "delta", "status");
   printf(" ----------------------------------------------------------------"
-         "----------------\n");
+         "------------------------------\n");
 
   T EPS = 0.00001;
   T desired = 0.0;
@@ -197,30 +197,32 @@ int main(int argc, char *argv[]) {
     desired = (d_eps == 0.01) * 0.042535;
     // Julia value [0.0415682]
     if (abs(result - desired) < EPS) {
-      printf("|%-15lf|%-15f|%-15f|%-15f|", desired, result, EPS,
-             abs(result - desired));
+      printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
+             result, EPS, abs(result - desired));
       printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
       printf("|\n");
     } else {
-      printf("|%-15lf|%-15f|%-15f|%-15f| ", desired, result, EPS,
-             abs(result - desired));
+      printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
+             result, EPS, abs(result - desired));
       printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
       printf("|\n");
     }
   } else if (abs(x0[0] - 1.0) < EPS) {
     T desired = 0.5;
     if (abs(result - desired) < EPS) {
+      printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
+             result, EPS, abs(result - desired));
       printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
       printf("|\n");
     } else {
-      printf("|%-15lf|%-15f|%-15f|%-15f| ", desired, result, EPS,
-             abs(result - desired));
+      printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
+             result, EPS, abs(result - desired));
       printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
       printf("|\n");
     }
   }
   printf(" ----------------------------------------------------------------"
-         "----------------\n\n");
+         "------------------------------\n");
   // Time output
   printf("TIMING: \n");
 
