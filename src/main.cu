@@ -12,13 +12,9 @@
 #define MAX_THREADS 1024
 #endif
 #ifndef MAX_BLOCKS
-#define MAX_BLOCKS 65535
+#define MAX_BLOCKS
 #endif
 //#include <cublas_v2.h>
-
-// Source: CUDA reduction documentation
-template <class T>
-T reduceCPU(T *data, int size);
 
 // this is the cumsum devided by number of relative runs (insitu)
 template <typename T>
@@ -58,12 +54,19 @@ int main(int argc, char *argv[]) {
   typedef double T;                  // Type for problem
 
   // TODO for runcount indipendent of number of blocks
-  unsigned int number_blocks;
-  unsigned int runsperblock = getRunsPerBlock(p.wos.iterations, number_blocks);
+  unsigned int number_blocks = p.wos.iterations;
+  unsigned int runsperblock =
+      number_blocks; // getRunsPerBlock(p.wos.iterations, number_blocks);
 
   // declare local array variabls
   T x0[p.wos.x0.length];
   T h_results[p.reduction.blocks];
+  // init h_results:
+  for (int j = 0; j < p.reduction.blocks; j++) {
+    h_results[j] = 0.0;
+  }
+  // T *h_results = NULL;
+  // cudaMallocHost(&h_results, p.reduction.blocks * sizeof(T));
   // declare pointers for device variables
   T *d_x0;
   T *d_runs;
@@ -91,6 +94,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+  printf("initializing d_runs with a length of %d\n", p.wos.iterations);
   cudaStat = cudaMalloc((void **)&d_runs, p.wos.iterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory allocation failed for d_sum");
@@ -117,6 +121,7 @@ int main(int argc, char *argv[]) {
   computationTime.start();
 
   // Calling WoS kernel
+  // TODO pass only struct to wos
   wos<T>(number_blocks, p.wos.x0.length, d_x0, d_runs, d_eps,
          p.wos.x0.dimension, runsperblock,
          getSizeSharedMem<T>(p.wos.x0.length));
@@ -129,9 +134,9 @@ int main(int argc, char *argv[]) {
 
 #ifdef PLOT
   // create variable for Plot data
-  T h_runs[p.wos.itterations];
+  T h_runs[p.wos.iterations];
   // convergence plot export
-  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.itterations * sizeof(T),
+  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.iterations * sizeof(T),
                              cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
     printf(" device memory download failed\n");
@@ -139,36 +144,62 @@ int main(int argc, char *argv[]) {
   }
 
   printf("exporting convergences data\n");
-  eval2result(h_runs, runs);
-  getRelativeError(h_runs, runs);
-  outputConvergence("docs/data/cuWos_convergence.dat", h_runs, runs);
+  eval2result(h_runs, p.wos.iterations);
+  getRelativeError(h_runs, p.wos.iterations);
+  outputConvergence("docs/data/cuWos_convergence.dat", h_runs,
+                    p.wos.iterations);
 // outputRuntime();
 #endif
   memoryTime.start();
 
   cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
   if (cudaStat != cudaSuccess) {
-    printError("device memory allocation failed for d_sum");
+    printError("device memory allocation failed for d_results");
     return EXIT_FAILURE;
   }
 
   float mid = memoryTime.get() - prep;
-  // perform local reducion on CPU
-  reduce(p.wos.iterations, p.reduction.threads, p.reduction.blocks, d_runs,
-         d_results);
+  if (p.reduction.blocks > 1) {
+    cudaError err;
+    reduce(p.wos.iterations, p.reduction.threads, p.reduction.blocks, d_runs,
+           d_results);
+    err = cudaGetLastError();
+    if (cudaSuccess != err) {
+      printf("Reduction Kernel returned an error:\n %s\n",
+             cudaGetErrorString(err));
+    }
+  }
 
   memoryTime.start();
 
-  cudaStat =
-      cudaMemcpyAsync(&h_results, d_results, p.reduction.blocks * sizeof(T),
-                      cudaMemcpyDeviceToHost);
+  // #ifdef DEBUG
+  //   printf("[MAIN]: results values before copy:\n");
+  //   for (int n = 0; n < 2 * p.reduction.blocks; n++) {
+  //     printf("%f\n", h_results[n]);
+  //   }
+  // #endif
+
+  // copy result from device to hostcudaStat =
+  cudaStat = cudaMemcpy(&h_results, d_results, p.reduction.blocks * sizeof(T),
+                        cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
     printError("device memory download failed");
     return EXIT_FAILURE;
   }
-  h_results[0] = reduceCPU(h_results, p.reduction.blocks);
 
-  T result = h_results[0] / p.wos.iterations;
+  T gpu_result = 0.0;
+  for (int i = 0; i < p.reduction.blocks; i++) {
+    printf("itteration %d, %f\n", i, h_results[0]);
+    gpu_result += h_results[i];
+  }
+  gpu_result /= p.wos.iterations;
+
+  // #ifdef DEBUG
+  //   printf("[MAIN]: results values after copy:\n");
+  //   for (int n = 0; n < p.reduction.blocks; n++) {
+  //     printf("%f\n", h_results[n]);
+  //   }
+  // #endif
 
   float finish = memoryTime.get() - mid - prep;
 
@@ -196,27 +227,27 @@ int main(int argc, char *argv[]) {
     desired = (d_eps != 0.01) * 0.039760;
     desired = (d_eps == 0.01) * 0.042535;
     // Julia value [0.0415682]
-    if (abs(result - desired) < EPS) {
+    if (abs(gpu_result - desired) < EPS) {
       printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
-             result, EPS, abs(result - desired));
+             gpu_result, EPS, abs(gpu_result - desired));
       printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
       printf("|\n");
     } else {
       printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
-             result, EPS, abs(result - desired));
+             gpu_result, EPS, abs(gpu_result - desired));
       printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
       printf("|\n");
     }
   } else if (abs(x0[0] - 1.0) < EPS) {
     T desired = 0.5;
-    if (abs(result - desired) < EPS) {
+    if (abs(gpu_result - desired) < EPS) {
       printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
-             result, EPS, abs(result - desired));
+             gpu_result, EPS, abs(gpu_result - desired));
       printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
       printf("|\n");
     } else {
       printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
-             result, EPS, abs(result - desired));
+             gpu_result, EPS, abs(gpu_result - desired));
       printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
       printf("|\n");
     }

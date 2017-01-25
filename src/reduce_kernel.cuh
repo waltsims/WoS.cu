@@ -49,10 +49,19 @@ __global__ void sumReduce(T *g_idata, T *g_odata, unsigned int n) {
   unsigned int i = blockIdx.x * blockSize * 2 + threadIdx.x;
   unsigned int gridSize = blockSize * 2 * gridDim.x;
 
+  if (tid == 0)
+    printf("[REDUCE]: nIsPow2: %s\n", nIsPow2 ? "True" : "False");
+
   T mySum = 0;
 #ifdef DEBUG
-  if (tid == 0)
-    printf("input on block %d:\t%f\n", blockIdx.x, g_idata[blockIdx.x]);
+  if (tid == 0) {
+    int j = blockIdx.x * blockSize * 2 + threadIdx.x;
+    while (j < n) {
+      printf("[REDUCE]: input on block %d:\t%f\n", blockIdx.x, g_idata[j]);
+      j += gridSize;
+    }
+  }
+  __syncthreads();
 #endif
 
   // we reduce multiple elements per thread.  The number is determined by the
@@ -65,6 +74,7 @@ __global__ void sumReduce(T *g_idata, T *g_odata, unsigned int n) {
     // sized arrays
     if (nIsPow2 || i + blockSize < n)
       mySum += g_idata[i + blockSize];
+    printf("[REDUCE]: local sum:\t%f\n", mySum);
 
     i += gridSize;
   }
@@ -147,7 +157,9 @@ __global__ void sumReduce(T *g_idata, T *g_odata, unsigned int n) {
 
 #ifdef DEBUG
   if (tid == 0)
-    printf("output on block %d:\t%f\n", blockIdx.x, g_idata[blockIdx.x]);
+    printf("[REDUCE]: output on block %d:\t%f\n", blockIdx.x,
+           g_idata[blockIdx.x]);
+  __syncthreads();
 #endif
 }
 

@@ -36,7 +36,7 @@ __device__ void boundaryDistance(T *s_cache, T *d_x, int tid);
 
 template <typename T>
 __device__ void evaluateBoundary(T *s_x, T *s_cache, T *d_result,
-                                 const size_t dim, int tid, int blockRun);
+                                 const size_t dim, int tid);
 
 template <typename T>
 struct BlockVariablePointers {
@@ -74,44 +74,53 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   calcSubPointers(&bvp, len, buff);
   smemInit(bvp, d_x0, tid);
 
-  for (int i = 0; i < runsperblock; i++) {
-    // seed for random number generation
-    unsigned int seed = index;
-    curandState s;
-    curand_init(seed, 0, 0, &s);
-
-    // TODO: x0 in texture meomry
-
-    T r = INFINITY;
-    // max step size
-    while (d_eps < r) {
-
-      boundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
-
-      warpMinReduce<T>(bvp.s_radius, tid);
-      // local copy of radius
-      r = bvp.s_radius[0];
-
-      // random next step_direction
-      bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
-
-      // normalize direction with L2 norm
-      normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
-
-      // next x point
-      bvp.s_x[tid] += r * bvp.s_direction[tid];
-    }
-
-    // find closest boundary point
-    round2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
-
-    // boundary eval and return do global memory
-    evaluateBoundary<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid, i);
 #ifdef DEBUG
-    if (tid == 0)
-      printf("result on block %d:\t%f\n", blockIdx.x, d_global[blockIdx.x]);
+  if (tid == 0)
+    printf("[WOS]: d_global[%d] before:\t%f\n", blockIdx.x,
+           d_global[blockIdx.x]);
+  __syncthreads();
 #endif
+
+  // seed for random number generation
+  unsigned int seed = index;
+  curandState s;
+  curand_init(seed, 0, 0, &s);
+
+  // TODO: x0 in texture meomry
+
+  T r = INFINITY;
+  // max step size
+  while (d_eps < r) {
+
+    boundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
+
+    warpMinReduce<T>(bvp.s_radius, tid);
+    // local copy of radius
+    r = bvp.s_radius[0];
+
+    // random next step_direction
+    bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
+
+    // normalize direction with L2 norm
+    normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
+
+    // next x point
+    bvp.s_x[tid] += r * bvp.s_direction[tid];
   }
+
+  // find closest boundary point
+  round2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
+
+  // boundary eval and return do global memory
+  evaluateBoundary<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid);
+#ifdef DEBUG
+  if (tid == 0) {
+    printf("[WOS]: result on block %d:\n", blockIdx.x);
+    printf("%f, ", d_global[blockIdx.x]);
+    printf("\n");
+  }
+  __syncthreads();
+#endif
 }
 
 template <typename T>
@@ -341,16 +350,20 @@ __device__ void boundaryDistance(T *s_cache, T *d_x, int tid) {
 
 template <typename T>
 __device__ void evaluateBoundary(T *s_x, T *s_cache, T *d_result,
-                                 const size_t dim, int tid, int blockRun) {
+                                 const size_t dim, int tid) {
 
   s_cache[tid] = s_x[tid] * s_x[tid];
 
   warpReduce<T>(s_cache, tid);
 
+#ifdef DEBUG
   if (tid == 0) {
-    d_result[blockIdx.x + blockDim.x * blockRun] = s_cache[0] / (2 * dim);
+    printf("[WOS]: output from block %d:\t%f\n", blockIdx.x,
+           s_cache[0] / (2 * dim));
+    d_result[blockIdx.x] = s_cache[0] / (2 * dim);
   }
   __syncthreads();
+#endif
 }
 
 //==============================================================================
@@ -359,8 +372,8 @@ void wos(unsigned int blocks, size_t threads, T *d_x0, T *d_runs, T d_eps,
          const int dim, unsigned int runsperblock, size_t smemSize) {
 
   printInfo("setting up problem");
-  dim3 dimBlock(threads, 1, 1);
-  dim3 dimGrid(blocks, 1, 1);
+  dim3 dimBlock(threads);
+  dim3 dimGrid(blocks);
 
   cudaError err;
 
