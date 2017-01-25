@@ -30,7 +30,7 @@ public:
 
     // TODO: should be a template param. hard to impiment
 
-    float value;
+    double value;
   };
   X0 x0;
   int iterations;
