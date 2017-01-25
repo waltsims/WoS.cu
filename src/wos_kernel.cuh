@@ -42,6 +42,7 @@ template <typename T>
 struct BlockVariablePointers {
   T *s_radius, *s_direction, *s_cache, *s_x;
 };
+
 template <typename T>
 __device__ void calcSubPointers(BlockVariablePointers<T> *bvp, size_t len,
                                 T *buff) {
@@ -356,14 +357,14 @@ __device__ void evaluateBoundary(T *s_x, T *s_cache, T *d_result,
 
   warpReduce<T>(s_cache, tid);
 
-#ifdef DEBUG
   if (tid == 0) {
+#ifdef DEBUG
     printf("[WOS]: output from block %d:\t%f\n", blockIdx.x,
            s_cache[0] / (2 * dim));
+#endif
     d_result[blockIdx.x] = s_cache[0] / (2 * dim);
   }
   __syncthreads();
-#endif
 }
 
 //==============================================================================
@@ -372,8 +373,8 @@ void wos(unsigned int blocks, size_t threads, T *d_x0, T *d_runs, T d_eps,
          const int dim, unsigned int runsperblock, size_t smemSize) {
 
   printInfo("setting up problem");
-  dim3 dimBlock(threads);
-  dim3 dimGrid(blocks);
+  dim3 dimBlock(threads, 1, 1);
+  dim3 dimGrid(blocks, 1, 1);
 
   cudaError err;
 
