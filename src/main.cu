@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
   // declare pointers for device variables
   T *d_x0;
   T *d_runs;
-  T *d_results;
+
   // TODO: Question: what effect does the d_eps have on practical convergence?
   T d_eps = 0.01; // 1 / sqrt(p.wos.x0.dimension); // or 0.01
 
@@ -169,6 +169,7 @@ int main(int argc, char *argv[]) {
 
 #else
 
+  T *d_results;
   cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory allocation failed for d_results");
@@ -213,12 +214,12 @@ int main(int argc, char *argv[]) {
 #endif
   gpu_result /= p.wos.iterations;
 
-  // #ifdef DEBUG
+#ifdef DEBUG
   printf("[MAIN]: results values after copy:\n");
   for (int n = 0; n < p.reduction.blocks; n++) {
     printf("%f\n", h_results[n]);
   }
-  // #endif
+#endif
 
   float finish = memoryTime.get() - mid - prep;
 
