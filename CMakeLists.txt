@@ -5,6 +5,7 @@ project(WoS.cu)
 
 option(DEBUG "compiling with debuging output" OFF)
 option(PLOT "compiling for plot output" OFF)
+option(CPU_REDUCE "complete reduction on CPU" OFF)
 
 set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -lineinfo)
 
@@ -25,6 +26,10 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 		if(PLOT)
 			message( "Plot flag being set")
 			add_definitions(-DPLOT)
+		endif()
+		if(CPU_REDUCE)
+			message( "Plot flag being set")
+			add_definitions(-DCPU_REDUCE)
 		endif()
 		# Specify the binary name and the source files to build
 		file(GLOB SRC src/main.cu src/wos_kernel.cuh src/reduce_kernel.cuh src/helper.cpp src/parse.cpp)

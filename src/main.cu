@@ -56,17 +56,17 @@ int main(int argc, char *argv[]) {
   // TODO for runcount indipendent of number of blocks
   unsigned int number_blocks = p.wos.iterations;
   unsigned int runsperblock =
-      number_blocks; // getRunsPerBlock(p.wos.iterations, number_blocks);
+      1; // getRunsPerBlock(p.wos.iterations, number_blocks);
 
   // declare local array variabls
   T x0[p.wos.x0.length];
-  T h_results[p.reduction.blocks];
+  // T h_results[p.reduction.blocks];
+
+  T *h_results = (T *)malloc(p.reduction.blocks * sizeof(T));
   // init h_results:
   for (int j = 0; j < p.reduction.blocks; j++) {
     h_results[j] = 0.0;
   }
-  // T *h_results = NULL;
-  // cudaMallocHost(&h_results, p.reduction.blocks * sizeof(T));
   // declare pointers for device variables
   T *d_x0;
   T *d_runs;
@@ -95,6 +95,7 @@ int main(int argc, char *argv[]) {
   }
 
   printf("initializing d_runs with a length of %d\n", p.wos.iterations);
+
   cudaStat = cudaMalloc((void **)&d_runs, p.wos.iterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory allocation failed for d_sum");
@@ -103,15 +104,15 @@ int main(int argc, char *argv[]) {
 
   // TODO for runcount independant of number of blocks
 
-  cudaStat = cudaMemsetAsync(d_runs, 0.0, p.wos.iterations * sizeof(T));
+  cudaStat = cudaMemset(d_runs, 0.0, p.wos.iterations * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory set failed for d_runs");
     return EXIT_FAILURE;
   }
 
   // Let's bring our data to the Device
-  cudaStat = cudaMemcpyAsync(d_x0, x0, p.wos.x0.length * sizeof(T),
-                             cudaMemcpyHostToDevice);
+  cudaStat =
+      cudaMemcpy(d_x0, x0, p.wos.x0.length * sizeof(T), cudaMemcpyHostToDevice);
   if (cudaStat != cudaSuccess) {
     printError("device memory upload failed");
     return EXIT_FAILURE;
@@ -152,6 +153,22 @@ int main(int argc, char *argv[]) {
 #endif
   memoryTime.start();
 
+#ifdef CPU_REDUCE
+  T h_runs[p.wos.iterations];
+  // convergence plot export
+  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.iterations * sizeof(T),
+                             cudaMemcpyDeviceToHost);
+  if (cudaStat != cudaSuccess) {
+    printf(" device memory download failed\n");
+    return EXIT_FAILURE;
+  }
+
+  float mid = memoryTime.get() - prep;
+
+  T gpu_result = reduceCPU(h_runs, p.wos.iterations);
+
+#else
+
   cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory allocation failed for d_results");
@@ -159,28 +176,29 @@ int main(int argc, char *argv[]) {
   }
 
   float mid = memoryTime.get() - prep;
-  if (p.reduction.blocks > 1) {
-    cudaError err;
-    reduce(p.wos.iterations, p.reduction.threads, p.reduction.blocks, d_runs,
-           d_results);
-    err = cudaGetLastError();
-    if (cudaSuccess != err) {
-      printf("Reduction Kernel returned an error:\n %s\n",
-             cudaGetErrorString(err));
-    }
+
+  // if (p.reduction.blocks > 1) {
+  cudaError err;
+  reduce(p.wos.iterations, p.reduction.threads, p.reduction.blocks, d_runs,
+         d_results);
+  err = cudaGetLastError();
+  if (cudaSuccess != err) {
+    printf("Reduction Kernel returned an error:\n %s\n",
+           cudaGetErrorString(err));
   }
+  //  }
 
   memoryTime.start();
 
-  // #ifdef DEBUG
-  //   printf("[MAIN]: results values before copy:\n");
-  //   for (int n = 0; n < 2 * p.reduction.blocks; n++) {
-  //     printf("%f\n", h_results[n]);
-  //   }
-  // #endif
+#ifdef DEBUG
+  printf("[MAIN]: results values before copy:\n");
+  for (int n = 0; n < p.reduction.blocks; n++) {
+    printf("%f\n", h_results[n]);
+  }
+#endif
 
   // copy result from device to hostcudaStat =
-  cudaStat = cudaMemcpy(&h_results, d_results, p.reduction.blocks * sizeof(T),
+  cudaStat = cudaMemcpy(h_results, d_results, p.reduction.blocks * sizeof(T),
                         cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
     printError("device memory download failed");
@@ -189,16 +207,17 @@ int main(int argc, char *argv[]) {
 
   T gpu_result = 0.0;
   for (int i = 0; i < p.reduction.blocks; i++) {
-    printf("itteration %d, %f\n", i, h_results[0]);
+    printf("iteration %d, %f\n", i, h_results[i]);
     gpu_result += h_results[i];
   }
+#endif
   gpu_result /= p.wos.iterations;
 
   // #ifdef DEBUG
-  //   printf("[MAIN]: results values after copy:\n");
-  //   for (int n = 0; n < p.reduction.blocks; n++) {
-  //     printf("%f\n", h_results[n]);
-  //   }
+  printf("[MAIN]: results values after copy:\n");
+  for (int n = 0; n < p.reduction.blocks; n++) {
+    printf("%f\n", h_results[n]);
+  }
   // #endif
 
   float finish = memoryTime.get() - mid - prep;
@@ -268,7 +287,9 @@ int main(int argc, char *argv[]) {
          totalTime.get(), finish);
   printf(" ----------------------------------------------------------------"
          "---------------------------------------\n");
+#ifndef CPU_REDUCE
   cudaFree(d_results);
+#endif
 
   return (0);
 }
