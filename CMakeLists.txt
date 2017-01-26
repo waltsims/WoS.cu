@@ -32,8 +32,8 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 			add_definitions(-DCPU_REDUCE)
 		endif()
 		# Specify the binary name and the source files to build
-		file(GLOB SRC src/main.cu src/wos_kernel.cuh src/reduce_kernel.cuh src/helper.cpp src/parse.cpp)
-		file(GLOB LIB src/helper.hpp  src/clock.h  src/params.h  src/parse.h)
+		file(GLOB SRC src/helper.cpp src/main.cu src/wos_kernel.cuh src/params.cpp src/reduce_kernel.cuh src/parse.cpp )
+		file(GLOB LIB src/helper.hpp src/clock.h src/params.h src/parse.h)
 		cuda_add_executable(wos ${SRC} ${LIB}  )
 		target_link_libraries(wos ${CUDA_LIBARIES} )
 

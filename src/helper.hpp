@@ -1,6 +1,10 @@
-#include <cstddef>
-#include <iostream>
+#ifndef HELPER_H
+#define HELPER_H
+#include "params.h"
+
 #include <stdio.h>
+
+class Parameters; // forward declaration
 
 // Beautify outpt
 #define ANSI_RED "\x1b[31m"
@@ -21,3 +25,8 @@ void printInfo(const char *info);
 void printError(const char *info);
 
 void printTitle();
+
+void printTiming(float prep, float computation, float total, float finish);
+
+void testResults(float x0, float d_eps, float gpu_result, Parameters &p);
+#endif // HELPER_H

@@ -1,7 +1,16 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
+#ifndef MAX_THREADS
+#define MAX_THREADS 1024
+#endif
+#ifndef MAX_BLOCKS
+#define MAX_BLOCKS 65535
+#endif
+
+#include <cuda_runtime.h>
 #include <iostream>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string>
 
@@ -9,12 +18,15 @@
 
 // TODO make class that holds both structure and function
 
-template <typename T>
-size_t getSizeSharedMem(size_t len) {
-  // definition of total size needed for variable in buffer dependent on the
-  // length of the data transefered
-  return (4 * len) * sizeof(T);
-}
+size_t getLength(size_t dim);
+
+void getNumBlocksAndThreads(int n, int maxBlocks, int maxThreads, int &blocks,
+                            int &threads);
+
+template <bool isDouble>
+size_t getSizeSharedMem(size_t len);
+
+unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks);
 
 class ReductionParameters {
 public:
@@ -32,8 +44,12 @@ public:
 
     double value;
   };
+
   X0 x0;
-  int iterations;
+  int totalPaths;
+  int pathsPerBlock;
+  size_t size_SharedMemory;
+  bool typeDouble; // 0 for float 1 for double
 };
 
 class Parameters {

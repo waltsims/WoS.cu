@@ -8,22 +8,16 @@
 #define MAX_BLOCKS 65535
 
 template <typename T>
-__device__ void minReduce(T *s_radius, size_t dim, size_t tid);
-
-template <typename T>
 __device__ void warpMinReduce(T *sdata, int tid);
 
 template <typename T>
-__device__ void warpReduce(T *sdata, int tid);
+__device__ void warpSumReduce(T *sdata, int tid);
 
 template <typename T>
 __device__ void broadcast(T *sdata, int tid);
 
 template <typename T>
-__device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid);
-
-template <typename T>
-__device__ void WoS(T *s_cache, int tid);
+__device__ void project2Boundary(T *s_x, T *cache, size_t dim, int tid);
 
 template <typename T>
 __device__ void norm2(T *s_radius, int tid);
@@ -32,11 +26,11 @@ template <typename T>
 __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid);
 
 template <typename T>
-__device__ void boundaryDistance(T *s_cache, T *d_x, int tid);
+__device__ void getBoundaryDistance(T *s_cache, T *d_x, int tid);
 
 template <typename T>
-__device__ void evaluateBoundary(T *s_x, T *s_cache, T *d_result,
-                                 const size_t dim, int tid);
+__device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T *d_result,
+                                      const size_t dim, int tid);
 
 template <typename T>
 struct BlockVariablePointers {
@@ -93,7 +87,7 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   // max step size
   while (d_eps < r) {
 
-    boundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
+    getBoundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
 
     warpMinReduce<T>(bvp.s_radius, tid);
     // local copy of radius
@@ -110,10 +104,10 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   }
 
   // find closest boundary point
-  round2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
+  project2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
 
   // boundary eval and return do global memory
-  evaluateBoundary<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid);
+  evaluateBoundaryValue<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid);
 #ifdef DEBUG
   if (tid == 0) {
     printf("[WOS]: result on block %d:\n", blockIdx.x);
@@ -218,7 +212,7 @@ __device__ void warpMinReduce(T *sdata, int tid) {
 }
 
 template <typename T>
-__device__ void warpReduce(T *sdata, int tid) {
+__device__ void warpSumReduce(T *sdata, int tid) {
   // each thread puts its local sum value into warp variable
   T mySum = sdata[tid];
   unsigned int blockSize = blockDim.x;
@@ -313,8 +307,8 @@ __device__ void broadcast(T *sdata, int tid) {
 }
 
 template <typename T>
-__device__ void round2Boundary(T *s_x, T *cache, size_t dim, int tid) {
-  boundaryDistance(cache, s_x, tid);
+__device__ void project2Boundary(T *s_x, T *cache, size_t dim, int tid) {
+  getBoundaryDistance(cache, s_x, tid);
   warpMinReduce(cache, tid);
   broadcast(cache, tid);
 
@@ -329,7 +323,7 @@ __device__ void norm2(T *s_radius, T *s_cache, int tid) {
   // square vals and copy to cache
   s_cache[tid] = s_radius[tid] * s_radius[tid];
 
-  warpReduce<T>(s_cache, tid);
+  warpSumReduce<T>(s_cache, tid);
 
   if (tid == 0)
     s_cache[tid] = sqrt(s_cache[tid]);
@@ -345,17 +339,17 @@ __device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
 }
 
 template <typename T>
-__device__ void boundaryDistance(T *s_cache, T *d_x, int tid) {
+__device__ void getBoundaryDistance(T *s_cache, T *d_x, int tid) {
   s_cache[tid] = 1.0 - abs(d_x[tid]);
 }
 
 template <typename T>
-__device__ void evaluateBoundary(T *s_x, T *s_cache, T *d_result,
-                                 const size_t dim, int tid) {
+__device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T *d_result,
+                                      const size_t dim, int tid) {
 
   s_cache[tid] = s_x[tid] * s_x[tid];
 
-  warpReduce<T>(s_cache, tid);
+  warpSumReduce<T>(s_cache, tid);
 
   if (tid == 0) {
 #ifdef DEBUG

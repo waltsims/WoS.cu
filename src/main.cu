@@ -1,18 +1,16 @@
 #include "clock.h"
-#include "helper.hpp"
 #include "parse.h"
 #include "wos_kernel.cuh"
 
 #include <fstream>
 #include <limits>
-#include <math.h>
 #include <math_functions.h>
 
 #ifndef MAX_THREADS
 #define MAX_THREADS 1024
 #endif
 #ifndef MAX_BLOCKS
-#define MAX_BLOCKS
+#define MAX_BLOCKS 65535
 #endif
 //#include <cublas_v2.h>
 
@@ -31,13 +29,6 @@ void outputConvergence(const char *filename, T *vals, int runs);
 template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
 
-void printTitle();
-void printInfo(const char *info);
-
-unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks);
-
-size_t getLength(size_t dim);
-
 int main(int argc, char *argv[]) {
   printTitle();
   // cuda status inits
@@ -45,31 +36,18 @@ int main(int argc, char *argv[]) {
   cudaError_t cudaStat;
   Parameters p;
 
+  // TODO this should/could go in parameter constructor
   int parseStatus = parseParams(argc, argv, p);
   if (parseStatus == 0)
     return 0;
 
-  p.wos.x0.length =
-      getLength(p.wos.x0.dimension); // length of the storage vector
-  typedef double T;                  // Type for problem
+  // TODO: call WoS template wraper function
+  // if (p.wos.typeDouble) {
+  typedef double T; // Type for problem
 
-  // TODO for runcount indipendent of number of blocks
-  unsigned int number_blocks = p.wos.iterations;
-  unsigned int runsperblock =
-      1; // getRunsPerBlock(p.wos.iterations, number_blocks);
-
-  // declare local array variabls
-  T x0[p.wos.x0.length];
-  // T h_results[p.reduction.blocks];
-
-  T *h_results = (T *)malloc(p.reduction.blocks * sizeof(T));
-  // init h_results:
-  for (int j = 0; j < p.reduction.blocks; j++) {
-    h_results[j] = 0.0;
-  }
-  // declare pointers for device variables
-  T *d_x0;
-  T *d_runs;
+  // } else {
+  //   typedef float T; // Type for problem
+  // }
 
   // TODO: Question: what effect does the d_eps have on practical convergence?
   T d_eps = 0.01; // 1 / sqrt(p.wos.x0.dimension); // or 0.01
@@ -81,6 +59,11 @@ int main(int argc, char *argv[]) {
 
   totalTime.start();
 
+  // declare local array variabls
+  T x0[p.wos.x0.length];
+  // declare pointers for device variables
+  T *d_x0;
+  T *d_runs;
   // init our point on host
   // cast to T hotfix until class is templated
   initX0(x0, p.wos.x0.dimension, p.wos.x0.length, (T)p.wos.x0.value);
@@ -94,9 +77,9 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  printf("initializing d_runs with a length of %d\n", p.wos.iterations);
+  printf("initializing d_runs with a length of %d\n", p.wos.totalPaths);
 
-  cudaStat = cudaMalloc((void **)&d_runs, p.wos.iterations * sizeof(T));
+  cudaStat = cudaMalloc((void **)&d_runs, p.wos.totalPaths * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory allocation failed for d_sum");
     return EXIT_FAILURE;
@@ -104,7 +87,7 @@ int main(int argc, char *argv[]) {
 
   // TODO for runcount independant of number of blocks
 
-  cudaStat = cudaMemset(d_runs, 0.0, p.wos.iterations * sizeof(T));
+  cudaStat = cudaMemset(d_runs, 0.0, p.wos.totalPaths * sizeof(T));
   if (cudaStat != cudaSuccess) {
     printError("device memory set failed for d_runs");
     return EXIT_FAILURE;
@@ -123,9 +106,8 @@ int main(int argc, char *argv[]) {
 
   // Calling WoS kernel
   // TODO pass only struct to wos
-  wos<T>(number_blocks, p.wos.x0.length, d_x0, d_runs, d_eps,
-         p.wos.x0.dimension, runsperblock,
-         getSizeSharedMem<T>(p.wos.x0.length));
+  wos<T>(p.wos.totalPaths, p.wos.x0.length, d_x0, d_runs, d_eps,
+         p.wos.x0.dimension, p.wos.pathsPerBlock, p.wos.size_SharedMemory);
 
   cudaDeviceSynchronize();
   computationTime.end();
@@ -135,9 +117,9 @@ int main(int argc, char *argv[]) {
 
 #ifdef PLOT
   // create variable for Plot data
-  T h_runs[p.wos.iterations];
+  T h_runs[p.wos.totalPaths];
   // convergence plot export
-  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.iterations * sizeof(T),
+  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.totalPaths * sizeof(T),
                              cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
     printf(" device memory download failed\n");
@@ -145,18 +127,18 @@ int main(int argc, char *argv[]) {
   }
 
   printf("exporting convergences data\n");
-  eval2result(h_runs, p.wos.iterations);
-  getRelativeError(h_runs, p.wos.iterations);
+  eval2result(h_runs, p.wos.totalPaths);
+  getRelativeError(h_runs, p.wos.totalPaths);
   outputConvergence("docs/data/cuWos_convergence.dat", h_runs,
-                    p.wos.iterations);
+                    p.wos.totalPaths);
 // outputRuntime();
 #endif
   memoryTime.start();
 
 #ifdef CPU_REDUCE
-  T h_runs[p.wos.iterations];
+  T h_runs[p.wos.totalPaths];
   // convergence plot export
-  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.iterations * sizeof(T),
+  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.totalPaths * sizeof(T),
                              cudaMemcpyDeviceToHost);
   if (cudaStat != cudaSuccess) {
     printf(" device memory download failed\n");
@@ -165,9 +147,16 @@ int main(int argc, char *argv[]) {
 
   float mid = memoryTime.get() - prep;
 
-  T gpu_result = reduceCPU(h_runs, p.wos.iterations);
+  T gpu_result = reduceCPU(h_runs, p.wos.totalPaths);
 
 #else
+  // T h_results[p.reduction.blocks];
+
+  T *h_results = (T *)malloc(p.reduction.blocks * sizeof(T));
+  // init h_results:
+  for (int j = 0; j < p.reduction.blocks; j++) {
+    h_results[j] = 0.0;
+  }
 
   T *d_results;
   cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
@@ -180,7 +169,7 @@ int main(int argc, char *argv[]) {
 
   // if (p.reduction.blocks > 1) {
   cudaError err;
-  reduce(p.wos.iterations, p.reduction.threads, p.reduction.blocks, d_runs,
+  reduce(p.wos.totalPaths, p.reduction.threads, p.reduction.blocks, d_runs,
          d_results);
   err = cudaGetLastError();
   if (cudaSuccess != err) {
@@ -211,8 +200,9 @@ int main(int argc, char *argv[]) {
     printf("iteration %d, %f\n", i, h_results[i]);
     gpu_result += h_results[i];
   }
+  free(h_results);
 #endif
-  gpu_result /= p.wos.iterations;
+  gpu_result /= p.wos.totalPaths;
 
 #ifdef DEBUG
   printf("[MAIN]: results values after copy:\n");
@@ -225,90 +215,15 @@ int main(int argc, char *argv[]) {
 
   totalTime.end();
 
-  // TODO: dynamic table output function
-  // this is a hot mess
+  testResults((float)x0[0], (float)d_eps, (float)gpu_result, p);
 
-  // Basic testing
+  printTiming(prep, computationTime.get(), totalTime.get(), finish);
 
-  printf("\nSIMULATION SUMMARY: \n\n");
-  printf("VALUES: \n");
-
-  printf(" ----------------------------------------------------------------"
-         "------------------------------\n");
-  printf("|%-15s|%-15s|%-15s|%-15s|%-15s|%-15s|\n", "iterations",
-         "desired value", "resulting value", "epsilon", "delta", "status");
-  printf(" ----------------------------------------------------------------"
-         "------------------------------\n");
-
-  T EPS = 0.00001;
-  T desired = 0.0;
-
-  if (abs(x0[0] - 0.0) < EPS) {
-    desired = (d_eps != 0.01) * 0.039760;
-    desired = (d_eps == 0.01) * 0.042535;
-    // Julia value [0.0415682]
-    if (abs(gpu_result - desired) < EPS) {
-      printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
-             gpu_result, EPS, abs(gpu_result - desired));
-      printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
-      printf("|\n");
-    } else {
-      printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
-             gpu_result, EPS, abs(gpu_result - desired));
-      printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
-      printf("|\n");
-    }
-  } else if (abs(x0[0] - 1.0) < EPS) {
-    T desired = 0.5;
-    if (abs(gpu_result - desired) < EPS) {
-      printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
-             gpu_result, EPS, abs(gpu_result - desired));
-      printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
-      printf("|\n");
-    } else {
-      printf("|%-15d|%-15lf|%-15f|%-15f|%-15f|", p.wos.iterations, desired,
-             gpu_result, EPS, abs(gpu_result - desired));
-      printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
-      printf("|\n");
-    }
-  }
-  printf(" ----------------------------------------------------------------"
-         "------------------------------\n");
-  // Time output
-  printf("TIMING: \n");
-
-  printf(" ----------------------------------------------------------------"
-         "----------------------------------------\n");
-  printf("|%-25s|%-25s|%-25s|%-25s|\n", "memory init time[sec]",
-         "GPU computation time[sec]", "total exicution time[sec]",
-         "memory finish time[sec]");
-  printf(" ----------------------------------------------------------------"
-         "----------------------------------------\n");
-  printf("|%-25f|%-25f|%-25f|%-25f|\n ", prep, computationTime.get(),
-         totalTime.get(), finish);
-  printf(" ----------------------------------------------------------------"
-         "---------------------------------------\n");
 #ifndef CPU_REDUCE
   cudaFree(d_results);
 #endif
 
   return (0);
-}
-
-size_t getLength(size_t dim) { return (isPow2(dim)) ? dim : nextPow2(dim); }
-
-unsigned int getRunsPerBlock(unsigned int runs, unsigned int &number_blocks) {
-  unsigned int runsperblock = 1;
-  number_blocks = runs;
-  if (runs > MAX_BLOCKS) {
-    while (MAX_BLOCKS < number_blocks) {
-      runsperblock++;
-      number_blocks /= runsperblock;
-    }
-    printf("runs: %d\nnumber of blocks: %d \n runs per block: %d\n", runs,
-           number_blocks, runsperblock);
-  }
-  return runsperblock;
 }
 
 // this is the cumsum devided by number of relative runs (insitu)
