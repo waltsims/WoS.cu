@@ -106,8 +106,7 @@ int main(int argc, char *argv[]) {
 
   // Calling WoS kernel
   // TODO pass only struct to wos
-  wos<T>(p.wos.totalPaths, p.wos.x0.length, d_x0, d_runs, d_eps,
-         p.wos.x0.dimension, p.wos.pathsPerBlock, p.wos.size_SharedMemory);
+  wos<T>(p, d_x0, d_runs, d_eps);
 
   cudaDeviceSynchronize();
   computationTime.end();

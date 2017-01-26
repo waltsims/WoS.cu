@@ -363,17 +363,17 @@ __device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T *d_result,
 
 //==============================================================================
 template <typename T>
-void wos(unsigned int blocks, size_t threads, T *d_x0, T *d_runs, T d_eps,
-         const int dim, unsigned int runsperblock, size_t smemSize) {
+void wos(Parameters &p, T *d_x0, T *d_runs, T d_eps) {
 
   printInfo("setting up problem");
-  dim3 dimBlock(threads, 1, 1);
-  dim3 dimGrid(blocks, 1, 1);
+  dim3 dimBlock(p.wos.x0.length, 1, 1);
+  dim3 dimGrid(p.wos.totalPaths, 1, 1);
 
   cudaError err;
 
-  WoS<T><<<dimGrid, dimBlock, smemSize>>>(d_x0, d_runs, d_eps, dim, threads,
-                                          runsperblock);
+  WoS<T><<<dimGrid, dimBlock, p.wos.size_SharedMemory>>>(
+      d_x0, d_runs, d_eps, p.wos.x0.dimension, p.wos.x0.length,
+      p.wos.pathsPerBlock);
   err = cudaGetLastError();
   if (cudaSuccess != err) {
     printf("Wos Kernel returned an error:\n %s\n", cudaGetErrorString(err));
