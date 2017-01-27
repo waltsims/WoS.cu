@@ -46,7 +46,8 @@ int main(int argc, char *argv[]) {
   timers.totalTimer.start();
 
   // declare local array variabls
-  T h_x0[p.wos.x0.length];
+  T *h_x0;
+  checkCudaErrors(cudaMallocHost((void **)&h_x0, sizeof(T) * p.wos.x0.length));
   // declare pointers for device variables
   T *d_x0 = NULL;
   T *d_paths = NULL;
@@ -153,6 +154,8 @@ int main(int argc, char *argv[]) {
   timers.totalTimer.end();
 
   testResults((float)h_x0[0], (float)d_eps, (float)gpu_result, p);
+
+  cudaFreeHost(h_x0);
 
   printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
               timers.totalTimer.get(), timers.memoryDownloadTimer.get());
