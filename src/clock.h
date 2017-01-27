@@ -32,3 +32,11 @@ private:
   bool running;
   float sec;
 };
+
+class Timers {
+public:
+  Timer computationTimer;
+  Timer totalTimer;
+  Timer memorySetupTimer;
+  Timer memoryDownloadTimer;
+};

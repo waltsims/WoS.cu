@@ -9,7 +9,6 @@ option(CPU_REDUCE "complete reduction on CPU" OFF)
 
 set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -lineinfo)
 
-
 # Check if CUDA is available
 	message( "creating Makefile for lightning speed GPU implementation")
 	find_package(CUDA REQUIRED)
@@ -32,9 +31,10 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 			add_definitions(-DCPU_REDUCE)
 		endif()
 		# Specify the binary name and the source files to build
-		file(GLOB SRC src/helper.cpp src/main.cu src/wos_kernel.cuh src/params.cpp src/reduce_kernel.cuh src/parse.cpp )
-		file(GLOB LIB src/helper.hpp src/clock.h src/params.h src/parse.h)
-		cuda_add_executable(wos ${SRC} ${LIB}  )
+		file(GLOB SRC src/helper.cpp src/main.cu src/plot.cpp src/wos_kernel.cuh src/params.cpp src/reduce_kernel.cuh src/parse.cpp )
+		file(GLOB LIB src/helper.hpp src/clock.h src/plot.h	src/params.h src/parse.h )
+		file(GLOB INC inc/helper_string.h inc/helper_cuda.h)
+		cuda_add_executable(wos ${SRC} ${LIB} ${INC})
 		target_link_libraries(wos ${CUDA_LIBARIES} )
 
 	else()

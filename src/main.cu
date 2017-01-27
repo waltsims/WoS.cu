@@ -1,8 +1,9 @@
+#include "../inc/helper_cuda.h"
 #include "clock.h"
 #include "parse.h"
+#include "plot.h"
 #include "wos_kernel.cuh"
 
-#include <fstream>
 #include <limits>
 #include <math_functions.h>
 
@@ -14,26 +15,13 @@
 #endif
 //#include <cublas_v2.h>
 
-// this is the cumsum devided by number of relative runs (insitu)
-template <typename T>
-void eval2result(T *vals, int runs);
-
-// callculate the relative error (insitu)
-template <typename T>
-void getRelativeError(T *vals, int runs);
-
-template <typename T>
-void outputConvergence(const char *filename, T *vals, int runs);
-
-// initialize x0 vector of size dim and fill with val
+// initialize h_x0 vector of size dim and fill with val
 template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
 
 int main(int argc, char *argv[]) {
   printTitle();
-  // cuda status inits
   printInfo("initializing");
-  cudaError_t cudaStat;
   Parameters p;
 
   // TODO this should/could go in parameter constructor
@@ -53,131 +41,83 @@ int main(int argc, char *argv[]) {
   T d_eps = 0.01; // 1 / sqrt(p.wos.x0.dimension); // or 0.01
 
   // instantiate timers
-  Timer computationTime;
-  Timer totalTime;
-  Timer memoryTime;
+  Timers timers;
 
-  totalTime.start();
+  timers.totalTimer.start();
 
   // declare local array variabls
-  T x0[p.wos.x0.length];
+  T h_x0[p.wos.x0.length];
   // declare pointers for device variables
-  T *d_x0;
-  T *d_runs;
+  T *d_x0 = NULL;
+  T *d_paths = NULL;
   // init our point on host
   // cast to T hotfix until class is templated
-  initX0(x0, p.wos.x0.dimension, p.wos.x0.length, (T)p.wos.x0.value);
+  initX0(h_x0, p.wos.x0.dimension, p.wos.x0.length, (T)p.wos.x0.value);
 
-  memoryTime.start();
+  timers.memorySetupTimer.start();
 
   // maloc device memory
-  cudaStat = cudaMalloc((void **)&d_x0, p.wos.x0.length * sizeof(T));
-  if (cudaStat != cudaSuccess) {
-    printError("device memory allocation failed for d_x0");
-    return EXIT_FAILURE;
-  }
+  checkCudaErrors(cudaMalloc((void **)&d_x0, p.wos.x0.length * sizeof(T)));
 
-  printf("initializing d_runs with a length of %d\n", p.wos.totalPaths);
+  printInfo("initializing d_paths");
 
-  cudaStat = cudaMalloc((void **)&d_runs, p.wos.totalPaths * sizeof(T));
-  if (cudaStat != cudaSuccess) {
-    printError("device memory allocation failed for d_sum");
-    return EXIT_FAILURE;
-  }
+  checkCudaErrors(cudaMalloc((void **)&d_paths, p.wos.totalPaths * sizeof(T)));
 
-  // TODO for runcount independant of number of blocks
-
-  cudaStat = cudaMemset(d_runs, 0.0, p.wos.totalPaths * sizeof(T));
-  if (cudaStat != cudaSuccess) {
-    printError("device memory set failed for d_runs");
-    return EXIT_FAILURE;
-  }
+  checkCudaErrors(cudaMemset(d_paths, 0.0, p.wos.totalPaths * sizeof(T)));
 
   // Let's bring our data to the Device
-  cudaStat =
-      cudaMemcpy(d_x0, x0, p.wos.x0.length * sizeof(T), cudaMemcpyHostToDevice);
-  if (cudaStat != cudaSuccess) {
-    printError("device memory upload failed");
-    return EXIT_FAILURE;
-  }
+  checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.x0.length * sizeof(T),
+                             cudaMemcpyHostToDevice));
 
-  float prep = memoryTime.get();
-  computationTime.start();
+  timers.memorySetupTimer.end();
+  timers.computationTimer.start();
 
   // Calling WoS kernel
-  // TODO pass only struct to wos
-  wos<T>(p, d_x0, d_runs, d_eps);
-
+  wos<T>(p, d_x0, d_paths, d_eps);
   cudaDeviceSynchronize();
-  computationTime.end();
+  timers.computationTimer.end();
 
   // We don't need d_x0 anymore, only to reduce solution data
   cudaFree(d_x0);
 
-#ifdef PLOT
-  // create variable for Plot data
-  T h_runs[p.wos.totalPaths];
-  // convergence plot export
-  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.totalPaths * sizeof(T),
-                             cudaMemcpyDeviceToHost);
-  if (cudaStat != cudaSuccess) {
-    printf(" device memory download failed\n");
-    return EXIT_FAILURE;
-  }
+#if defined(PLOT) || defined(CPU_REDUCE)
+  printInfo("downloading path data\n");
+  timers.memoryDownloadTimer.start();
 
-  printf("exporting convergences data\n");
-  eval2result(h_runs, p.wos.totalPaths);
-  getRelativeError(h_runs, p.wos.totalPaths);
-  outputConvergence("docs/data/cuWos_convergence.dat", h_runs,
-                    p.wos.totalPaths);
-// outputRuntime();
+  T h_paths[p.wos.totalPaths];
+  // Download paths data
+  checkCudaErrors(cudaMemcpyAsync(
+      &h_paths, d_paths, p.wos.totalPaths * sizeof(T), cudaMemcpyDeviceToHost));
+
+  timers.memoryDownloadTimer.end();
 #endif
-  memoryTime.start();
+
+#ifdef PLOT
+  plot(h_paths, p);
+#endif
 
 #ifdef CPU_REDUCE
-  T h_runs[p.wos.totalPaths];
-  // convergence plot export
-  cudaStat = cudaMemcpyAsync(&h_runs, d_runs, p.wos.totalPaths * sizeof(T),
-                             cudaMemcpyDeviceToHost);
-  if (cudaStat != cudaSuccess) {
-    printf(" device memory download failed\n");
-    return EXIT_FAILURE;
-  }
 
-  float mid = memoryTime.get() - prep;
-
-  T gpu_result = reduceCPU(h_runs, p.wos.totalPaths);
+  T gpu_result = reduceCPU(h_paths, p.wos.totalPaths);
 
 #else
-  // T h_results[p.reduction.blocks];
 
   T *h_results = (T *)malloc(p.reduction.blocks * sizeof(T));
-  // init h_results:
-  for (int j = 0; j < p.reduction.blocks; j++) {
-    h_results[j] = 0.0;
-  }
 
   T *d_results;
-  cudaStat = cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T));
-  if (cudaStat != cudaSuccess) {
-    printError("device memory allocation failed for d_results");
-    return EXIT_FAILURE;
-  }
+  cudaCheckErrors(
+      cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T)));
 
-  float mid = memoryTime.get() - prep;
-
-  // if (p.reduction.blocks > 1) {
   cudaError err;
-  reduce(p.wos.totalPaths, p.reduction.threads, p.reduction.blocks, d_runs,
+  reduce(p.wos.totalPaths, p.reduction.threads, p.reduction.blocks, d_paths,
          d_results);
   err = cudaGetLastError();
   if (cudaSuccess != err) {
     printf("Reduction Kernel returned an error:\n %s\n",
            cudaGetErrorString(err));
   }
-  //  }
 
-  memoryTime.start();
+  timers.memoryDownloadTimer.start();
 
 #ifdef DEBUG
   printf("[MAIN]: results values before copy:\n");
@@ -187,12 +127,11 @@ int main(int argc, char *argv[]) {
 #endif
 
   // copy result from device to hostcudaStat =
-  cudaStat = cudaMemcpy(h_results, d_results, p.reduction.blocks * sizeof(T),
-                        cudaMemcpyDeviceToHost);
-  if (cudaStat != cudaSuccess) {
-    printError("device memory download failed");
-    return EXIT_FAILURE;
-  }
+  cudaCheckErrors(cudaMemcpy(h_results, d_results,
+                             p.reduction.blocks * sizeof(T),
+                             cudaMemcpyDeviceToHost));
+
+  timers.memoryDownloadTimer.end();
 
   T gpu_result = 0.0;
   for (int i = 0; i < p.reduction.blocks; i++) {
@@ -201,6 +140,7 @@ int main(int argc, char *argv[]) {
   }
   free(h_results);
 #endif
+
   gpu_result /= p.wos.totalPaths;
 
 #ifdef DEBUG
@@ -210,13 +150,12 @@ int main(int argc, char *argv[]) {
   }
 #endif
 
-  float finish = memoryTime.get() - mid - prep;
+  timers.totalTimer.end();
 
-  totalTime.end();
+  testResults((float)h_x0[0], (float)d_eps, (float)gpu_result, p);
 
-  testResults((float)x0[0], (float)d_eps, (float)gpu_result, p);
-
-  printTiming(prep, computationTime.get(), totalTime.get(), finish);
+  printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
+              timers.totalTimer.get(), timers.memoryDownloadTimer.get());
 
 #ifndef CPU_REDUCE
   cudaFree(d_results);
@@ -225,42 +164,12 @@ int main(int argc, char *argv[]) {
   return (0);
 }
 
-// this is the cumsum devided by number of relative runs (insitu)
 template <typename T>
-void eval2result(T *vals, int runs) {
-  for (int i = 1; i < runs; i++) {
-    vals[i] += vals[i - 1];
-    vals[i - 1] /= i;
-  }
-  vals[runs - 1] /= runs;
-}
-// callculate the relative error (insitu)
-template <typename T>
-void getRelativeError(T *vals, int runs) {
-  T end = vals[runs - 1];
-  for (int i = 0; i < runs; i++) {
-    vals[i] = abs((vals[i] - end) / end);
-  }
-}
-template <typename T>
-void outputConvergence(const char *filename, T *vals, int runs) {
-  // BUG
-  // TODO impliment for run numbers greater than MAX_BLOCKS
-  std::ofstream file(filename);
-  file << "run\t"
-       << "solution val\t" << std::endl;
-  // only export every 10th val reduce file size
-  for (int i = 0; i < runs; i += 10) {
-    file << i << "\t" << vals[i] / i << "\t" << std::endl;
-  }
-  file.close();
-}
-template <typename T>
-void initX0(T *x0, size_t dim, size_t len, T val) {
+void initX0(T *h_x0, size_t dim, size_t len, T val) {
   // init our point on host
   for (unsigned int i = 0; i < dim; i++)
-    // x0[i] = i == 1 ? 0.22 : 0;
-    x0[i] = val;
+    // h_x0[i] = i == 1 ? 0.22 : 0;
+    h_x0[i] = val;
   for (unsigned int i = dim; i < len; i++)
-    x0[i] = 0.0;
+    h_x0[i] = 0.0;
 }
