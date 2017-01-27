@@ -5,7 +5,7 @@
 
 // this is the cumsum devided by number of relative paths (insitu)
 template <typename T>
-void eval2result(T *vals, int paths) {
+void boundary2ExpectancyValue(T *vals, int paths) {
 
   for (int i = 1; i < paths; i++) {
     vals[i] += vals[i - 1];
@@ -26,22 +26,24 @@ void getRelativeError(T *vals, int paths) {
 
 template <typename T>
 void outputConvergence(const char *filename, T *vals, int paths) {
-  // BUG
   // TODO impliment for run numbers greater than MAX_BLOCKS
   std::ofstream file(filename);
-  file << "run\t"
+  file << "paths\t"
        << "solution val\t" << std::endl;
-  // only export every 10th val reduce file size
-  for (int i = 0; i < paths; i += 10) {
-    file << i << "\t" << vals[i] / i << "\t" << std::endl;
+  // only export every 1.25^n val reduce file size
+  // TODO remove logarithmic recution to seperate functionk
+  int points = ceil(log(paths) / log(1.25));
+
+  for (int i = 0; i < points; i++) {
+    file << ceil(pow(1.25, i)) << "\t" << vals[i] / pow(1.25, i) << "\t"
+         << std::endl;
   }
   file.close();
 }
 void plot(double *h_paths, Parameters &p) {
 
   printf("exporting convergences data\n");
-  eval2result(h_paths, p.wos.totalPaths);
-
+  boundary2ExpectancyValue(h_paths, p.wos.totalPaths);
   getRelativeError(h_paths, p.wos.totalPaths);
   outputConvergence("docs/data/cuWos_convergence.dat", h_paths,
                     p.wos.totalPaths);

@@ -3,7 +3,7 @@
 class Parameters; // forward declaration
 // this is the cumsum devided by number of relative paths (insitu)
 template <typename T>
-void eval2result(T *vals, int paths);
+void boundary2ExpectancyValue(T *vals, int paths);
 
 // callculate the relative error (insitu)
 template <typename T>
