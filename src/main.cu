@@ -2,7 +2,10 @@
 #include "clock.h"
 #include "parse.h"
 #include "plot.h"
+
+#ifndef THRUST
 #include "wos_kernel.cuh"
+#endif
 
 #include <limits>
 #include <math_functions.h>
@@ -13,11 +16,54 @@
 #ifndef MAX_BLOCKS
 #define MAX_BLOCKS 65535
 #endif
+
 //#include <cublas_v2.h>
+#ifdef THRUST
+#include <thrust/device_vector.h>
+#include <thrust/extrema.h>
+#include <thrust/fill.h>
+#include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/inner_product.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/random.h>
+#include <thrust/transform.h>
+
+// source:
+// http://stackoverflow.com/questions/12614164/generating-a-random-number-vector-between-0-and-1-0-using-thrust
+template <typename T>
+struct prg {
+  T a, b;
+
+  __host__ __device__ prg(T _a = 0.f, T _b = 1.f) : a(_a), b(_b){};
+
+  __host__ __device__ T operator()(const unsigned int n) const {
+    thrust::default_random_engine rng;
+    // TODO seed value?
+    thrust::uniform_real_distribution<T> dist(a, b);
+    rng.discard(n);
+
+    return dist(rng);
+  }
+};
+template <class T>
+struct getBoundaryDistance {
+  T width;
+  getBoundaryDistance(T _width) { width = _width; }
+
+  __host__ __device__ T operator()(T &radius) const {
+    return (1 - abs(radius));
+  }
+};
+#endif
 
 // initialize h_x0 vector of size dim and fill with val
 template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
+
+// template <typename T>
+// template initX0(thrust::host_vector<T, std::allocator<T>>, size_t dim,
+//                 size_t len, T val);
 
 int main(int argc, char *argv[]) {
   printTitle();
@@ -44,7 +90,7 @@ int main(int argc, char *argv[]) {
   Timers timers;
 
   timers.totalTimer.start();
-
+#ifndef THRUST
   // declare local array variabls
   T *h_x0;
   checkCudaErrors(cudaMallocHost((void **)&h_x0, sizeof(T) * p.wos.x0.length));
@@ -81,6 +127,97 @@ int main(int argc, char *argv[]) {
   // We don't need d_x0 anymore, only to reduce solution data
   cudaFree(d_x0);
 
+#endif
+
+#ifdef THRUST
+  timers.memorySetupTimer.start();
+  thrust::host_vector<T> h_x0(p.wos.x0.length);
+  thrust::device_vector<T> d_x(p.wos.x0.length);
+  thrust::device_vector<T> d_x0(p.wos.x0.length);
+  thrust::fill_n(d_x0.begin(), p.wos.x0.dimension, (T)p.wos.x0.value);
+  thrust::device_vector<T> d_radius(p.wos.x0.length);
+  thrust::fill(d_radius.begin(), d_radius.end(), INFINITY);
+  thrust::device_vector<T> d_direction(p.wos.x0.length);
+  thrust::fill(d_direction.begin(), d_direction.end(), 0.0);
+  thrust::device_vector<T> d_paths(p.wos.totalPaths);
+  thrust::fill(d_paths.begin(), d_paths.end(), 0.0);
+
+  timers.memorySetupTimer.end();
+  timers.computationTimer.start();
+  thrust::counting_iterator<T> index_sequence_begin(0);
+  T radius = INFINITY;
+  T norm = 0.0;
+  unsigned int position;
+  T gpu_result = 0;
+  for (int i = 0; i < p.wos.totalPaths; i++) {
+    thrust::copy(d_x0.begin(), d_x0.end(), d_x.begin());
+
+    // thrust::counting_iterator<T> index_sequence_begin(1000 * i);
+    radius = INFINITY;
+    norm = 0.0;
+    position = 0;
+    while (d_eps <= radius) {
+      // create random direction
+      thrust::transform(index_sequence_begin,
+                        index_sequence_begin + p.wos.x0.dimension,
+                        d_direction.begin(), prg<T>((T)-1.0, (T)1.0));
+
+      // normalize random direction
+      // Source:
+      // http://stackoverflow.com/questions/13688307/how-to-normalise-a-vector-with-thrust
+      norm = std::sqrt(thrust::inner_product(
+          d_direction.begin(), d_direction.end(), d_direction.begin(), (T)0.0));
+      using namespace thrust::placeholders;
+
+      thrust::transform(d_direction.begin(), d_direction.end(),
+                        d_direction.begin(), _1 / norm);
+
+      thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
+                        getBoundaryDistance<T>((T)1.0));
+
+      // calculate mimimun radius
+      // Source:
+      // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+      thrust::device_vector<T>::iterator iter =
+          thrust::min_element(d_radius.begin(), d_radius.end());
+
+      radius = *iter;
+
+      // calculate next point X
+      thrust::transform(d_direction.begin(), d_direction.end(), d_x.begin(),
+                        d_x.end(), _2 += radius * _1);
+    }
+
+    // Project current point to boundary
+    thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
+                      getBoundaryDistance<T>((T)1.0));
+    thrust::device_vector<T>::iterator iter =
+        thrust::min_element(d_radius.begin(), d_radius.end());
+
+    position = iter - d_radius.begin();
+    radius = *iter;
+    thrust::fill(d_x.begin() + position, d_x.begin() + position + 1, (T)1.0);
+    // thrust::copy(d_x.begin(), d_x.end(),
+    //              std::ostream_iterator<float>(std::cout, " "));
+    // std::cout << "\n" << std::endl;
+
+    // evaluate boundary value
+    d_paths[i] =
+        thrust::inner_product(d_x.begin(), d_x.end(), d_x.begin(), (T)0.0);
+    d_paths[i] /=
+        (2 * p.wos.x0.dimension * 4); // BUG solution is 4 times to big
+    // std::cout << "result vector in iteration " << i << " : " << std::endl;
+    // thrust::copy(d_paths.begin(), d_paths.end(),
+    //              std::ostream_iterator<float>(std::cout, " "));
+    // std::cout << "\n" << std::endl;
+  }
+  timers.computationTimer.end();
+  gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());
+  gpu_result /= p.wos.totalPaths;
+  timers.totalTimer.end();
+
+#endif
+#ifndef THRUST
 #if defined(PLOT) || defined(CPU_REDUCE)
   printInfo("downloading path data\n");
   timers.memoryDownloadTimer.start();
@@ -156,6 +293,11 @@ int main(int argc, char *argv[]) {
   testResults((float)h_x0[0], (float)d_eps, (float)gpu_result, p);
 
   cudaFreeHost(h_x0);
+#endif // !THRUST
+
+#ifdef THRUST
+  testResults((float)h_x0[0], (float)d_eps, gpu_result, p);
+#endif // THRUST
 
   printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
               timers.totalTimer.get(), timers.memoryDownloadTimer.get());

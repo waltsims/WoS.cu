@@ -6,6 +6,7 @@ project(WoS.cu)
 option(DEBUG "compiling with debuging output" OFF)
 option(PLOT "compiling for plot output" OFF)
 option(CPU_REDUCE "complete reduction on CPU" OFF)
+option(THRUST "exicute with thrust" OFF)
 
 set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -lineinfo)
 
@@ -29,6 +30,10 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 		if(CPU_REDUCE)
 			message( "Plot flag being set")
 			add_definitions(-DCPU_REDUCE)
+		endif()
+		if(THRUST)
+			message( "run with thrust library")
+			add_definitions(-DTHRUST)
 		endif()
 		# Specify the binary name and the source files to build
 		file(GLOB SRC src/helper.cpp src/main.cu src/plot.cpp src/wos_kernel.cuh src/params.cpp src/reduce_kernel.cuh src/parse.cpp )

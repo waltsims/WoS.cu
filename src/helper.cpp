@@ -86,7 +86,7 @@ void testResults(float x0, float d_eps, float gpu_result, Parameters &p) {
   float EPS = 0.00001;
 
   if (fabs(x0 - 0.0) < EPS) {
-    float desired = 0.042535;
+    float desired = /*0.042535;*/ 0.041561;
     // float desired = 0.0;
     // desired = (float)(d_eps != 0.01) * 0.039760;
     // desired = (float)(d_eps == 0.01) * 0.042535;
