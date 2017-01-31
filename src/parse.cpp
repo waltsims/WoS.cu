@@ -29,9 +29,6 @@ static void show_usage(char *argv[]) {
          "(ergo length of vector x0)\n"
       << "\t-it,\t--totalPaths\t\t\tdefine the number of iterations for the "
          "algorithm.\n"
-      << "\t-t,\t--type\t\t\t\ta boolean value for the problem type [1 = "
-         "double, "
-         "0 = float]\n"
       << std::endl;
 }
 
@@ -40,10 +37,6 @@ int parseParams(int argc, char *argv[], Parameters &p) {
   unsigned int count = 0;
   // p.reduction.threads = 256; // is curently overwriten
   // p.reduction.blocks = 2;    // is curently overwriten
-  p.wos.x0.value = 0.0; // another option for default val is 1.0
-  p.wos.x0.dimension = 512;
-  p.wos.totalPaths = 65535;
-  p.wos.typeDouble = true;
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -95,38 +88,14 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         std::cerr << "--itterations option requires one argument." << std::endl;
         return 0;
       }
-    } else if ((arg == "-t") || (arg == "--type")) {
-      if (i + 1 < argc) {
-        i++;
-        count++;
-        p.wos.typeDouble = (argv[i] == "1");
-      } else {
-        std::cerr << "--itterations option requires one argument." << std::endl;
-        return 0;
-      }
     } else {
       show_usage(argv);
       return 0;
     }
   }
 
-  getNumBlocksAndThreads(p.wos.totalPaths, 65535, 1024, p.reduction.blocks,
-                         p.reduction.threads);
+  p.update();
+  p.outputParameters(count);
 
-  p.wos.x0.length =
-      getLength(p.wos.x0.dimension); // length of the storage vector
-
-  if (p.wos.typeDouble)
-    p.wos.size_SharedMemory = getSizeSharedMem<true>(p.wos.x0.length);
-  else
-    p.wos.size_SharedMemory = getSizeSharedMem<false>(p.wos.x0.length);
-
-  printf("Running Simulation with %d arguments\n", count);
-  printf("CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
-         "totalPaths:\t\t%d\n\tReduction blocks:\t%d\n\tReductions "
-         "threads:\t%d\n\tvariable type:\t\t%s\n\n",
-         p.wos.x0.value, p.wos.x0.dimension, p.wos.totalPaths,
-         p.reduction.blocks, p.reduction.threads,
-         (p.wos.typeDouble) ? "double" : "float");
   return 1;
 }

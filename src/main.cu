@@ -1,3 +1,10 @@
+#ifndef MAX_THREADS
+#define MAX_THREADS 1024
+#endif
+#ifndef MAX_BLOCKS
+#define MAX_BLOCKS 65535
+#endif
+
 #include "../inc/helper_cuda.h"
 #include "clock.h"
 #include "parse.h"
@@ -9,13 +16,6 @@
 
 #include <limits>
 #include <math_functions.h>
-
-#ifndef MAX_THREADS
-#define MAX_THREADS 1024
-#endif
-#ifndef MAX_BLOCKS
-#define MAX_BLOCKS 65535
-#endif
 
 //#include <cublas_v2.h>
 #ifdef THRUST
@@ -61,27 +61,23 @@ struct getBoundaryDistance {
 template <typename T>
 void initX0(T *x0, size_t dim, size_t len, T val);
 
-// template <typename T>
-// template initX0(thrust::host_vector<T, std::allocator<T>>, size_t dim,
-//                 size_t len, T val);
-
 int main(int argc, char *argv[]) {
   printTitle();
   printInfo("initializing");
+
+// TODO: call WoS template wraper function
+
+#ifdef DOUBLE
+  typedef double T; // Type for problem
+#else
+  typedef float T;
+#endif // DOUBLE
   Parameters p;
 
   // TODO this should/could go in parameter constructor
   int parseStatus = parseParams(argc, argv, p);
   if (parseStatus == 0)
     return 0;
-
-  // TODO: call WoS template wraper function
-  // if (p.wos.typeDouble) {
-  typedef double T; // Type for problem
-
-  // } else {
-  //   typedef float T; // Type for problem
-  // }
 
   // TODO: Question: what effect does the d_eps have on practical convergence?
   T d_eps = 0.01; // 1 / sqrt(p.wos.x0.dimension); // or 0.01
@@ -149,7 +145,7 @@ int main(int argc, char *argv[]) {
   T norm = 0.0;
   unsigned int position;
   T gpu_result = 0;
-  for (int i = 0; i < p.wos.totalPaths; i++) {
+  for (unsigned int i = 0; i < p.wos.totalPaths; i++) {
     thrust::copy(d_x0.begin(), d_x0.end(), d_x.begin());
 
     // thrust::counting_iterator<T> index_sequence_begin(1000 * i);
@@ -196,7 +192,7 @@ int main(int argc, char *argv[]) {
 
     position = iter - d_radius.begin();
     radius = *iter;
-    thrust::fill(d_x.begin() + position, d_x.begin() + position + 1, (T)1.0);
+    thrust::fill(iter, iter + 1, (T)1.0);
     // thrust::copy(d_x.begin(), d_x.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
@@ -204,8 +200,11 @@ int main(int argc, char *argv[]) {
     // evaluate boundary value
     d_paths[i] =
         thrust::inner_product(d_x.begin(), d_x.end(), d_x.begin(), (T)0.0);
-    d_paths[i] /=
-        (2 * p.wos.x0.dimension * 4); // BUG solution is 4 times to big
+    // std::cout << "result vector in iteration " << i << " : " << std::endl;
+    // thrust::copy(d_paths.begin(), d_paths.end(),
+    //              std::ostream_iterator<float>(std::cout, " "));
+    // std::cout << "\n" << std::endl;
+    d_paths[i] /= (2 * p.wos.x0.dimension); // BUG solution is 4 times to big
     // std::cout << "result vector in iteration " << i << " : " << std::endl;
     // thrust::copy(d_paths.begin(), d_paths.end(),
     //              std::ostream_iterator<float>(std::cout, " "));

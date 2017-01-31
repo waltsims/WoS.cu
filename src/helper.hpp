@@ -1,5 +1,11 @@
 #ifndef HELPER_H
 #define HELPER_H
+#ifndef MAX_THREADS
+#define MAX_THREADS 1024
+#endif
+#ifndef MAX_BLOCKS
+#define MAX_BLOCKS 65535
+#endif
 #include "params.h"
 
 #include <stdio.h>
