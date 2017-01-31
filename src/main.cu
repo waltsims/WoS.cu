@@ -220,6 +220,12 @@ int main(int argc, char *argv[]) {
     // std::cout << "\n" << std::endl;
   }
   timers.computationTimer.end();
+#ifdef PLOT
+  thrust::host_vector<T> h_paths(p.wos.totalPaths);
+  thrust::copy(d_paths.begin(), d_paths.end(), h_paths.begin());
+  plot(h_paths.data(), p);
+
+#endif
   gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());
   gpu_result /= p.wos.totalPaths;
   timers.totalTimer.end();

@@ -7,9 +7,9 @@ void boundary2ExpectancyValue(T *vals, int paths);
 
 // callculate the relative error (insitu)
 template <typename T>
-void getRelativeError(T *vals, int paths);
+void getRelativeError(T *data, int paths, T end);
 
 template <typename T>
-void outputConvergence(const char *filename, T *vals, int paths);
+void outputConvergence(const char *filename, T *vals, T *values, int paths);
 
 void plot(double *h_paths, Parameters &p);
