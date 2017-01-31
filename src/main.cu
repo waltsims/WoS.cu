@@ -28,25 +28,26 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
 #include <thrust/transform.h>
+#include <thrust/transform_reduce.h>
 
 // source:
 // http://stackoverflow.com/questions/12614164/generating-a-random-number-vector-between-0-and-1-0-using-thrust
+
 template <typename T>
 struct prg {
   T a, b;
-
   __host__ __device__ prg(T _a = 0.f, T _b = 1.f) : a(_a), b(_b){};
 
-  __host__ __device__ T operator()(const unsigned int n) const {
+  __host__ __device__ T operator()(unsigned int thread_id) const {
     thrust::default_random_engine rng;
-    // TODO seed value?
-    thrust::uniform_real_distribution<T> dist(a, b);
-    rng.discard(n);
+    thrust::normal_distribution<T> dist(a, b);
+    rng.discard(thread_id);
 
     return dist(rng);
   }
 };
-template <class T>
+
+template <typename T>
 struct getBoundaryDistance {
   T width;
   getBoundaryDistance(T _width) { width = _width; }
@@ -127,42 +128,44 @@ int main(int argc, char *argv[]) {
 
 #ifdef THRUST
   timers.memorySetupTimer.start();
-  thrust::host_vector<T> h_x0(p.wos.x0.length);
-  thrust::device_vector<T> d_x(p.wos.x0.length);
-  thrust::device_vector<T> d_x0(p.wos.x0.length);
+  thrust::host_vector<T> h_x0(p.wos.x0.dimension);
+  thrust::device_vector<T> d_x(p.wos.x0.dimension);
+  thrust::device_vector<T> d_x0(p.wos.x0.dimension);
   thrust::fill_n(d_x0.begin(), p.wos.x0.dimension, (T)p.wos.x0.value);
-  thrust::device_vector<T> d_radius(p.wos.x0.length);
+  thrust::device_vector<T> d_radius(p.wos.x0.dimension);
   thrust::fill(d_radius.begin(), d_radius.end(), INFINITY);
-  thrust::device_vector<T> d_direction(p.wos.x0.length);
+  thrust::device_vector<T> d_direction(p.wos.x0.dimension);
   thrust::fill(d_direction.begin(), d_direction.end(), 0.0);
   thrust::device_vector<T> d_paths(p.wos.totalPaths);
   thrust::fill(d_paths.begin(), d_paths.end(), 0.0);
 
   timers.memorySetupTimer.end();
   timers.computationTimer.start();
-  thrust::counting_iterator<T> index_sequence_begin(0);
   T radius = INFINITY;
   T norm = 0.0;
   unsigned int position;
   T gpu_result = 0;
+
+  thrust::counting_iterator<T> index_sequence_begin(0);
+
   for (unsigned int i = 0; i < p.wos.totalPaths; i++) {
     thrust::copy(d_x0.begin(), d_x0.end(), d_x.begin());
 
-    // thrust::counting_iterator<T> index_sequence_begin(1000 * i);
     radius = INFINITY;
     norm = 0.0;
     position = 0;
     while (d_eps <= radius) {
       // create random direction
-      thrust::transform(index_sequence_begin,
-                        index_sequence_begin + p.wos.x0.dimension,
-                        d_direction.begin(), prg<T>((T)-1.0, (T)1.0));
+      thrust::transform(index_sequence_begin + p.wos.x0.dimension * i,
+                        index_sequence_begin + p.wos.x0.dimension * (i + 1),
+                        d_direction.begin(), prg<T>(0.0, 1.0));
 
       // normalize random direction
       // Source:
       // http://stackoverflow.com/questions/13688307/how-to-normalise-a-vector-with-thrust
       norm = std::sqrt(thrust::inner_product(
           d_direction.begin(), d_direction.end(), d_direction.begin(), (T)0.0));
+
       using namespace thrust::placeholders;
 
       thrust::transform(d_direction.begin(), d_direction.end(),
@@ -187,12 +190,17 @@ int main(int argc, char *argv[]) {
     // Project current point to boundary
     thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
                       getBoundaryDistance<T>((T)1.0));
+
+    // find min element in radius
     thrust::device_vector<T>::iterator iter =
         thrust::min_element(d_radius.begin(), d_radius.end());
 
     position = iter - d_radius.begin();
     radius = *iter;
-    thrust::fill(iter, iter + 1, (T)1.0);
+    // project closest dimension to boundary
+    thrust::fill(d_x.begin() + position, d_x.begin() + position + 1, (T)1.0);
+
+    // std::cout << " before inner product" << std::endl;
     // thrust::copy(d_x.begin(), d_x.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
@@ -200,11 +208,12 @@ int main(int argc, char *argv[]) {
     // evaluate boundary value
     d_paths[i] =
         thrust::inner_product(d_x.begin(), d_x.end(), d_x.begin(), (T)0.0);
+
     // std::cout << "result vector in iteration " << i << " : " << std::endl;
     // thrust::copy(d_paths.begin(), d_paths.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
-    d_paths[i] /= (2 * p.wos.x0.dimension); // BUG solution is 4 times to big
+    d_paths[i] /= p.wos.x0.dimension * 2;
     // std::cout << "result vector in iteration " << i << " : " << std::endl;
     // thrust::copy(d_paths.begin(), d_paths.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
