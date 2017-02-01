@@ -12,8 +12,37 @@ cmake_install.cmake
 wos
 #data files
 *.dat
+*.csv
 #latex to pdf helper files
+*.*~
+*.tmp
+*.xref
+*.pdx
+*.pnd
+*.bbl
+*.bcf
+*.auto
+*.dvi
+*.glo
+*.out
+*.ilg
+*.ind
+*.4ct
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.4tc
+*.lg
+*.xmpi
+*.tcp
+*.toc
+*.tps
+*.blx.bib
+*.run.xml
 *.pdf
+*.bbl
+*.blg
+*.idx
 *.aux
 *.log
 *.pdf
