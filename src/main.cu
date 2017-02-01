@@ -136,8 +136,14 @@ int main(int argc, char *argv[]) {
   thrust::fill(d_radius.begin(), d_radius.end(), INFINITY);
   thrust::device_vector<T> d_direction(p.wos.x0.dimension);
   thrust::fill(d_direction.begin(), d_direction.end(), 0.0);
+#ifdef PLOT
   thrust::device_vector<T> d_paths(p.wos.totalPaths);
   thrust::fill(d_paths.begin(), d_paths.end(), 0.0);
+  thrust::device_vector<T> d_exitX(p.wos.totalPaths);
+  thrust::fill(d_exitX.begin(), d_exitX.end(), 0.0);
+  thrust::device_vector<T> d_exitY(p.wos.totalPaths);
+  thrust::fill(d_exitY.begin(), d_exitY.end(), 0.0);
+#endif // PLOT
 
   timers.memorySetupTimer.end();
   timers.computationTimer.start();
@@ -213,7 +219,12 @@ int main(int argc, char *argv[]) {
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
     thrust::fill(d_x.begin() + position, d_x.begin() + position + 1, (T)1.0);
-
+#ifdef PLOT
+    if (p.wos.x0.dimension == 2) {
+      d_exitX[i] = d_x[0];
+      d_exitY[i] = d_x[1];
+    }
+#endif
     // std::cout << " before inner product:" << std::endl;
     // thrust::copy(d_x.begin(), d_x.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
@@ -236,8 +247,14 @@ int main(int argc, char *argv[]) {
   timers.computationTimer.end();
 #ifdef PLOT
   thrust::host_vector<T> h_paths(p.wos.totalPaths);
+  thrust::host_vector<T> h_exitPoints(p.wos.x0.dimension * p.wos.totalPaths);
+  thrust::host_vector<T> h_exitX(p.wos.totalPaths);
+  thrust::host_vector<T> h_exitY(p.wos.totalPaths);
   thrust::copy(d_paths.begin(), d_paths.end(), h_paths.begin());
-  plot(h_paths.data(), p);
+  thrust::copy(d_exitX.begin(), d_exitX.end(), h_exitX.begin());
+  thrust::copy(d_exitY.begin(), d_exitY.end(), h_exitY.begin());
+
+  exportData(h_paths.data(), h_exitX.data(), h_exitY.data(), p);
 
 #endif
   gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());

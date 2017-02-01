@@ -20,4 +20,7 @@ void logOutputData(const char *filename, T *vals, T *values, int paths);
 template <typename T>
 void linearOutputData(const char *filename, T *vals, T *values, int paths);
 
-void plot(double *h_paths, Parameters &p);
+template <typename T>
+void linearOutputData(const char *filename, T *h_exitX, T *h_exitY, int paths);
+
+void exportData(double *h_paths, double *h_exitX, double *exitY, Parameters &p);
