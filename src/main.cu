@@ -53,7 +53,7 @@ struct getBoundaryDistance {
   getBoundaryDistance(T _width) { width = _width; }
 
   __host__ __device__ T operator()(T &radius) const {
-    return (1 - abs(radius));
+    return (1.0 - abs(radius));
   }
 };
 #endif
@@ -145,20 +145,29 @@ int main(int argc, char *argv[]) {
   T norm = 0.0;
   unsigned int position;
   T gpu_result = 0;
+  T sum = 0.0;
+  T squaredSum = 0.0;
+  unsigned int counter = 0;
+  unsigned int randCount = 0;
 
-  thrust::counting_iterator<T> index_sequence_begin(0);
-
+  thrust::counting_iterator<unsigned int> index_sequence_begin(0);
   for (unsigned int i = 0; i < p.wos.totalPaths; i++) {
     thrust::copy(d_x0.begin(), d_x0.end(), d_x.begin());
 
     radius = INFINITY;
     norm = 0.0;
     position = 0;
+    counter = 0;
     while (d_eps <= radius) {
       // create random direction
       thrust::transform(index_sequence_begin + p.wos.x0.dimension * i,
                         index_sequence_begin + p.wos.x0.dimension * (i + 1),
                         d_direction.begin(), prg<T>(0.0, 1.0));
+
+      sum += thrust::reduce(d_direction.begin(), d_direction.end());
+      squaredSum += thrust::inner_product(
+          d_direction.begin(), d_direction.end(), d_direction.begin(), (T)0.0);
+      randCount += p.wos.x0.dimension;
 
       // normalize random direction
       // Source:
@@ -185,8 +194,9 @@ int main(int argc, char *argv[]) {
       // calculate next point X
       thrust::transform(d_direction.begin(), d_direction.end(), d_x.begin(),
                         d_x.end(), _2 += radius * _1);
+      counter++;
     }
-
+    // std::cout << "while itterations: " << counter << std::endl;
     // Project current point to boundary
     thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
                       getBoundaryDistance<T>((T)1.0));
@@ -198,27 +208,31 @@ int main(int argc, char *argv[]) {
     position = iter - d_radius.begin();
     radius = *iter;
     // project closest dimension to boundary
+    // std::cout << " before projection:" << std::endl;
+    // thrust::copy(d_x.begin(), d_x.end(),
+    //              std::ostream_iterator<float>(std::cout, " "));
+    // std::cout << "\n" << std::endl;
     thrust::fill(d_x.begin() + position, d_x.begin() + position + 1, (T)1.0);
 
-    // std::cout << " before inner product" << std::endl;
+    // std::cout << " before inner product:" << std::endl;
     // thrust::copy(d_x.begin(), d_x.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
 
     // evaluate boundary value
     d_paths[i] =
-        thrust::inner_product(d_x.begin(), d_x.end(), d_x.begin(), (T)0.0);
+        thrust::inner_product(d_x.begin(), d_x.end(), d_x.begin(), (T)0.0) /
+        (p.wos.x0.dimension * 2);
 
     // std::cout << "result vector in iteration " << i << " : " << std::endl;
     // thrust::copy(d_paths.begin(), d_paths.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
-    d_paths[i] /= p.wos.x0.dimension * 2;
-    // std::cout << "result vector in iteration " << i << " : " << std::endl;
-    // thrust::copy(d_paths.begin(), d_paths.end(),
-    //              std::ostream_iterator<float>(std::cout, " "));
-    // std::cout << "\n" << std::endl;
   }
+  std::cout << "mean: " << sum / randCount << std::endl;
+  std::cout << "standard deviation: "
+            << sqrt(pow(sum / randCount, 2) + squaredSum / randCount)
+            << std::endl;
   timers.computationTimer.end();
 #ifdef PLOT
   thrust::host_vector<T> h_paths(p.wos.totalPaths);
@@ -233,7 +247,7 @@ int main(int argc, char *argv[]) {
 #endif
 #ifndef THRUST
 #if defined(PLOT) || defined(CPU_REDUCE)
-  printInfo("downloading path data\n");
+  printInfo("downloading path data");
   timers.memoryDownloadTimer.start();
 
   T h_paths[p.wos.totalPaths];
