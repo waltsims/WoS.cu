@@ -59,23 +59,36 @@ void logOutputData(const char *filename, T *relError, T *values,
 }
 
 template <typename T>
-void linearOutputConvergence(const char *filename, T *relError, T *values,
-                             T *expectedValue, int paths) {
-  // TODO impliment for run numbers greater than MAX_BLOCKS
+void linearOutputData(const char *filename, T *h_exitX, T *h_exitY, int paths) {
+  std::cout << "writing file to: " << filename << std::endl;
+
+  std::ofstream file(filename);
+  file << "exitX,"
+       << "exitY" << std::endl;
+
+  for (int currentPoint = 0; currentPoint < paths; currentPoint++) {
+    file << h_exitX[currentPoint] << "," << h_exitY[currentPoint] << std::endl;
+  }
+  file.close();
+}
+
+template <typename T>
+void linearOutputData(const char *filename, T *relError, T *values,
+                      T *expectedValue, int paths) {
   std::cout << "writing file to: " << filename << std::endl;
 
   std::ofstream file(filename);
   outputHeader(file);
-  // TODO remove logarithmic recution to seperate functionk
   for (int currentPoint = 0; currentPoint < paths; currentPoint++) {
-    file << currentPoint << "\t" << relError[currentPoint] << "\t"
-         << expectedValue[currentPoint] << "\t" << values[currentPoint]
+    file << currentPoint << "," << relError[currentPoint] << ","
+         << expectedValue[currentPoint] << "," << values[currentPoint]
          << std::endl;
   }
   file.close();
 }
 
-void plot(double *h_paths, Parameters &p) {
+void exportData(double *h_paths, double *h_exitX, double *h_exitY,
+                Parameters &p) {
   typedef double T;
   // T end = vals[paths - 1]; // use last value to test convergence
   T exactSolution = 0.29468541312605526226;
@@ -94,6 +107,10 @@ void plot(double *h_paths, Parameters &p) {
   calcRelativeError(data, p.wos.totalPaths, exactSolution);
   logOutputData("docs/data/cuWos_data.csv", data, h_paths, expectedValue,
                 p.wos.totalPaths);
+
+  linearOutputData("docs/data/exit_positions.csv", h_exitX, h_exitY,
+                   p.wos.totalPaths);
+
   free(data);
   free(expectedValue);
 }

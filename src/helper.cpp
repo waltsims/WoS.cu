@@ -71,7 +71,6 @@ void testResults(float x0, float d_eps, float gpu_result, Parameters &p) {
   // this is a hot mess
 
   // Basic testing
-  printf("d_eps %f\n", d_eps);
 
   printf("\nSIMULATION SUMMARY: \n\n");
   printf("VALUES: \n");
