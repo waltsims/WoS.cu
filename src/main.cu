@@ -136,9 +136,9 @@ int main(int argc, char *argv[]) {
   thrust::fill(d_radius.begin(), d_radius.end(), INFINITY);
   thrust::device_vector<T> d_direction(p.wos.x0.dimension);
   thrust::fill(d_direction.begin(), d_direction.end(), 0.0);
-#ifdef PLOT
   thrust::device_vector<T> d_paths(p.wos.totalPaths);
   thrust::fill(d_paths.begin(), d_paths.end(), 0.0);
+#ifdef PLOT
   thrust::device_vector<T> d_exitX(p.wos.totalPaths);
   thrust::fill(d_exitX.begin(), d_exitX.end(), 0.0);
   thrust::device_vector<T> d_exitY(p.wos.totalPaths);
@@ -165,10 +165,18 @@ int main(int argc, char *argv[]) {
     position = 0;
     counter = 0;
     while (d_eps <= radius) {
+      // std::cout << " direction before rand:" << std::endl;
+      // thrust::copy(d_direction.begin(), d_direction.end(),
+      //              std::ostream_iterator<float>(std::cout, " "));
+      // std::cout << "\n" << std::endl;
       // create random direction
-      thrust::transform(index_sequence_begin + p.wos.x0.dimension * i,
-                        index_sequence_begin + p.wos.x0.dimension * (i + 1),
+      thrust::transform(index_sequence_begin + randCount,
+                        index_sequence_begin + p.wos.x0.dimension + randCount,
                         d_direction.begin(), prg<T>(0.0, 1.0));
+      // std::cout << " direction after rand:" << std::endl;
+      // thrust::copy(d_direction.begin(), d_direction.end(),
+      //              std::ostream_iterator<float>(std::cout, " "));
+      // std::cout << "\n" << std::endl;
 
       sum += thrust::reduce(d_direction.begin(), d_direction.end());
       squaredSum += thrust::inner_product(
@@ -178,8 +186,16 @@ int main(int argc, char *argv[]) {
       // normalize random direction
       // Source:
       // http://stackoverflow.com/questions/13688307/how-to-normalise-a-vector-with-thrust
+      // std::cout << " direction before inner product:" << std::endl;
+      // thrust::copy(d_direction.begin(), d_direction.end(),
+      //              std::ostream_iterator<float>(std::cout, " "));
+      // std::cout << "\n" << std::endl;
       norm = std::sqrt(thrust::inner_product(
           d_direction.begin(), d_direction.end(), d_direction.begin(), (T)0.0));
+      // std::cout << " direction after inner_product:" << std::endl;
+      // thrust::copy(d_direction.begin(), d_direction.end(),
+      //              std::ostream_iterator<float>(std::cout, " "));
+      // std::cout << "\n" << std::endl;
 
       using namespace thrust::placeholders;
 
@@ -197,9 +213,20 @@ int main(int argc, char *argv[]) {
 
       radius = *iter;
 
+      // std::cout << " before step:" << std::endl;
+      // thrust::copy(d_x.begin(), d_x.end(),
+      //              std::ostream_iterator<float>(std::cout, " "));
+      // std::cout << "\n" << std::endl;
+
       // calculate next point X
       thrust::transform(d_direction.begin(), d_direction.end(), d_x.begin(),
                         d_x.end(), _2 += radius * _1);
+
+      // std::cout << " after step:" << std::endl;
+      // thrust::copy(d_x.begin(), d_x.end(),
+      //              std::ostream_iterator<float>(std::cout, " "));
+      // std::cout << "\n" << std::endl;
+
       counter++;
     }
     // std::cout << "while itterations: " << counter << std::endl;
@@ -213,11 +240,14 @@ int main(int argc, char *argv[]) {
 
     position = iter - d_radius.begin();
     radius = *iter;
-    // project closest dimension to boundary
+
     // std::cout << " before projection:" << std::endl;
     // thrust::copy(d_x.begin(), d_x.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
+
+    // TODO: keep sign
+    // project closest dimension to boundary
     thrust::fill(d_x.begin() + position, d_x.begin() + position + 1, (T)1.0);
 #ifdef PLOT
     if (p.wos.x0.dimension == 2) {
@@ -225,7 +255,7 @@ int main(int argc, char *argv[]) {
       d_exitY[i] = d_x[1];
     }
 #endif
-    // std::cout << " before inner product:" << std::endl;
+    // std::cout << "before boundary eval:" << std::endl;
     // thrust::copy(d_x.begin(), d_x.end(),
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
