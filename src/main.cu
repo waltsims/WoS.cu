@@ -7,8 +7,8 @@
 
 #include "../inc/helper_cuda.h"
 #include "clock.h"
+#include "export.h"
 #include "parse.h"
-#include "plot.h"
 
 #ifndef THRUST
 #include "wos_kernel.cuh"
@@ -303,18 +303,13 @@ int main(int argc, char *argv[]) {
       &h_paths, d_paths, p.wos.totalPaths * sizeof(T), cudaMemcpyDeviceToHost));
 
   timers.memoryDownloadTimer.end();
-#endif
 
-#ifdef PLOT
-  plot(h_paths, p);
+  exportData(h_paths, p);
 #endif
 
 #ifdef CPU_REDUCE
 
   printInfo("reduce data on CPU");
-  for (unsigned int i = 0; i < p.wos.totalPaths; i++) {
-    std::cout << h_paths[i] << std::endl;
-  }
   T gpu_result = reduceCPU(h_paths, p.wos.totalPaths);
 
 #else

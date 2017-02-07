@@ -1,4 +1,6 @@
 #include "params.h"
+#include <fstream>
+#include "clock.h"
 
 class Parameters; // forward declaration
 // this is the cumsum devided by number of relative paths (insitu)
@@ -24,3 +26,11 @@ template <typename T>
 void linearOutputData(const char *filename, T *h_exitX, T *h_exitY, int paths);
 
 void exportData(double *h_paths, double *h_exitX, double *exitY, Parameters &p);
+
+float getBase(int paths);
+
+int getNumPoints(int paths);
+
+int getCurrentPoint(int exponent, float base);
+
+void exportData(double *h_paths, Parameters &p);

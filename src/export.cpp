@@ -32,28 +32,41 @@ void outputHeader(std::ofstream &file) {
        << "value" << std::endl;
 }
 
+float getBase(int paths, int points) { return pow(10, log(paths) / points); }
+
+// int getNumPoints(int paths) {
+//   return (int)ceil(log(paths / log(getBase(paths))));
+// }
+
+int getCurrentPoint(int exponent, float base) {
+  return (int)ceil(pow(base, exponent));
+}
+
 template <typename T>
 void logOutputData(const char *filename, T *relError, T *values,
                    T *expectedValue, int paths) {
   // TODO impliment for run numbers greater than MAX_BLOCKS
-  // only export every 1.25^n val reduce file size
 
   printInfo("writing to file:");
   std::cout << "\t" << filename << std::endl;
   std::ofstream file(filename);
   outputHeader(file);
   // TODO remove logarithmic recution to seperate function
-  int points = (int)ceil(log(paths) / log(1.25));
-  int last = 0;
-  int currentPoint;
-  for (int i = 2; i < points; i++) {
-    currentPoint = (int)floor(pow(1.25, i));
+  int data_points = 50; // define number out ouput points desired
+  int last = 0;         // to avoid printing the same point twice
+
+  int exponent = 0;
+  int currentPoint = getCurrentPoint(exponent, getBase(paths, data_points));
+
+  while (currentPoint < paths) {
     if (last != currentPoint) {
       file << currentPoint << "," << relError[currentPoint] << ","
            << expectedValue[currentPoint] << "," << values[currentPoint]
            << std::endl;
       last = currentPoint;
     }
+    exponent++;
+    currentPoint = getCurrentPoint(exponent, getBase(paths, data_points));
   }
   file.close();
 }
@@ -110,6 +123,26 @@ void exportData(double *h_paths, double *h_exitX, double *h_exitY,
 
   linearOutputData("docs/data/exit_positions.csv", h_exitX, h_exitY,
                    p.wos.totalPaths);
+
+  free(data);
+  free(expectedValue);
+}
+
+void exportData(double *h_paths, Parameters &p) {
+  typedef double T;
+  // T end = vals[paths - 1]; // use last value to test convergence
+  T exactSolution = 0.29468541312605526226;
+
+  T *data = (T *)malloc(p.wos.totalPaths * sizeof(double));
+  T *expectedValue = (T *)malloc(p.wos.totalPaths * sizeof(double));
+  std::memcpy(data, h_paths, p.wos.totalPaths * sizeof(double));
+
+  printInfo("exporting simulation data");
+  calcExpectedValue(data, p.wos.totalPaths);
+  std::memcpy(expectedValue, data, p.wos.totalPaths * sizeof(double));
+  calcRelativeError(data, p.wos.totalPaths, exactSolution);
+  logOutputData("docs/data/cuWos_data.csv", data, h_paths, expectedValue,
+                p.wos.totalPaths);
 
   free(data);
   free(expectedValue);
