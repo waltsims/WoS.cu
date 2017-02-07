@@ -311,6 +311,10 @@ int main(int argc, char *argv[]) {
 
 #ifdef CPU_REDUCE
 
+  printInfo("reduce data on CPU");
+  for (unsigned int i = 0; i < p.wos.totalPaths; i++) {
+    std::cout << h_paths[i] << std::endl;
+  }
   T gpu_result = reduceCPU(h_paths, p.wos.totalPaths);
 
 #else
@@ -318,7 +322,7 @@ int main(int argc, char *argv[]) {
   T *h_results = (T *)malloc(p.reduction.blocks * sizeof(T));
 
   T *d_results;
-  cudaCheckErrors(
+  checkCudaErrors(
       cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T)));
 
   cudaError err;
@@ -340,7 +344,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   // copy result from device to hostcudaStat =
-  cudaCheckErrors(cudaMemcpy(h_results, d_results,
+  checkCudaErrors(cudaMemcpy(h_results, d_results,
                              p.reduction.blocks * sizeof(T),
                              cudaMemcpyDeviceToHost));
 
