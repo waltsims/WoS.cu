@@ -5,7 +5,7 @@ project(WoS.cu)
 
 option(DEBUG "compiling with debuging output" OFF)
 option(PLOT "compiling for plot output" OFF)
-option(CPU_REDUCE "complete reduction on CPU" OFF)
+option(CPU_REDUCE "complete reduction on CPU" ON)
 option(THRUST "exicute with thrust" OFF)
 option(DOUBLE "running with double precision" ON)
 
