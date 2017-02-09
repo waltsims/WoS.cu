@@ -7,8 +7,8 @@
 
 #include "inc/helper_cuda.h"
 #include "src/clock.h"
-#include "src/parse.h"
 #include "src/export.h"
+#include "src/parse.h"
 
 #ifndef THRUST
 #include "src/wos_kernel.cuh"
@@ -287,7 +287,7 @@ int main(int argc, char *argv[]) {
   exportData(h_paths.data(), h_exitX.data(), h_exitY.data(), p);
 
 #endif
-  gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());
+  gpu_result = thrust::reduce(d_paths.begin(), d_paths.end());
   gpu_result /= p.wos.totalPaths;
   timers.totalTimer.end();
 
