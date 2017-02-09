@@ -5,13 +5,13 @@
 #define MAX_BLOCKS 65535
 #endif
 
-#include "../inc/helper_cuda.h"
-#include "clock.h"
-#include "export.h"
-#include "parse.h"
+#include "inc/helper_cuda.h"
+#include "src/clock.h"
+#include "src/parse.h"
+#include "src/export.h"
 
 #ifndef THRUST
-#include "wos_kernel.cuh"
+#include "src/wos_kernel.cuh"
 #endif
 
 #include <limits>
