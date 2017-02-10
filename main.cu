@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 #ifndef THRUST
 
   // Calling WoS kernel
-  T gpu_result = wos<T>(timers,p );
+  T gpu_result = wos<T>(timers, p);
 
 #else  // NTHRUST
   // T gpu_result = wosThrust<T>(timers, p);
@@ -52,10 +52,8 @@ int main(int argc, char *argv[]) {
 #endif // NTHRUST
   timers.totalTimer.end();
 
-
   printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
               timers.totalTimer.get(), timers.memoryDownloadTimer.get());
 
   return (0);
 }
-
