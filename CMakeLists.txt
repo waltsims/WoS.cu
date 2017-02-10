@@ -24,7 +24,7 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 			message( "Debugging flag being set")
 			add_definitions(-DDEBUG)
 		endif()
-		if(PLOT)
+		if(OUT)
 			message( "Plot flag being set")
 			add_definitions(-DOUT)
 		endif()
