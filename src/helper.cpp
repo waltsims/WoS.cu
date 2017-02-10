@@ -66,7 +66,7 @@ void printTiming(float prep, float computation, float total, float finish) {
   printf(" ----------------------------------------------------------------"
          "---------------------------------------\n");
 }
-void testResults(float d_eps, float gpu_result, Parameters &p) {
+void testResults(float gpu_result, Parameters &p) {
   // TODO: dynamic table output function
   // this is a hot mess
 

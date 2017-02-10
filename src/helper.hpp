@@ -34,5 +34,5 @@ void printTitle();
 
 void printTiming(float prep, float computation, float total, float finish);
 
-void testResults(float d_eps, float gpu_result, Parameters &p);
+void testResults(float gpu_result, Parameters &p);
 #endif // HELPER_H

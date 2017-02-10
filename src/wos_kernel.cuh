@@ -393,6 +393,7 @@ T wos(Timers &timers, Parameters &p) {
   // Let's bring our data to the Device
   checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.x0.length * sizeof(T),
                              cudaMemcpyHostToDevice));
+  cudaFreeHost(h_x0);
 
   timers.memorySetupTimer.end();
   timers.computationTimer.start();
@@ -484,9 +485,6 @@ T wos(Timers &timers, Parameters &p) {
 #endif
 
   timers.totalTimer.end();
-
-  testResults((float)d_eps, (float)gpu_result, p);
-  cudaFreeHost(h_x0);
 
 #ifndef CPU_REDUCE
   cudaFree(d_results);

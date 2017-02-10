@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
 #endif // NTHRUST
   timers.totalTimer.end();
 
+  testResults((float)gpu_result, p);
   printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
               timers.totalTimer.get(), timers.memoryDownloadTimer.get());
 

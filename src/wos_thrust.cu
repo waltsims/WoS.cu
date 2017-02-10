@@ -220,8 +220,6 @@ double wosThrust(Timers &timers, Parameters &p) {
   gpu_result /= p.wos.totalPaths;
   timers.totalTimer.end();
 
-  testResults((float)d_eps, gpu_result, p);
-
   return gpu_result;
 }
 #endif // THRUST
