@@ -33,12 +33,14 @@ public:
 
 class WoSParameters {
 public:
-  WoSParameters() : totalPaths(65535) {}
+  WoSParameters() : totalPaths(65535), eps(0.0001) {}
 
   X0 x0;
   unsigned int totalPaths;
   unsigned int pathsPerBlock;
   size_t size_SharedMemory;
+  // TODO: Question: what effect does the d_eps have on practical convergence?
+  double eps;
 };
 
 class Parameters {

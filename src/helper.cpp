@@ -66,7 +66,7 @@ void printTiming(float prep, float computation, float total, float finish) {
   printf(" ----------------------------------------------------------------"
          "---------------------------------------\n");
 }
-void testResults(float x0, float d_eps, float gpu_result, Parameters &p) {
+void testResults(float d_eps, float gpu_result, Parameters &p) {
   // TODO: dynamic table output function
   // this is a hot mess
 
@@ -83,6 +83,7 @@ void testResults(float x0, float d_eps, float gpu_result, Parameters &p) {
          "------------------------------\n");
 
   float EPS = 0.00001;
+  float x0 = (float)p.wos.x0.value;
 
   if (fabs(x0 - 0.0) < EPS) {
     float desired = /*0.042535;*/ 0.041561;
