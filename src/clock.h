@@ -1,6 +1,7 @@
 #ifndef CLOCK_H
 #define CLOCK_H
 
+#include <ctime>
 #include <cuda_runtime.h>
 
 class Timer {
@@ -39,4 +40,4 @@ public:
   Timer memorySetupTimer;
   Timer memoryDownloadTimer;
 };
-#endif
+#endif // CLOCK_H

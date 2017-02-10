@@ -1,8 +1,10 @@
 
+#include "clock.h"
 #include "params.h"
 #include <cstring>
 #include <fstream>
 #include <math.h>
+#include <sys/stat.h>
 
 // this is the cumsum devided by number of relative paths (insitu)
 template <typename T>
@@ -146,4 +148,36 @@ void exportData(double *h_paths, Parameters &p) {
 
   free(data);
   free(expectedValue);
+}
+// source:
+// http://stackoverflow.com/questions/8236/how-do-you-determine-the-size-of-a-file-in-c
+
+off_t fsize(const char *filename) {
+  struct stat st;
+
+  if (stat(filename, &st) == 0)
+    return st.st_size;
+
+  return -1;
+}
+
+void exportTime(Timers &timers, Parameters &p) {
+  // write time header
+
+  std::ofstream file("docs/data/timing_data.csv",
+                     std::ofstream::out | std::ofstream::app);
+
+  if (fsize("docs/data/timing_data.csv") == 0) {
+    file << "number of dimesions, number of threads, number of paths, "
+            "number of blocks, computation time, total time, data "
+            "initailization "
+            "time, data download time"
+         << std::endl;
+  }
+  file << p.wos.x0.dimension << "," << p.wos.x0.dimension << ","
+       << p.wos.totalPaths << "," << p.wos.totalPaths << ","
+       << timers.computationTimer.get() << "," << timers.totalTimer.get() << ","
+       << timers.memorySetupTimer.get() << ","
+       << timers.memoryDownloadTimer.get() << std::endl;
+  file.close();
 }

@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
   testResults((float)gpu_result, p);
   printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
               timers.totalTimer.get(), timers.memoryDownloadTimer.get());
+  exportTime(timers, p);
 
   return (0);
 }

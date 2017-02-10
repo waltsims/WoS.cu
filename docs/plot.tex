@@ -118,4 +118,22 @@
 % \end{axis}
 % \end{tikzpicture}
 
+ \pgfplotstableread[col sep = comma]{./data/timing_data.csv}\exit
+\begin{tikzpicture}
+\begin{loglogaxis}[
+ xlabel={\small number of dimensions},
+ ylabel={\small computation time},
+ legend pos=north east,
+ grid=major,
+ width=0.75\textwidth,
+ ymax=200,
+ ymin=0,
+ xmax=600,
+ xmin=0.1,
+ ]
+    \addplot
+   [only marks,mark size=1 pt, green]table[ x index={1}, y index={4}] {\exit} ;
+    \legend{{\small computaion time}}
+\end{loglogaxis}
+\end{tikzpicture}
 \end{document}

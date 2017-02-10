@@ -34,3 +34,5 @@ int getNumPoints(int paths);
 int getCurrentPoint(int exponent, float base);
 
 void exportData(double *h_paths, Parameters &p);
+
+void exportTime(Timers &timers, Parameters &p);
