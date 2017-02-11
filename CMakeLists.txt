@@ -42,7 +42,7 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 		endif()
 		# Specify the binary name and the source files to build
 		#add_library(ThrustWos src/wos_thrust.cpp)
-		file(GLOB SRC src/wos_thrust.cu src/helper.cpp  main.cu src/export.cpp src/wos_kernel.cuh src/params.cpp src/reduce_kernel.cuh src/parse.cpp )
+		file(GLOB SRC src/wos_thrust.cuh src/helper.cpp  main.cu src/export.cpp src/wos_kernel.cuh src/params.cpp src/reduce_kernel.cuh src/parse.cpp )
 		file(GLOB LIB src/wos_thrust.h src/helper.hpp src/clock.h src/export.h	src/params.h src/parse.h )
 		file(GLOB INC inc/helper_string.h inc/helper_cuda.h)
 		cuda_add_executable(wos ${SRC} ${LIB} ${INC})

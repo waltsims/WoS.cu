@@ -1,3 +1,5 @@
+#ifndef THRUST
+
 #include <curand_kernel.h>
 #include <iostream>
 
@@ -501,3 +503,4 @@ void initX0(T *h_x0, size_t dim, size_t len, T val) {
   for (unsigned int i = dim; i < len; i++)
     h_x0[i] = 0.0;
 }
+#endif // !THRUST

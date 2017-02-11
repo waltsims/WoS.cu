@@ -10,8 +10,8 @@
 #include "src/export.h"
 #include "src/parse.h"
 
+#include "src/wos_thrust.cuh"
 #include "src/wos_kernel.cuh"
-#include "src/wos_thrust.h"
 
 #include <limits>
 #include <math_functions.h>
@@ -40,16 +40,11 @@ int main(int argc, char *argv[]) {
   Timers timers;
 
   timers.totalTimer.start();
-#ifndef THRUST
 
   // Calling WoS kernel
+
   T gpu_result = wos<T>(timers, p);
 
-#else  // NTHRUST
-  // T gpu_result = wosThrust<T>(timers, p);
-
-  double gpu_result = wosThrust(timers, p);
-#endif // NTHRUST
   timers.totalTimer.end();
 
   testResults((float)gpu_result, p);
