@@ -424,10 +424,8 @@ T wos(Timers &timers, Parameters &p) {
   // We don't need d_x0 anymore, only to reduce solution data
   cudaFree(d_x0);
 
-#if defined(OUT) || defined(CPU_REDUCE)
   printInfo("downloading path data");
   timers.memoryDownloadTimer.start();
-
   T h_paths[p.wos.totalPaths];
   // Download paths data
   checkCudaErrors(cudaMemcpyAsync(
@@ -435,53 +433,12 @@ T wos(Timers &timers, Parameters &p) {
 
   timers.memoryDownloadTimer.end();
 
-#endif
 #ifdef OUT
   exportData(h_paths, p);
-#endif // OUT || CPU_REDUCE
+#endif // OUT
 
-#ifdef CPU_REDUCE
-
-  printInfo("reduce data on CPU");
+  printInfo("reduce data on ePU");
   T gpu_result = reduceCPU(h_paths, p.wos.totalPaths);
-
-#else  // GPU_REDCUE
-
-// T *h_results = (T *)malloc(p.reduction.blocks * sizeof(T));
-//
-// T *d_results;
-// checkCudaErrors(
-//     cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T)));
-//
-// cudaError err;
-// reduce(p.wos.totalPaths, p.reduction.threads, p.reduction.blocks, d_paths,
-//        d_results);
-// err = cudaGetLastError();
-// if (cudaSuccess != err) {
-//   printf("Reduction Kernel returned an error:\n %s\n",
-//          cudaGetErrorString(err));
-// }
-//
-// timers.memoryDownloadTimer.start();
-//
-// printf("[MAIN]: results values before copy:\n");
-// for (int n = 0; n < p.reduction.blocks; n++) {
-//   printf("%f\n", h_results[n]);
-// }
-// // copy result from device to hostcudaStat =
-// checkCudaErrors(cudaMemcpy(h_results, d_results,
-//                            p.reduction.blocks * sizeof(T),
-//                            cudaMemcpyDeviceToHost));
-//
-// timers.memoryDownloadTimer.end();
-//
-// T gpu_result = 0.0;
-// for (int i = 0; i < p.reduction.blocks; i++) {
-//   printf("iteration %d, %f\n", i, h_results[i]);
-//   gpu_result += h_results[i];
-// }
-// free(h_results);
-#endif // CPU_REDUCE
 
   gpu_result /= p.wos.totalPaths;
 
@@ -494,9 +451,7 @@ T wos(Timers &timers, Parameters &p) {
 
   timers.totalTimer.end();
 
-#ifndef CPU_REDUCE
-  cudaFree(d_results);
-#endif
+  cudaFree(d_paths);
   return gpu_result;
 }
 
