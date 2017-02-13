@@ -61,7 +61,7 @@ __device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
 
 template <typename T>
 __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
-                    int runsperblock) {
+                    unsigned int pathsPerBlock) {
 
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
@@ -78,38 +78,41 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   __syncthreads();
 #endif
 
-  // seed for random number generation
-  unsigned int seed = index;
   curandState s;
-  curand_init(seed, 0, 0, &s);
+  // seed for random number generation
+  unsigned int seed;
 
   // TODO: x0 in texture meomry
 
-  T r = INFINITY;
-  // max step size
-  while (d_eps < r) {
+  for (unsigned int j = 1; j <= pathsPerBlock; j++) {
+    seed = index * j;
+    curand_init(seed, 0, 0, &s);
+    T r = INFINITY;
+    // max step size
+    while (d_eps < r) {
 
-    getBoundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
+      getBoundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
 
-    warpMinReduce<T>(bvp.s_radius, tid);
-    // local copy of radius
-    r = bvp.s_radius[0];
+      warpMinReduce<T>(bvp.s_radius, tid);
+      // local copy of radius
+      r = bvp.s_radius[0];
 
-    // random next step_direction
-    bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
+      // random next step_direction
+      bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
 
-    // normalize direction with L2 norm
-    normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
+      // normalize direction with L2 norm
+      normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
 
-    // next x point
-    bvp.s_x[tid] += r * bvp.s_direction[tid];
+      // next x point
+      bvp.s_x[tid] += r * bvp.s_direction[tid];
+    }
+
+    // find closest boundary point
+    project2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
+
+    // boundary eval and return do global memory
+    evaluateBoundaryValue<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid);
   }
-
-  // find closest boundary point
-  project2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
-
-  // boundary eval and return do global memory
-  evaluateBoundaryValue<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid);
 #ifdef DEBUG
   if (tid == 0) {
     printf("[WOS]: result on block %d:\n", blockIdx.x);
@@ -303,9 +306,9 @@ __device__ void warpSumReduce(T *sdata, int tid) {
 template <typename T>
 __device__ void broadcast(T *sdata, int tid) {
 
-  // if (tid != 0) // needed for race condition check
-  sdata[tid] = sdata[0];
-  //__syncthreads(); // needed for race condition check
+  if (tid != 0) // needed for race condition check
+    sdata[tid] = sdata[0];
+  __syncthreads(); // needed for race condition check
 }
 
 template <typename T>
@@ -358,7 +361,7 @@ __device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T *d_result,
     printf("[WOS]: output from block %d:\t%f\n", blockIdx.x,
            s_cache[0] / (2 * dim));
 #endif
-    d_result[blockIdx.x] = s_cache[0] / (2 * dim);
+    d_result[blockIdx.x] += s_cache[0] / (2 * dim);
   }
   __syncthreads();
 }
@@ -406,6 +409,7 @@ T wos(Timers &timers, Parameters &p) {
 
   cudaError err;
 
+  p.wos.pathsPerBlock = 1;
   WoS<T><<<dimGrid, dimBlock, p.wos.size_SharedMemory>>>(
       d_x0, d_paths, d_eps, p.wos.x0.dimension, p.wos.x0.length,
       p.wos.pathsPerBlock);
@@ -431,6 +435,8 @@ T wos(Timers &timers, Parameters &p) {
 
   timers.memoryDownloadTimer.end();
 
+#endif
+#ifdef OUT
   exportData(h_paths, p);
 #endif // OUT || CPU_REDUCE
 
@@ -441,40 +447,40 @@ T wos(Timers &timers, Parameters &p) {
 
 #else  // GPU_REDCUE
 
-  T *h_results = (T *)malloc(p.reduction.blocks * sizeof(T));
-
-  T *d_results;
-  checkCudaErrors(
-      cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T)));
-
-  cudaError err;
-  reduce(p.wos.totalPaths, p.reduction.threads, p.reduction.blocks, d_paths,
-         d_results);
-  err = cudaGetLastError();
-  if (cudaSuccess != err) {
-    printf("Reduction Kernel returned an error:\n %s\n",
-           cudaGetErrorString(err));
-  }
-
-  timers.memoryDownloadTimer.start();
-
-  printf("[MAIN]: results values before copy:\n");
-  for (int n = 0; n < p.reduction.blocks; n++) {
-    printf("%f\n", h_results[n]);
-  }
-  // copy result from device to hostcudaStat =
-  checkCudaErrors(cudaMemcpy(h_results, d_results,
-                             p.reduction.blocks * sizeof(T),
-                             cudaMemcpyDeviceToHost));
-
-  timers.memoryDownloadTimer.end();
-
-  T gpu_result = 0.0;
-  for (int i = 0; i < p.reduction.blocks; i++) {
-    printf("iteration %d, %f\n", i, h_results[i]);
-    gpu_result += h_results[i];
-  }
-  free(h_results);
+// T *h_results = (T *)malloc(p.reduction.blocks * sizeof(T));
+//
+// T *d_results;
+// checkCudaErrors(
+//     cudaMalloc((void **)&d_results, p.reduction.blocks * sizeof(T)));
+//
+// cudaError err;
+// reduce(p.wos.totalPaths, p.reduction.threads, p.reduction.blocks, d_paths,
+//        d_results);
+// err = cudaGetLastError();
+// if (cudaSuccess != err) {
+//   printf("Reduction Kernel returned an error:\n %s\n",
+//          cudaGetErrorString(err));
+// }
+//
+// timers.memoryDownloadTimer.start();
+//
+// printf("[MAIN]: results values before copy:\n");
+// for (int n = 0; n < p.reduction.blocks; n++) {
+//   printf("%f\n", h_results[n]);
+// }
+// // copy result from device to hostcudaStat =
+// checkCudaErrors(cudaMemcpy(h_results, d_results,
+//                            p.reduction.blocks * sizeof(T),
+//                            cudaMemcpyDeviceToHost));
+//
+// timers.memoryDownloadTimer.end();
+//
+// T gpu_result = 0.0;
+// for (int i = 0; i < p.reduction.blocks; i++) {
+//   printf("iteration %d, %f\n", i, h_results[i]);
+//   gpu_result += h_results[i];
+// }
+// free(h_results);
 #endif // CPU_REDUCE
 
   gpu_result /= p.wos.totalPaths;

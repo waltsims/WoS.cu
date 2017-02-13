@@ -25,7 +25,7 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 			add_definitions(-DDEBUG)
 		endif()
 		if(OUT)
-			message( "Plot flag being set")
+			message( "OUT flag being set")
 			add_definitions(-DOUT)
 		endif()
 		if(CPU_REDUCE)
