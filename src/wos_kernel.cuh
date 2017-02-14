@@ -444,8 +444,8 @@ T wos(Timers &timers, Parameters &p) {
 
 #ifdef DEBUG
   printf("[MAIN]: results values after copy:\n");
-  for (int n = 0; n < p.reduction.blocks; n++) {
-    printf("%f\n", h_results[n]);
+  for (unsigned int n = 0; n < p.wos.totalPaths; n++) {
+    printf("%f\n", h_paths[n]);
   }
 #endif
 
