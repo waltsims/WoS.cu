@@ -33,7 +33,7 @@ public:
 
 class WoSParameters {
 public:
-  WoSParameters() : totalPaths(65535), eps(0.0001) {}
+  WoSParameters() : totalPaths(65535), eps(0.01) {}
 
   X0 x0;
   unsigned int totalPaths;
