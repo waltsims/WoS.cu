@@ -80,39 +80,35 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
   curandState s;
   // seed for random number generation
-  unsigned int seed;
+  unsigned int seed = index;
 
   // TODO: x0 in texture meomry
+  curand_init(seed, 0, 0, &s);
+  T r = INFINITY;
+  // max step size
+  while (d_eps < r) {
 
-  for (unsigned int j = 1; j <= pathsPerBlock; j++) {
-    seed = index * j;
-    curand_init(seed, 0, 0, &s);
-    T r = INFINITY;
-    // max step size
-    while (d_eps < r) {
+    getBoundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
 
-      getBoundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
+    warpMinReduce<T>(bvp.s_radius, tid);
+    // local copy of radius
+    r = bvp.s_radius[0];
 
-      warpMinReduce<T>(bvp.s_radius, tid);
-      // local copy of radius
-      r = bvp.s_radius[0];
+    // random next step_direction
+    bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
 
-      // random next step_direction
-      bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
+    // normalize direction with L2 norm
+    normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
 
-      // normalize direction with L2 norm
-      normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
-
-      // next x point
-      bvp.s_x[tid] += r * bvp.s_direction[tid];
-    }
-
-    // find closest boundary point
-    project2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
-
-    // boundary eval and return do global memory
-    evaluateBoundaryValue<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid);
+    // next x point
+    bvp.s_x[tid] += r * bvp.s_direction[tid];
   }
+
+  // find closest boundary point
+  project2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
+
+  // boundary eval and return do global memory
+  evaluateBoundaryValue<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid);
 #ifdef DEBUG
   if (tid == 0) {
     printf("[WOS]: result on block %d:\n", blockIdx.x);
@@ -409,7 +405,6 @@ T wos(Timers &timers, Parameters &p) {
 
   cudaError err;
 
-  p.wos.pathsPerBlock = 1;
   WoS<T><<<dimGrid, dimBlock, p.wos.size_SharedMemory>>>(
       d_x0, d_paths, d_eps, p.wos.x0.dimension, p.wos.x0.length,
       p.wos.pathsPerBlock);
