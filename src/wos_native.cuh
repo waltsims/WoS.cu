@@ -432,7 +432,7 @@ T wosNative(Timers &timers, Parameters &p) {
   exportData(h_paths, p);
 #endif // OUT
 
-  printInfo("reduce data on ePU");
+  printInfo("reduce data on CPU");
   T gpu_result = reduceCPU(h_paths, p.wos.totalPaths);
 
   gpu_result /= p.wos.totalPaths;
