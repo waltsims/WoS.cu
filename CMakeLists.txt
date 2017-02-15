@@ -5,7 +5,6 @@ project(WoS.cu)
 
 option(DEBUG "compiling with debuging output" OFF)
 option(OUT "compiling for export/output" OFF)
-option(CPU_REDUCE "complete reduction on CPU" ON)
 option(DOUBLE "running with double precision" ON)
 
 set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -lineinfo)
@@ -26,10 +25,6 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS} --std=c++11 --compiler-options -Wall -linei
 		if(OUT)
 			message( "OUT flag being set")
 			add_definitions(-DOUT)
-		endif()
-		if(CPU_REDUCE)
-			message( "CPU_REDUCE flag being set")
-			add_definitions(-DCPU_REDUCE)
 		endif()
 		if(DOUBLE)
 			message( "Double flag being set")
