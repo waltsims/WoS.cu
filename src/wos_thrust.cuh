@@ -1,5 +1,6 @@
 //#include <cublas_v2.h>
-#ifdef THRUST
+#ifndef THRUST
+#define THRUST
 
 #include "clock.h"
 #include "params.h"
@@ -34,9 +35,9 @@ struct prg {
 };
 
 template <typename T>
-struct getBoundaryDistance {
+struct getBoundaryDistanceThrust {
   T width;
-  getBoundaryDistance(T _width) { width = _width; }
+  getBoundaryDistanceThrust(T _width) { width = _width; }
 
   __host__ __device__ T operator()(T &radius) const {
     return (1.0 - abs(radius));
@@ -44,7 +45,7 @@ struct getBoundaryDistance {
 };
 
 template <typename T>
-T wos(Timers &timers, Parameters &p) {
+T wosThrust(Timers &timers, Parameters &p) {
 
   // typedef double T;
   timers.memorySetupTimer.start();
@@ -125,18 +126,19 @@ T wos(Timers &timers, Parameters &p) {
                         d_direction.begin(), _1 / norm);
 
       thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
-                        getBoundaryDistance<T>((T)1.0));
+                        getBoundaryDistanceThrust<T>((T)1.0));
 
-// calculate mimimun radius
-#if (CUDART_VERSION == 8000)
-      // Source:
-      // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
-      Thrust::device_vector<T>::iterator iter =
-          thrust::min_element(d_radius.begin(), d_radius.end());
-#elif (CUDART_VERSION == 7050)
+      // calculate mimimun radius
+      // #if (CUDART_VERSION == 8000)
+      //       // Source:
+      //       //
+      //       http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+      //       Thrust::device_vector<T>::iterator iter =
+      //           thrust::min_element(d_radius.begin(), d_radius.end());
+      // #elif (CUDART_VERSION == 7050)
       thrust::detail::normal_iterator<thrust::device_ptr<T>> iter =
           thrust::min_element(d_radius.begin(), d_radius.end());
-#endif
+      // #endif
       radius = *iter;
 
       // std::cout << " before step:" << std::endl;
@@ -158,17 +160,18 @@ T wos(Timers &timers, Parameters &p) {
     // std::cout << "while itterations: " << counter << std::endl;
     // Project current point to boundary
     thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
-                      getBoundaryDistance<T>((T)1.0));
+                      getBoundaryDistanceThrust<T>((T)1.0));
 
-#if (CUDART_VERSION == 8000)
-    // Source:
-    // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
-    Thrust::device_vector<T>::iterator iter =
-        thrust::min_element(d_radius.begin(), d_radius.end());
-#elif (CUDART_VERSION == 7050)
+    // #if (CUDART_VERSION == 8000)
+    //     // Source:
+    //     //
+    //     http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+    //     Thrust::device_vector<T>::iterator iter =
+    //         thrust::min_element(d_radius.begin(), d_radius.end());
+    // #elif (CUDART_VERSION == 7050)
     thrust::detail::normal_iterator<thrust::device_ptr<T>> iter =
         thrust::min_element(d_radius.begin(), d_radius.end());
-#endif
+    // #endif
 
     position = iter - d_radius.begin();
     radius = *iter;
@@ -221,7 +224,7 @@ T wos(Timers &timers, Parameters &p) {
 #endif // OUT
 #if (CUDART_VERSION == 7050)
   gpu_result = thrust::reduce(d_paths.begin(), d_paths.end());
-#elif (CUDART_VERSION = 8000)
+#elif (CUDART_VERSION == 8000)
   gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());
 #endif
   gpu_result /= p.wos.totalPaths;
@@ -232,7 +235,7 @@ T wos(Timers &timers, Parameters &p) {
 
 // explicit declaration
 template <>
-double wos<double>(Timers &timers, Parameters &p) {
+double wosThrust<double>(Timers &timers, Parameters &p) {
   typedef double T;
   timers.memorySetupTimer.start();
   thrust::host_vector<T> h_x0(p.wos.x0.dimension);
@@ -312,18 +315,19 @@ double wos<double>(Timers &timers, Parameters &p) {
                         d_direction.begin(), _1 / norm);
 
       thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
-                        getBoundaryDistance<T>((T)1.0));
+                        getBoundaryDistanceThrust<T>((T)1.0));
 
-// calculate mimimun radius
-#if (CUDART_VERSION == 8000)
-      // Source:
-      // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
-      Thrust::device_vector<T>::iterator iter =
-          thrust::min_element(d_radius.begin(), d_radius.end());
-#elif (CUDART_VERSION == 7050)
+      // calculate mimimun radius
+      // #if (CUDART_VERSION == 8000)
+      //       // Source:
+      //       //
+      //       http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+      //       Thrust::device_vector<T>::iterator iter =
+      //           thrust::min_element(d_radius.begin(), d_radius.end());
+      // #elif (CUDART_VERSION == 7050)
       thrust::detail::normal_iterator<thrust::device_ptr<T>> iter =
           thrust::min_element(d_radius.begin(), d_radius.end());
-#endif
+      // #endif
       radius = *iter;
 
       // std::cout << " before step:" << std::endl;
@@ -345,17 +349,18 @@ double wos<double>(Timers &timers, Parameters &p) {
     // std::cout << "while itterations: " << counter << std::endl;
     // Project current point to boundary
     thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
-                      getBoundaryDistance<T>((T)1.0));
+                      getBoundaryDistanceThrust<T>((T)1.0));
 
-#if (CUDART_VERSION == 8000)
-    // Source:
-    // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
-    Thrust::device_vector<T>::iterator iter =
-        thrust::min_element(d_radius.begin(), d_radius.end());
-#elif (CUDART_VERSION == 7050)
+    // #if (CUDART_VERSION == 8000)
+    //     // Source:
+    //     //
+    //     http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+    //     Thrust::device_vector<T>::iterator iter =
+    //         thrust::min_element(d_radius.begin(), d_radius.end());
+    // #elif (CUDART_VERSION == 7050)
     thrust::detail::normal_iterator<thrust::device_ptr<T>> iter =
         thrust::min_element(d_radius.begin(), d_radius.end());
-#endif
+    // #endif
 
     position = iter - d_radius.begin();
     radius = *iter;
@@ -408,7 +413,7 @@ double wos<double>(Timers &timers, Parameters &p) {
 #endif // OUT
 #if (CUDART_VERSION == 7050)
   gpu_result = thrust::reduce(d_paths.begin(), d_paths.end());
-#elif (CUDART_VERSION = 8000)
+#elif (CUDART_VERSION == 8000)
   gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());
 #endif
   gpu_result /= p.wos.totalPaths;
@@ -418,7 +423,7 @@ double wos<double>(Timers &timers, Parameters &p) {
 }
 
 template <>
-float wos<float>(Timers &timers, Parameters &p) {
+float wosThrust<float>(Timers &timers, Parameters &p) {
 
   typedef float T;
   timers.memorySetupTimer.start();
@@ -499,18 +504,19 @@ float wos<float>(Timers &timers, Parameters &p) {
                         d_direction.begin(), _1 / norm);
 
       thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
-                        getBoundaryDistance<T>((T)1.0));
+                        getBoundaryDistanceThrust<T>((T)1.0));
 
-// calculate mimimun radius
-#if (CUDART_VERSION == 8000)
-      // Source:
-      // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
-      Thrust::device_vector<T>::iterator iter =
-          thrust::min_element(d_radius.begin(), d_radius.end());
-#elif (CUDART_VERSION == 7050)
+      // calculate mimimun radius
+      // #if (CUDART_VERSION == 8000)
+      //       // Source:
+      //       //
+      //       http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+      //       Thrust::device_vector<T>::iterator iter =
+      //           thrust::min_element(d_radius.begin(), d_radius.end());
+      // #elif (CUDART_VERSION == 7050)
       thrust::detail::normal_iterator<thrust::device_ptr<T>> iter =
           thrust::min_element(d_radius.begin(), d_radius.end());
-#endif
+      // #endif
       radius = *iter;
 
       // std::cout << " before step:" << std::endl;
@@ -532,17 +538,18 @@ float wos<float>(Timers &timers, Parameters &p) {
     // std::cout << "while itterations: " << counter << std::endl;
     // Project current point to boundary
     thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
-                      getBoundaryDistance<T>((T)1.0));
+                      getBoundaryDistanceThrust<T>((T)1.0));
 
-#if (CUDART_VERSION == 8000)
-    // Source:
-    // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
-    Thrust::device_vector<T>::iterator iter =
-        thrust::min_element(d_radius.begin(), d_radius.end());
-#elif (CUDART_VERSION == 7050)
+    // #if (CUDART_VERSION == 8000)
+    //     // Source:
+    //     //
+    //     http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+    //     Thrust::device_vector<T>::iterator iter =
+    //         thrust::min_element(d_radius.begin(), d_radius.end());
+    // #elif (CUDART_VERSION == 7050)
     thrust::detail::normal_iterator<thrust::device_ptr<T>> iter =
         thrust::min_element(d_radius.begin(), d_radius.end());
-#endif
+    // #endif
 
     position = iter - d_radius.begin();
     radius = *iter;
@@ -595,7 +602,7 @@ float wos<float>(Timers &timers, Parameters &p) {
 #endif // OUT
 #if (CUDART_VERSION == 7050)
   gpu_result = thrust::reduce(d_paths.begin(), d_paths.end());
-#elif (CUDART_VERSION = 8000)
+#elif (CUDART_VERSION == 8000)
   gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());
 #endif
   gpu_result /= p.wos.totalPaths;
@@ -603,4 +610,5 @@ float wos<float>(Timers &timers, Parameters &p) {
 
   return gpu_result;
 }
+
 #endif // THRUST

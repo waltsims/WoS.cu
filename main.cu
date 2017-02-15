@@ -10,8 +10,7 @@
 #include "src/export.h"
 #include "src/parse.h"
 
-#include "src/wos_thrust.cuh"
-#include "src/wos_kernel.cuh"
+#include "src/wos_wrapper.cuh"
 
 #include <limits>
 #include <math_functions.h>
@@ -43,7 +42,8 @@ int main(int argc, char *argv[]) {
 
   // Calling WoS kernel
 
-  T gpu_result = wos<T>(timers, p);
+  p.wos.simulation = thrustWos;
+  T gpu_result = wosWrapper<T>(timers, p);
 
   timers.totalTimer.end();
 

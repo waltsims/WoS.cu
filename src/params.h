@@ -11,6 +11,8 @@
 
 // TODO make class that holds both structure and function
 
+enum SimulationTypes { nativeWos, thrustWos };
+
 template <bool isDouble>
 size_t getSizeSharedMem(size_t len);
 
@@ -33,7 +35,7 @@ public:
 
 class WoSParameters {
 public:
-  WoSParameters() : totalPaths(65535), eps(0.01) {}
+  WoSParameters() : totalPaths(65535), eps(0.01), simulation(nativeWos) {}
 
   X0 x0;
   unsigned int totalPaths;
@@ -41,6 +43,7 @@ public:
   size_t size_SharedMemory;
   // TODO: Question: what effect does the d_eps have on practical convergence?
   double eps;
+  SimulationTypes simulation;
 };
 
 class Parameters {
