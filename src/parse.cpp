@@ -1,9 +1,10 @@
 #include "helper.hpp"
+#include "params.h"
 
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
+#include <string.h>
 // Source: http://www.cplusplus.com/articles/DEN36Up4/
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -86,6 +87,27 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         p.wos.totalPaths = atoi(argv[i]);
       } else {
         std::cerr << "--itterations option requires one argument." << std::endl;
+        return 0;
+      }
+    } else if ((arg == "-st") || (arg == "--simulation-type")) {
+      if (i + 1 < argc) {
+        i++;
+        count++;
+        if (!strcmp(argv[i], "thrust"))
+          p.wos.simulation = thrustWos;
+        else if (!strcmp(argv[i], "native"))
+          p.wos.simulation = nativeWos;
+        else {
+          std::cerr
+              << "--simulation-type option requires one argument.[thrust | "
+                 "native]"
+              << std::endl;
+          return 0;
+        }
+      } else {
+        std::cerr << "--simulation-type option requires one argument.[thrust | "
+                     "native]"
+                  << std::endl;
         return 0;
       }
     } else {

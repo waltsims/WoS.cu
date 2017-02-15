@@ -42,7 +42,6 @@ int main(int argc, char *argv[]) {
 
   // Calling WoS kernel
 
-  p.wos.simulation = thrustWos;
   T gpu_result = wosWrapper<T>(timers, p);
 
   timers.totalTimer.end();
