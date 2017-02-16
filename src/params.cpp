@@ -10,7 +10,7 @@ void Parameters::updateSizeSharedMemory() {
 
   // definition of total size needed for variable in buffer dependent on the
   // length of the data transefered
-  wos.size_SharedMemory = (4 * wos.x0.length) * sizeof(double);
+  wos.size_SharedMemory = (4 * wos.x0.length + 1) * sizeof(double);
 }
 
 void Parameters::outputParameters(int count) {

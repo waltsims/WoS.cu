@@ -29,12 +29,12 @@ template <typename T>
 __device__ void getBoundaryDistance(T *s_cache, T *d_x, int tid);
 
 template <typename T>
-__device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T *d_result,
+__device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T &s_result,
                                       const size_t dim, int tid);
 
 template <typename T>
 struct BlockVariablePointers {
-  T *s_radius, *s_direction, *s_cache, *s_x;
+  T *s_radius, *s_direction, *s_cache, *s_x, *s_result;
 };
 
 template <typename T>
@@ -44,6 +44,7 @@ __device__ void calcSubPointers(BlockVariablePointers<T> *bvp, size_t len,
   bvp->s_direction = len + buff;
   bvp->s_cache = 2 * len + buff;
   bvp->s_x = 3 * len + buff;
+  bvp->s_result = 4 * len + buff;
 }
 template <typename T>
 __device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
@@ -54,6 +55,9 @@ __device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
   bvp.s_radius[tid] = INFINITY;
   // copy x0 to local __shared__"moveable" x
   bvp.s_x[tid] = d_x0[tid];
+  if (threadIdx.x == 0)
+    bvp.s_result[0] = 0.0;
+  __syncthreads();
   return bvp;
 }
 
@@ -106,15 +110,14 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   project2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
 
   // boundary eval and return do global memory
-  evaluateBoundaryValue<T>(bvp.s_x, bvp.s_cache, d_global, dim, tid);
-#ifdef DEBUG
+  evaluateBoundaryValue<T>(bvp.s_x, bvp.s_cache, bvp.s_result[0], dim, tid);
   if (tid == 0) {
-    printf("[WOS]: result on block %d:\n", blockIdx.x);
-    printf("%f, ", d_global[blockIdx.x]);
-    printf("\n");
+    d_global[blockIdx.x] = bvp.s_result[tid];
+#ifdef DEBUG
+    printf("[WOS]: result on block %d:\n%f\n", blockIdx.x, bvp.s_result[0]);
+#endif
   }
   __syncthreads();
-#endif
 }
 
 template <typename T>
@@ -343,7 +346,7 @@ __device__ void getBoundaryDistance(T *s_cache, T *d_x, int tid) {
 }
 
 template <typename T>
-__device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T *d_result,
+__device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T &s_result,
                                       const size_t dim, int tid) {
 
   s_cache[tid] = s_x[tid] * s_x[tid];
@@ -355,7 +358,7 @@ __device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T *d_result,
     printf("[WOS]: output from block %d:\t%f\n", blockIdx.x,
            s_cache[0] / (2 * dim));
 #endif
-    d_result[blockIdx.x] += s_cache[0] / (2 * dim);
+    s_result += s_cache[0] / (2 * dim);
   }
   __syncthreads();
 }
