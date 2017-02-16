@@ -1,4 +1,5 @@
 #include "params.h"
+#include "helper.hpp"
 
 void Parameters::updateLength() {
   wos.x0.length = (isPow2(wos.x0.dimension)) ? wos.x0.dimension

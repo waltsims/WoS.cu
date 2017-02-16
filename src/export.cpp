@@ -1,6 +1,6 @@
 
 #include "clock.h"
-#include "params.h"
+#include "helper.hpp"
 #include <cstring>
 #include <fstream>
 #include <math.h>

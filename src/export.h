@@ -1,4 +1,3 @@
-#include "params.h"
 #include <fstream>
 #include "clock.h"
 

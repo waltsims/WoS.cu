@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <string>
 
-#include "helper.hpp"
-
 // TODO make class that holds both structure and function
 
 enum SimulationTypes { nativeWos, thrustWos };
