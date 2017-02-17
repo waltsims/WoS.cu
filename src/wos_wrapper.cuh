@@ -2,7 +2,7 @@
 #include "wos_thrust.cuh"
 
 template <typename T>
-T wosWrapper(Timers timers, Parameters p) {
+T wosWrapper(Timers &timers, Parameters &p) {
   switch (p.wos.simulation) {
   case (nativeWos):
     return wosNative<T>(timers, p);

@@ -445,8 +445,6 @@ T wosNative(Timers &timers, Parameters &p) {
   }
 #endif
 
-  timers.totalTimer.end();
-
   cudaFree(d_paths);
   return gpu_result;
 }
