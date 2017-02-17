@@ -46,6 +46,7 @@ __device__ void calcSubPointers(BlockVariablePointers<T> *bvp, size_t len,
   bvp->s_x = 3 * len + buff;
   bvp->s_result = 4 * len + buff;
 }
+
 template <typename T>
 __device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
                                              T *d_x0, int tid) {

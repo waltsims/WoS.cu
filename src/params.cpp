@@ -1,6 +1,7 @@
 #include "params.h"
 #include "helper.hpp"
 
+#include <cuda_runtime.h>
 void Parameters::updateLength() {
   wos.x0.length = (isPow2(wos.x0.dimension)) ? wos.x0.dimension
                                              : nextPow2(wos.x0.dimension);

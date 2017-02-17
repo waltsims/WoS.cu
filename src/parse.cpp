@@ -30,6 +30,7 @@ static void show_usage(char *argv[]) {
          "(ergo length of vector x0)\n"
       << "\t-it,\t--totalPaths\t\t\tdefine the number of iterations for the "
          "algorithm.\n"
+      << "\t-st,\t--simulation-type\t\t[thrust | native | host]\n"
       << std::endl;
 }
 
@@ -97,6 +98,8 @@ int parseParams(int argc, char *argv[], Parameters &p) {
           p.wos.simulation = thrustWos;
         else if (!strcmp(argv[i], "native"))
           p.wos.simulation = nativeWos;
+        else if (!strcmp(argv[i], "host"))
+          p.wos.simulation = hostWos;
         else {
           std::cerr
               << "--simulation-type option requires one argument.[thrust | "

@@ -1,3 +1,4 @@
+#include "host/wos_host.h"
 #include "wos_native.cuh"
 #include "wos_thrust.cuh"
 
@@ -8,6 +9,8 @@ T wosWrapper(Timers &timers, Parameters &p) {
     return wosNative<T>(timers, p);
   case (thrustWos):
     return wosThrust<T>(timers, p);
+  case (hostWos):
+    return (T)wosHost(timers, p);
   }
   return 0;
 }

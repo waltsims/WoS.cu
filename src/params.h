@@ -1,7 +1,6 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
-#include <cuda_runtime.h>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +8,7 @@
 
 // TODO make class that holds both structure and function
 
-enum SimulationTypes { nativeWos, thrustWos };
+enum SimulationTypes { nativeWos, thrustWos, hostWos };
 
 template <bool isDouble>
 size_t getSizeSharedMem(size_t len);
