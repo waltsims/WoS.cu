@@ -37,6 +37,7 @@ public:
   unsigned int totalPaths;
   unsigned int numThreads;
   unsigned int pathsPerBlock;
+  unsigned int numberBlocks;
   size_t size_SharedMemory;
   // TODO: Question: what effect does the d_eps have on practical convergence?
   float eps;
@@ -61,6 +62,7 @@ private:
   void updateNumThreads();
   void updatePathsPerBlock();
   void updateSizeSharedMemory();
+  unsigned int primeFactor();
 };
 
 #endif // PARAMS_H

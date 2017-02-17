@@ -53,11 +53,18 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
 
+  // seed for random number generation
+  curandState s;
+  unsigned int seed = index;
+  curand_init(seed, 0, 0, &s);
+
   extern __shared__ float buff[];
   BlockVariablePointers bvp;
   calcSubPointers(&bvp, blockDim.x, buff);
   smemInit(bvp, d_x0, tid);
   if (tid < dim) {
+    float x0 = bvp.s_x[tid]; // only works as long as dim x = dim block
+
 #ifdef DEBUG
     if (tid == 0)
       printf("[WOS]: d_global[%d] before:\t%f\n", blockIdx.x,
@@ -67,34 +74,41 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
     curandState s;
     // seed for random number generation
     unsigned int seed = index;
-
+    float r;
     // TODO: x0 in texture meomry
     curand_init(seed, 0, 0, &s);
-    float r = INFINITY;
     // max step size
-    while (d_eps < r) {
+    for (unsigned int blockPath = 0; blockPath < pathsPerBlock; blockPath++) {
+      bvp.s_x[tid] = x0;
 
-      getBoundaryDistance(bvp.s_radius, bvp.s_x, tid);
+      // TODO: x0 in texture meomry
+      r = INFINITY;
 
-      warpMinReduce(bvp.s_radius, tid);
-      // local copy of radius
-      r = bvp.s_radius[0];
+      // max step size
+      while (d_eps < r) {
 
-      // random next step_direction
-      bvp.s_direction[tid] = curand_normal(&s);
+        getBoundaryDistance(bvp.s_radius, bvp.s_x, tid);
 
-      // normalize direction with L2 norm
-      norm2(bvp.s_direction, bvp.s_cache, tid);
+        warpMinReduce(bvp.s_radius, tid);
+        // local copy of radius
+        r = bvp.s_radius[0];
 
-      // next x point
-      bvp.s_x[tid] += r * bvp.s_direction[tid];
+        // random next step_direction
+        bvp.s_direction[tid] = curand_normal(&s);
+
+        // normalize direction with L2 norm
+        norm2(bvp.s_direction, bvp.s_cache, tid);
+
+        // next x point
+        bvp.s_x[tid] += r * bvp.s_direction[tid];
+      }
+
+      // find closest boundary point
+      project2Boundary(bvp.s_x, bvp.s_cache, dim, tid);
+
+      // boundary eval and return do global memory
+      evaluateBoundaryValue(bvp.s_x, bvp.s_cache, bvp.s_result[0], dim, tid);
     }
-
-    // find closest boundary point
-    project2Boundary(bvp.s_x, bvp.s_cache, dim, tid);
-
-    // boundary eval and return do global memory
-    evaluateBoundaryValue(bvp.s_x, bvp.s_cache, bvp.s_result[0], dim, tid);
     if (tid == 0) {
       d_global[blockIdx.x] = bvp.s_result[tid];
 #ifdef DEBUG
@@ -386,6 +400,7 @@ float wosNative(Timers &timers, Parameters &p) {
 
   cudaError err;
 
+  printInfo("running simulation");
   WoS<<<dimGrid, dimBlock, p.wos.size_SharedMemory>>>(
       d_x0, d_paths, d_eps, p.wos.x0.dimension, p.wos.pathsPerBlock);
   err = cudaGetLastError();
@@ -401,10 +416,10 @@ float wosNative(Timers &timers, Parameters &p) {
 
   printInfo("downloading path data");
   timers.memoryDownloadTimer.start();
-  float h_paths[p.wos.totalPaths];
+  float h_paths[p.wos.numberBlocks];
   // Download paths data
   checkCudaErrors(cudaMemcpyAsync(&h_paths, d_paths,
-                                  p.wos.totalPaths * sizeof(float),
+                                  p.wos.numberBlocks * sizeof(float),
                                   cudaMemcpyDeviceToHost));
 
   timers.memoryDownloadTimer.end();
@@ -414,11 +429,11 @@ float wosNative(Timers &timers, Parameters &p) {
 #endif // OUT
 
   printInfo("reduce data on CPU");
-  float gpu_result = reduceCPU(h_paths, p.wos.totalPaths) / p.wos.totalPaths;
+  float gpu_result = reduceCPU(h_paths, p.wos.numberBlocks) / p.wos.totalPaths;
 
 #ifdef DEBUG
   printf("[MAIN]: results values after copy:\n");
-  for (unsigned int n = 0; n < p.wos.totalPaths; n++) {
+  for (unsigned int n = 0; n < p.wos.numberBlocks; n++) {
     printf("%f\n", h_paths[n]);
   }
 #endif
