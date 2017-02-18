@@ -7,39 +7,30 @@
 #define MAX_THREADS 1024
 #define MAX_BLOCKS 65535
 
-template <typename T>
-__device__ void warpMinReduce(T *sdata, int tid);
+__device__ void warpMinReduce(float *sdata, int tid);
 
-template <typename T>
-__device__ void warpSumReduce(T *sdata, int tid);
+__device__ void warpSumReduce(float *sdata, int tid);
 
-template <typename T>
-__device__ void broadcast(T *sdata, int tid);
+__device__ void broadcast(float *sdata, int tid);
 
-template <typename T>
-__device__ void project2Boundary(T *s_x, T *cache, size_t dim, int tid);
+__device__ void project2Boundary(float *s_x, float *cache, size_t dim, int tid);
 
-template <typename T>
-__device__ void norm2(T *s_radius, int tid);
+__device__ void norm2(float *s_radius, int tid);
 
-template <typename T>
-__device__ void normalize(T *s_radius, T *cache, size_t dim, int tid);
+__device__ void normalize(float *s_radius, float *cache, size_t dim, int tid);
 
-template <typename T>
-__device__ void getBoundaryDistance(T *s_cache, T *d_x, int tid);
+__device__ void getBoundaryDistance(float *s_cache, float *d_x, int tid);
 
-template <typename T>
-__device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T &s_result,
-                                      const size_t dim, int tid);
+__device__ void evaluateBoundaryValue(float *s_x, float *s_cache,
+                                      float &s_result, const size_t dim,
+                                      int tid);
 
-template <typename T>
 struct BlockVariablePointers {
-  T *s_radius, *s_direction, *s_cache, *s_x, *s_result;
+  float *s_radius, *s_direction, *s_cache, *s_x, *s_result;
 };
 
-template <typename T>
-__device__ void calcSubPointers(BlockVariablePointers<T> *bvp, size_t len,
-                                T *buff) {
+__device__ void calcSubPointers(BlockVariablePointers *bvp, size_t len,
+                                float *buff) {
   bvp->s_radius = buff;
   bvp->s_direction = len + buff;
   bvp->s_cache = 2 * len + buff;
@@ -47,9 +38,8 @@ __device__ void calcSubPointers(BlockVariablePointers<T> *bvp, size_t len,
   bvp->s_result = 4 * len + buff;
 }
 
-template <typename T>
-__device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
-                                             T *d_x0, int tid) {
+__device__ BlockVariablePointers smemInit(BlockVariablePointers bvp,
+                                          float *d_x0, int tid) {
   // initialize shared memory
   bvp.s_direction[tid] = 0.0;
   bvp.s_cache[tid] = 0.0;
@@ -62,15 +52,14 @@ __device__ BlockVariablePointers<T> smemInit(BlockVariablePointers<T> bvp,
   return bvp;
 }
 
-template <typename T>
-__global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
-                    unsigned int pathsPerBlock) {
+__global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
+                    size_t len, unsigned int pathsPerBlock) {
 
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
 
-  extern __shared__ T buff[];
-  BlockVariablePointers<T> bvp;
+  extern __shared__ float buff[];
+  BlockVariablePointers bvp;
   calcSubPointers(&bvp, len, buff);
   smemInit(bvp, d_x0, tid);
 
@@ -87,13 +76,13 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
 
   // TODO: x0 in texture meomry
   curand_init(seed, 0, 0, &s);
-  T r = INFINITY;
+  float r = INFINITY;
   // max step size
   while (d_eps < r) {
 
-    getBoundaryDistance<T>(bvp.s_radius, bvp.s_x, tid);
+    getBoundaryDistance(bvp.s_radius, bvp.s_x, tid);
 
-    warpMinReduce<T>(bvp.s_radius, tid);
+    warpMinReduce(bvp.s_radius, tid);
     // local copy of radius
     r = bvp.s_radius[0];
 
@@ -101,17 +90,17 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
     bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
 
     // normalize direction with L2 norm
-    normalize<T>(bvp.s_direction, bvp.s_cache, dim, tid);
+    normalize(bvp.s_direction, bvp.s_cache, dim, tid);
 
     // next x point
     bvp.s_x[tid] += r * bvp.s_direction[tid];
   }
 
   // find closest boundary point
-  project2Boundary<T>(bvp.s_x, bvp.s_cache, dim, tid);
+  project2Boundary(bvp.s_x, bvp.s_cache, dim, tid);
 
   // boundary eval and return do global memory
-  evaluateBoundaryValue<T>(bvp.s_x, bvp.s_cache, bvp.s_result[0], dim, tid);
+  evaluateBoundaryValue(bvp.s_x, bvp.s_cache, bvp.s_result[0], dim, tid);
   if (tid == 0) {
     d_global[blockIdx.x] = bvp.s_result[tid];
 #ifdef DEBUG
@@ -121,10 +110,9 @@ __global__ void WoS(T *d_x0, T *d_global, T d_eps, size_t dim, size_t len,
   __syncthreads();
 }
 
-template <typename T>
-__device__ void warpMinReduce(T *sdata, int tid) {
+__device__ void warpMinReduce(float *sdata, int tid) {
   // each thread puts its local value into warp variable
-  T myMin = sdata[tid];
+  float myMin = sdata[tid];
   unsigned int blockSize = blockDim.x;
 
   __syncthreads();
@@ -214,10 +202,9 @@ __device__ void warpMinReduce(T *sdata, int tid) {
   __syncthreads();
 }
 
-template <typename T>
-__device__ void warpSumReduce(T *sdata, int tid) {
+__device__ void warpSumReduce(float *sdata, int tid) {
   // each thread puts its local sum value into warp variable
-  T mySum = sdata[tid];
+  float mySum = sdata[tid];
   unsigned int blockSize = blockDim.x;
 
   // do reduction in shared mem
@@ -301,16 +288,15 @@ __device__ void warpSumReduce(T *sdata, int tid) {
   __syncthreads();
 }
 
-template <typename T>
-__device__ void broadcast(T *sdata, int tid) {
+__device__ void broadcast(float *sdata, int tid) {
 
   if (tid != 0) // needed for race condition check
     sdata[tid] = sdata[0];
   __syncthreads(); // needed for race condition check
 }
 
-template <typename T>
-__device__ void project2Boundary(T *s_x, T *cache, size_t dim, int tid) {
+__device__ void project2Boundary(float *s_x, float *cache, size_t dim,
+                                 int tid) {
   getBoundaryDistance(cache, s_x, tid);
   warpMinReduce(cache, tid);
   broadcast(cache, tid);
@@ -320,39 +306,36 @@ __device__ void project2Boundary(T *s_x, T *cache, size_t dim, int tid) {
   __syncthreads();
 }
 
-template <typename T>
-__device__ void norm2(T *s_radius, T *s_cache, int tid) {
+__device__ void norm2(float *s_radius, float *s_cache, int tid) {
 
   // square vals and copy to cache
   s_cache[tid] = s_radius[tid] * s_radius[tid];
 
-  warpSumReduce<T>(s_cache, tid);
+  warpSumReduce(s_cache, tid);
 
   if (tid == 0)
     s_cache[tid] = sqrt(s_cache[tid]);
   __syncthreads();
 }
 
-template <typename T>
-__device__ void normalize(T *s_radius, T *cache, size_t dim, int tid) {
+__device__ void normalize(float *s_radius, float *cache, size_t dim, int tid) {
 
   norm2(s_radius, cache, tid);
   s_radius[tid] /= cache[0];
   //__syncthreads(); // needed for race check
 }
 
-template <typename T>
-__device__ void getBoundaryDistance(T *s_cache, T *d_x, int tid) {
+__device__ void getBoundaryDistance(float *s_cache, float *d_x, int tid) {
   s_cache[tid] = 1.0 - abs(d_x[tid]);
 }
 
-template <typename T>
-__device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T &s_result,
-                                      const size_t dim, int tid) {
+__device__ void evaluateBoundaryValue(float *s_x, float *s_cache,
+                                      float &s_result, const size_t dim,
+                                      int tid) {
 
   s_cache[tid] = s_x[tid] * s_x[tid];
 
-  warpSumReduce<T>(s_cache, tid);
+  warpSumReduce(s_cache, tid);
 
   if (tid == 0) {
 #ifdef DEBUG
@@ -365,36 +348,35 @@ __device__ void evaluateBoundaryValue(T *s_x, T *s_cache, T &s_result,
 }
 
 //==============================================================================
-template <typename T>
-void initX0(T *x0, size_t dim, size_t len, T val);
+void initX0(float *x0, size_t dim, size_t len, float val);
 
-template <typename T>
-T wosNative(Timers &timers, Parameters &p) {
+float wosNative(Timers &timers, Parameters &p) {
 
   // declare local array variabls
-  T *h_x0;
-  checkCudaErrors(cudaMallocHost((void **)&h_x0, sizeof(T) * p.wos.x0.length));
+  float *h_x0;
+  checkCudaErrors(
+      cudaMallocHost((void **)&h_x0, sizeof(float) * p.wos.x0.length));
   // declare pointers for device variables
-  T *d_x0 = NULL;
-  T *d_paths = NULL;
+  float *d_x0 = NULL;
+  float *d_paths = NULL;
   // init our point on host
-  // cast to T hotfix until class is templated
-  T d_eps = p.wos.eps;
-  initX0(h_x0, p.wos.x0.dimension, p.wos.x0.length, (T)p.wos.x0.value);
+  float d_eps = p.wos.eps;
+  initX0(h_x0, p.wos.x0.dimension, p.wos.x0.length, p.wos.x0.value);
 
   timers.memorySetupTimer.start();
 
   // maloc device memory
-  checkCudaErrors(cudaMalloc((void **)&d_x0, p.wos.x0.length * sizeof(T)));
+  checkCudaErrors(cudaMalloc((void **)&d_x0, p.wos.x0.length * sizeof(float)));
 
   printInfo("initializing d_paths");
 
-  checkCudaErrors(cudaMalloc((void **)&d_paths, p.wos.totalPaths * sizeof(T)));
+  checkCudaErrors(
+      cudaMalloc((void **)&d_paths, p.wos.totalPaths * sizeof(float)));
 
-  checkCudaErrors(cudaMemset(d_paths, 0.0, p.wos.totalPaths * sizeof(T)));
+  checkCudaErrors(cudaMemset(d_paths, 0.0, p.wos.totalPaths * sizeof(float)));
 
   // Let's bring our data to the Device
-  checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.x0.length * sizeof(T),
+  checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.x0.length * sizeof(float),
                              cudaMemcpyHostToDevice));
   cudaFreeHost(h_x0);
 
@@ -407,7 +389,7 @@ T wosNative(Timers &timers, Parameters &p) {
 
   cudaError err;
 
-  WoS<T><<<dimGrid, dimBlock, p.wos.size_SharedMemory>>>(
+  WoS<<<dimGrid, dimBlock, p.wos.size_SharedMemory>>>(
       d_x0, d_paths, d_eps, p.wos.x0.dimension, p.wos.x0.length,
       p.wos.pathsPerBlock);
   err = cudaGetLastError();
@@ -423,10 +405,11 @@ T wosNative(Timers &timers, Parameters &p) {
 
   printInfo("downloading path data");
   timers.memoryDownloadTimer.start();
-  T h_paths[p.wos.totalPaths];
+  float h_paths[p.wos.totalPaths];
   // Download paths data
-  checkCudaErrors(cudaMemcpyAsync(
-      &h_paths, d_paths, p.wos.totalPaths * sizeof(T), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpyAsync(&h_paths, d_paths,
+                                  p.wos.totalPaths * sizeof(float),
+                                  cudaMemcpyDeviceToHost));
 
   timers.memoryDownloadTimer.end();
 
@@ -435,9 +418,7 @@ T wosNative(Timers &timers, Parameters &p) {
 #endif // OUT
 
   printInfo("reduce data on CPU");
-  T gpu_result = reduceCPU(h_paths, p.wos.totalPaths);
-
-  gpu_result /= p.wos.totalPaths;
+  float gpu_result = reduceCPU(h_paths, p.wos.totalPaths) / p.wos.totalPaths;
 
 #ifdef DEBUG
   printf("[MAIN]: results values after copy:\n");
@@ -450,8 +431,7 @@ T wosNative(Timers &timers, Parameters &p) {
   return gpu_result;
 }
 
-template <typename T>
-void initX0(T *h_x0, size_t dim, size_t len, T val) {
+void initX0(float *h_x0, size_t dim, size_t len, float val) {
   // init our point on host
   for (unsigned int i = 0; i < dim; i++)
     // h_x0[i] = i == 1 ? 0.22 : 0;

@@ -7,22 +7,19 @@
 #include <sys/stat.h>
 
 // this is the cumsum devided by number of relative paths (insitu)
-template <typename T>
-void cumsum(T *vals, int paths) {
+void cumsum(float *vals, int paths) {
   for (int i = 1; i < paths; i++)
     vals[i] += vals[i - 1];
 }
 
-template <typename T>
-void calcExpectedValue(T *vals, int paths) {
+void calcExpectedValue(float *vals, int paths) {
   cumsum(vals, paths);
   for (int i = 0; i < paths; i++) {
     vals[i] /= i + 1;
   }
 }
 // callculate the relative error (insitu)
-template <typename T>
-void calcRelativeError(T *data, int paths, T exactSolution) {
+void calcRelativeError(float *data, int paths, float exactSolution) {
   for (int i = 0; i < paths; i++) {
     data[i] = fabs((data[i] - exactSolution) / exactSolution);
   }
@@ -36,17 +33,12 @@ void outputHeader(std::ofstream &file) {
 
 float getBase(int paths, int points) { return pow(10, log(paths) / points); }
 
-// int getNumPoints(int paths) {
-//   return (int)ceil(log(paths / log(getBase(paths))));
-// }
-
 int getCurrentPoint(int exponent, float base) {
   return (int)ceil(pow(base, exponent));
 }
 
-template <typename T>
-void logOutputData(const char *filename, T *relError, T *values,
-                   T *expectedValue, int paths) {
+void logOutputData(const char *filename, float *relError, float *values,
+                   float *expectedValue, int paths) {
   // TODO impliment for run numbers greater than MAX_BLOCKS
 
   printInfo("writing to file:");
@@ -73,8 +65,8 @@ void logOutputData(const char *filename, T *relError, T *values,
   file.close();
 }
 
-template <typename T>
-void linearOutputData(const char *filename, T *h_exitX, T *h_exitY, int paths) {
+void linearOutputData(const char *filename, float *h_exitX, float *h_exitY,
+                      int paths) {
   std::cout << "writing file to: " << filename << std::endl;
 
   std::ofstream file(filename);
@@ -87,9 +79,8 @@ void linearOutputData(const char *filename, T *h_exitX, T *h_exitY, int paths) {
   file.close();
 }
 
-template <typename T>
-void linearOutputData(const char *filename, T *relError, T *values,
-                      T *expectedValue, int paths) {
+void linearOutputData(const char *filename, float *relError, float *values,
+                      float *expectedValue, int paths) {
   std::cout << "writing file to: " << filename << std::endl;
 
   std::ofstream file(filename);
@@ -103,12 +94,11 @@ void linearOutputData(const char *filename, T *relError, T *values,
 }
 
 void exportData(float *h_paths, float *h_exitX, float *h_exitY, Parameters &p) {
-  typedef float T;
   // T end = vals[paths - 1]; // use last value to test convergence
-  T exactSolution = 0.29468541312605526226;
+  float exactSolution = 0.29468541312605526226;
 
-  T *data = (T *)malloc(p.wos.totalPaths * sizeof(float));
-  T *expectedValue = (T *)malloc(p.wos.totalPaths * sizeof(float));
+  float *data = (float *)malloc(p.wos.totalPaths * sizeof(float));
+  float *expectedValue = (float *)malloc(p.wos.totalPaths * sizeof(float));
   std::memcpy(data, h_paths, p.wos.totalPaths * sizeof(float));
 
   // std::cout << "data\n" << std::endl;
@@ -129,46 +119,17 @@ void exportData(float *h_paths, float *h_exitX, float *h_exitY, Parameters &p) {
   free(expectedValue);
 }
 
-void exportData(double *h_paths, double *h_exitX, double *h_exitY,
-                Parameters &p) {
-  typedef double T;
+void exportData(float *h_paths, Parameters &p) {
   // T end = vals[paths - 1]; // use last value to test convergence
-  T exactSolution = 0.29468541312605526226;
+  float exactSolution = 0.29468541312605526226;
 
-  T *data = (T *)malloc(p.wos.totalPaths * sizeof(double));
-  T *expectedValue = (T *)malloc(p.wos.totalPaths * sizeof(double));
-  std::memcpy(data, h_paths, p.wos.totalPaths * sizeof(double));
-
-  // std::cout << "data\n" << std::endl;
-  // for (int i = 0; i < p.wos.totalPaths; i++)
-  //   std::cout << data[i] << std::endl;
+  float *data = (float *)malloc(p.wos.totalPaths * sizeof(float));
+  float *expectedValue = (float *)malloc(p.wos.totalPaths * sizeof(float));
+  std::memcpy(data, h_paths, p.wos.totalPaths * sizeof(float));
 
   printInfo("exporting simulation data");
   calcExpectedValue(data, p.wos.totalPaths);
-  std::memcpy(expectedValue, data, p.wos.totalPaths * sizeof(double));
-  calcRelativeError(data, p.wos.totalPaths, exactSolution);
-  logOutputData("docs/data/cuWos_data.csv", data, h_paths, expectedValue,
-                p.wos.totalPaths);
-
-  linearOutputData("docs/data/exit_positions.csv", h_exitX, h_exitY,
-                   p.wos.totalPaths);
-
-  free(data);
-  free(expectedValue);
-}
-
-void exportData(double *h_paths, Parameters &p) {
-  typedef double T;
-  // T end = vals[paths - 1]; // use last value to test convergence
-  T exactSolution = 0.29468541312605526226;
-
-  T *data = (T *)malloc(p.wos.totalPaths * sizeof(double));
-  T *expectedValue = (T *)malloc(p.wos.totalPaths * sizeof(double));
-  std::memcpy(data, h_paths, p.wos.totalPaths * sizeof(double));
-
-  printInfo("exporting simulation data");
-  calcExpectedValue(data, p.wos.totalPaths);
-  std::memcpy(expectedValue, data, p.wos.totalPaths * sizeof(double));
+  std::memcpy(expectedValue, data, p.wos.totalPaths * sizeof(float));
   calcRelativeError(data, p.wos.totalPaths, exactSolution);
   logOutputData("docs/data/cuWos_data.csv", data, h_paths, expectedValue,
                 p.wos.totalPaths);

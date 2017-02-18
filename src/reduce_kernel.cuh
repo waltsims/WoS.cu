@@ -9,19 +9,21 @@
 //! @param data       pointer to input data
 //! @param size       number of input data elements
 ////////////////////////////////////////////////////////////////////////////////
-template <class T>
-T reduceCPU(T *data, int size) {
-  T sum = data[0];
-  T c = (T)0.0;
+float reduceCPU(float *data, int size) {
+  float sum = data[0];
+  float c = 0.f;
 
+  // TODO declare outside of for loop!
   for (int i = 1; i < size; i++) {
-    T y = data[i] - c;
-    T t = sum + y;
+    float y = data[i] - c;
+    float t = sum + y;
     c = (t - sum) - y;
     sum = t;
   }
   return sum;
 }
+
+/// dead code below ////
 
 // Utility class used to avoid linker errors with extern
 // unsized shared memory arrays with templated type

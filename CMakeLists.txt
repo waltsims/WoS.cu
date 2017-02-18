@@ -5,7 +5,6 @@ project(WoS.cu)
 
 option(DEBUG "compiling with debuging output" OFF)
 option(OUT "compiling for export/output" OFF)
-option(DOUBLE "running with double precision" ON)
 
 set(STANDARD_FLAGS ${STANDARD_FLAGS}  --compiler-options -Wall -std=c++11 -lineinfo)
 
@@ -25,10 +24,6 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS}  --compiler-options -Wall -std=c++11 -linei
 		if(OUT)
 			message( "OUT flag being set")
 			add_definitions(-DOUT)
-		endif()
-		if(DOUBLE)
-			message( "Double flag being set")
-			add_definitions(-DDOUBLE)
 		endif()
 		# Specify the binary name and the source files to build
 		add_subdirectory(src/host)

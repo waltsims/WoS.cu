@@ -27,7 +27,7 @@ public:
 
   // TODO: should be a template param. hard to impliment
 
-  double value;
+  float value;
 };
 
 class WoSParameters {
@@ -39,7 +39,7 @@ public:
   unsigned int pathsPerBlock;
   size_t size_SharedMemory;
   // TODO: Question: what effect does the d_eps have on practical convergence?
-  double eps;
+  float eps;
   SimulationTypes simulation;
 };
 

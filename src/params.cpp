@@ -42,6 +42,8 @@ void Parameters::updatePathsPerBlock() {
 void Parameters::updateNumBlocksAndThreads() {
 
   // get device capability, to avoid block/grid size exceed the upper bound
+
+  // dead code for reduce
   cudaDeviceProp prop;
   int n = wos.totalPaths;
   int maxBlocks = MAX_BLOCKS;

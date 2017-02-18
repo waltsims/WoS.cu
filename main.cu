@@ -23,11 +23,6 @@ int main(int argc, char *argv[]) {
 
 // TODO: call WoS template wraper function
 
-#ifdef DOUBLE
-  typedef double T; // Type for problem
-#else
-  typedef float T;
-#endif // DOUBLE
   Parameters p;
 
   // TODO this should/could go in parameter constructor
@@ -42,11 +37,11 @@ int main(int argc, char *argv[]) {
 
   // Calling WoS kernel
 
-  T gpu_result = wosWrapper<T>(timers, p);
+  float gpu_result = wosWrapper(timers, p);
 
   timers.totalTimer.end();
 
-  testResults((float)gpu_result, p);
+  testResults(gpu_result, p);
   printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
               timers.totalTimer.get(), timers.memoryDownloadTimer.get());
   exportTime(timers, p);
