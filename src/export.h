@@ -24,6 +24,8 @@ void linearOutputData(const char *filename, T *vals, T *values, int paths);
 template <typename T>
 void linearOutputData(const char *filename, T *h_exitX, T *h_exitY, int paths);
 
+void exportData(float *h_paths, float *h_exitX, float *exitY, Parameters &p);
+
 void exportData(double *h_paths, double *h_exitX, double *exitY, Parameters &p);
 
 float getBase(int paths);

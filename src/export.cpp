@@ -102,6 +102,33 @@ void linearOutputData(const char *filename, T *relError, T *values,
   file.close();
 }
 
+void exportData(float *h_paths, float *h_exitX, float *h_exitY, Parameters &p) {
+  typedef float T;
+  // T end = vals[paths - 1]; // use last value to test convergence
+  T exactSolution = 0.29468541312605526226;
+
+  T *data = (T *)malloc(p.wos.totalPaths * sizeof(float));
+  T *expectedValue = (T *)malloc(p.wos.totalPaths * sizeof(float));
+  std::memcpy(data, h_paths, p.wos.totalPaths * sizeof(float));
+
+  // std::cout << "data\n" << std::endl;
+  // for (int i = 0; i < p.wos.totalPaths; i++)
+  //   std::cout << data[i] << std::endl;
+
+  printInfo("exporting simulation data");
+  calcExpectedValue(data, p.wos.totalPaths);
+  std::memcpy(expectedValue, data, p.wos.totalPaths * sizeof(float));
+  calcRelativeError(data, p.wos.totalPaths, exactSolution);
+  logOutputData("docs/data/cuWos_data.csv", data, h_paths, expectedValue,
+                p.wos.totalPaths);
+
+  linearOutputData("docs/data/exit_positions.csv", h_exitX, h_exitY,
+                   p.wos.totalPaths);
+
+  free(data);
+  free(expectedValue);
+}
+
 void exportData(double *h_paths, double *h_exitX, double *h_exitY,
                 Parameters &p) {
   typedef double T;
