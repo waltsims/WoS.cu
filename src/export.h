@@ -22,6 +22,8 @@ void linearOutputData(const char *filename, float *h_exitX, float *h_exitY,
 
 void exportData(float *h_paths, float *h_exitX, float *exitY, Parameters &p);
 
+void exportData(float *h_paths, float *h_exitX, float *h_exitY, Parameters &p);
+
 float getBase(int paths);
 
 int getNumPoints(int paths);
