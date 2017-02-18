@@ -37,20 +37,24 @@ void Parameters::outputParameters(int count) {
 }
 
 void Parameters::updatePathsPerBlock() {
-  // TODO optimize
-  unsigned int &pathsPerBlock = wos.pathsPerBlock;
-  unsigned int &number_blocks = wos.totalPaths;
-  unsigned int paths = wos.totalPaths;
+
+  // source::https://devblogs.nvidia.com/parallelforall/how-query-device-properties-and-handle-errors-cuda-cc/
+  cudaDeviceProp devProp;
+  cudaGetDeviceProperties(&devProp, 0); // assume one device for now
 
   unsigned int i = floor(sqrt(wos.totalPaths));
-
+  printf("max grid size : %d\n", devProp.maxGridSize[1]);
   while (wos.totalPaths % i != 0) {
     i--;
   }
 
+  // TODO ensure number blocks smaller than maxGridSize
   wos.numberBlocks =
       (i < wos.totalPaths / i) ? wos.totalPaths / i : i; // 21845;
   wos.pathsPerBlock = wos.totalPaths / wos.numberBlocks;
+
+  // wos.pathsPerBlock = 10000000;
+  // wos.numberBlocks = 100;
 
   // wos.pathsPerBlock = 1;
   // wos.numberBlocks = wos.totalPaths;
@@ -84,7 +88,8 @@ void Parameters::updateNumBlocksAndThreads() {
   // }
   //
   // if (blocks > prop.maxGridSize[0]) {
-  //   printf("Grid size <%d> exceeds the device capability <%d>, set block size
+  //   printf("Grid size <%d> exceeds the device capability <%d>, set block
+  //   size
   //   "
   //          "as %d (original %d)\n",
   //          blocks, prop.maxGridSize[0], threads * 2, threads);
