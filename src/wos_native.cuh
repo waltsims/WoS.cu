@@ -322,7 +322,7 @@ __device__ void normalize(float *s_radius, float *cache, size_t dim, int tid) {
 
   norm2(s_radius, cache, tid);
   s_radius[tid] /= cache[0];
-  //__syncthreads(); // needed for race check
+  __syncthreads(); // needed for race check
 }
 
 __device__ void getBoundaryDistance(float *s_cache, float *d_x, int tid) {
