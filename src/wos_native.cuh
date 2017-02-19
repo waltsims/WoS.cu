@@ -48,7 +48,7 @@ __device__ void smemInit(BlockVariablePointers bvp, float *d_x0, int tid) {
 }
 
 __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
-                    unsigned int pathsPerBlock) {
+                    int pathsPerBlock) {
 
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
@@ -64,6 +64,7 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
   smemInit(bvp, d_x0, tid);
   if (tid < dim) {
     float x0 = bvp.s_x[tid]; // only works as long as dim x = dim block
+    float r;
 
 #ifdef DEBUG
     if (tid == 0)
@@ -71,14 +72,7 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
              d_global[blockIdx.x]);
 #endif
 
-    curandState s;
-    // seed for random number generation
-    unsigned int seed = index;
-    float r;
-    // TODO: x0 in texture meomry
-    curand_init(seed, 0, 0, &s);
-    // max step size
-    for (unsigned int blockPath = 0; blockPath < pathsPerBlock; blockPath++) {
+    for (int blockPath = 0; blockPath < pathsPerBlock; blockPath++) {
       bvp.s_x[tid] = x0;
 
       // TODO: x0 in texture meomry

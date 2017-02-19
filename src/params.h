@@ -34,9 +34,9 @@ public:
   WoSParameters() : totalPaths(65535), eps(0.01), simulation(nativeWos) {}
 
   X0 x0;
-  unsigned int totalPaths;
   unsigned int numThreads;
-  unsigned int pathsPerBlock;
+  unsigned long int totalPaths;
+  int pathsPerBlock;
   unsigned int numberBlocks;
   size_t size_SharedMemory;
   // TODO: Question: what effect does the d_eps have on practical convergence?
