@@ -10,12 +10,78 @@ Here starts the thesis with an introduction. Please use nice latex and bibtex en
 \subsubsection{Mean Value Property}
 \subsubsection{The Maximum Principle}
 \subsection{Brownian Motion}
+\subsubsection{Excursion in Uniform Distributions on Spheres}
 \subsection{Markov Chains}
 \subsection{The Algorithm}
 
 
 
-\section{Parallel Computing with CUDA}
 \section{The Basics of Parallel Computing}
+In recent years, the convergence towards the physical limits of Moors law has lead to a
+trend towards Parallel Computing\cite{Kumar} \cite{Markov}.  By most accounts, the
+field of Parallel Computing conceived in the early 1958 \cite{Gill}, but has
+since bloomed into the State of the Art, for high-dimensional simulations in
+High Performance Computing as hardware technology has caught up to the first
+theoretical speculation of half a century prior. \par
+
+Traditionally, the concept of Parallel Computing was simple; in order to improve
+(reduce) computation time, one should separate independent steps of a given algorithm
+and execute them concurrently upon unique processing units.  In doing so, for a given
+problem, which traditionally would have taken time \textit{T}, in the optimal case,
+the calculation could be completed in \textit{T/N} time, where \textit{N} discribes
+the number of unique processing units being utilized.  This observation was formalized
+by Gene Amdahl in 1967\cite{Wilt}:
+%
+\begin{equation}
+  \tag{Amdahl's Law}
+  Speedup = S_{latency}(s)= \frac{1}{(r_{s} + \frac{r_{p}}{N})} = \frac{N}{N(1-r_{p})-r_{p}}
+  \label{egn:Amdahl}
+\end{equation}
+%
+where \textit{Speedup} embodies the factor of temporal acceleration a program
+exhibits when additional computational resources are dedicated to it's exicution.
+ \textit{$r_{s}$} and \textit{$ r_{p} $} represent the ratio of the algorithm that must be executed serially or in parallel, respectively.  Amdahl's Law describes a problem of a fixed dimensin,
+and the effects that more parallel computing resources have on execution time.
+This strategy of optimization, in which the size of the problem is constant,
+ is called Strong Scaling.
+In extreme cases unlimited resources, the greatest speed up of a given algorithm
+ is limited by it's serial component.
+%
+\begin{equation}
+ \lim_{N\to\infty}  \frac{1}{(r_{s} + \frac{r_{p}}{N})} = \frac{1}{r_{s}} = \frac{1}{1-r_{p}}
+\end{equation}
+%
+This description of optimal Speedup does not take into account issues of physical
+distance of computing cores or the communication and facilitation overhead between
+cores that can occur in real applications, which can lead to lower parallel efficiency.
+Nevertheless, the model can serve as a useful tool when analyzing algorithmic parallelization and and the greatest
+attainable Speedup for a given problem.\par
+
+One further method of quantifying parallelism, is Gustafson's Law\cite{Gustafson}.
+%
+\begin{equation}
+  \tag{Gustofson's Law}
+  Speedup = S_{latency}(s) = r_{s} + (1 - r_{p})N
+\end{equation}
+%
+This view of parallelism maintains that `` in practice, the problem
+size scales with the number of processes'', and therefore
+``assume[s] run time, not problem size, is constant''.
+of the given problem. In other words, as the problem size grows, a proportional
+amount of resources should be devoted to keep the execution time constant.
+
+Both of these laws, assist in the quantification of parallel efficiency and
+expected gains.
+
+
+
+\subsection{An Architectural Comparison of CPU's and GPU's}
+
+By design, CPU's are designed to handle general purpose computing workloads, where as GPU's are
+specifically designed to handle workloads on large Data sets ( traditionally these
+data sets were individual color values for digital images, and the workload as
+the transformation of image data to modulate the output on a digital screen).
 \subsection{Architecture}
 \subsection{Computing Model}
+
+\section{Parallel Computing with CUDA}
