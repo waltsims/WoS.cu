@@ -376,9 +376,10 @@ float wosNative(Timers &timers, Parameters &p) {
   printInfo("initializing d_paths");
 
   checkCudaErrors(
-      cudaMalloc((void **)&d_paths, p.wos.totalPaths * sizeof(float)));
+      cudaMalloc((void **)&d_paths, p.wos.numberBlocks * sizeof(float)));
 
-  checkCudaErrors(cudaMemset(d_paths, 0.0, p.wos.totalPaths * sizeof(float)));
+  // checkCudaErrors(cudaMemset(d_paths, 0.0, p.wos.numberBlocks *
+  // sizeof(float)));
 
   // Let's bring our data to the Device
   checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.x0.dimension * sizeof(float),
