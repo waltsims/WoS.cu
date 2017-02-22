@@ -2,8 +2,8 @@
 #ifndef THRUST
 #define THRUST
 
-#include "clock.h"
 #include "params.h"
+#include "timers.h"
 
 #include <cuda_runtime_api.h>
 #include <thrust/device_vector.h>

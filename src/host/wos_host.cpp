@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../clock.h"
 #include "../params.h"
+#include "timers.h"
 
 float wosHost(Timers &timers, Parameters &p) {
   unsigned int dimension = 2;

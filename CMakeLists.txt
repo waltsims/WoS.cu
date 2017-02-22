@@ -26,10 +26,11 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS}  --compiler-options -Wall -std=c++11 -linei
 			add_definitions(-DOUT)
 		endif()
 		# Specify the binary name and the source files to build
+		include_directories(inc)
 		add_subdirectory(src/host)
+
 		file(GLOB SRC src/wos_thrust.cuh src/helper.cpp  main.cu src/export.cpp  src/params.cpp src/parse.cpp )
 		file(GLOB LIB src/wos_thrust.h src/helper.hpp src/clock.h src/export.h	src/params.h src/parse.h src/reduce_kernel.cuh src/wos_wrapper.cuh src/wos_native.cuh)
-		file(GLOB INC inc/helper_string.h inc/helper_cuda.h)
 		cuda_add_executable(wos ${SRC} ${LIB} ${INC})
 		target_link_libraries(wos ${CUDA_LIBARIES} host)
 

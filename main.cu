@@ -5,8 +5,8 @@
 #define MAX_BLOCKS 65535
 #endif
 
-#include "inc/helper_cuda.h"
-#include "src/clock.h"
+#include "helper_cuda.h"
+#include "timers.h"
 #include "src/export.h"
 #include "src/parse.h"
 
