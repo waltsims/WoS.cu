@@ -72,10 +72,7 @@ amount of resources should be devoted to keep the execution time constant.
 Both of these laws, assist in the quantification of parallel efficiency and
 expected gains.
 
-
-
 \subsection{An Architectural Comparison of CPUs and GPUs}
-
 By design, \Glspl{CPU} are designed
 to handle general purpose computing workloads.
 By design, each \Gls{ALU} of a modern CPU can execute general computational
@@ -128,17 +125,25 @@ These are standard terminologies in GPU programing. GPUs are comprised of four m
 \end{description}\cite{Wilt}
 
 \subsubsection{Streaming Multiprocessors}
-Each GPC contains a cluster of SM's.
+Each GPC contains a cluster of SM's.  The number of SM's per cluster varies by
+model of GPU. Some examples can be found in %table bellow
 
 %TODO list table with modern examples
 
-Each SM contains execution units for 32-bit integer, as well as single and double
-precision arithmetic. Special function units for log/exp sin/cos and sqrt functions.
+Each SM is comprised of: \cite{Wilt}
+\begin{itemize}
+  \item execution units for 32-bit integer, as well as single and double precision arithmetic.
+  \item Special function units for log/exp sin/cos and sqrt functions.
+  \item a warp scheduler to coordinate the dispatch of threads.
+  \item a constant cache to broadcast data to SM's.
+  \item shared memory accessible by all threads.
+  \item texture mapping hardware.
+\end{itemize}
 
-
-
-\subsubsection{Memory Structures}
-
-\subsection{Computing Model}
+This basic overview of the architecture of the hardware is important to understand
+how the the programming API maps to the available hardware.
 
 \section{Parallel Computing with CUDA}
+\subsubsection{Execution }
+
+\subsubsection{Memory Structures}
