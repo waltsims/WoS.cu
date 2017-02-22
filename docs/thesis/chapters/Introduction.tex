@@ -76,16 +76,16 @@ expected gains.
 
 \subsection{An Architectural Comparison of CPUs and GPUs}
 
-By design, CPUs (\underline{C}entral \underline{P}rocessing \underline{U}nits) are designed
+By design, \Glspl{CPU} are designed
 to handle general purpose computing workloads.
-By design, each ALU (\underline{A}rithmatic \underline{L}ogic \underline{U}nit) of a modern CPU can execute general computational
+By design, each \Gls{ALU} of a modern CPU can execute general computational
 tasks on an individual Datum or vectorized data in parallel.
 The goal of modern CPU computation strategies, is to always ensure that the data
 necessary for a computation is at hand, ready to be used, when requested by the ALU.
 As transfer times from Random Access Memory
 (RAM) are be orders of magnitude greater than the computation clock frequency of
 a CPU, it advantageous to load data onto the CPUs cache. Cache is a level of
-SRAM (\underline{S}tatic \underline{R}andom \underline{A}ccess \underline{M}emory)
+\Gls{SRAM}
 that is etched on the same silicon wafer as the CPU itself.  This spacial locality,
 along with the higher read and write speeds compared to DRAM, lessen the transfer
 time of Data, and therefore increase the effective ability of the ALU to complete computations.
@@ -93,8 +93,8 @@ Due to the greater production cost of on-chip Cache, it's size is limited, and t
 much research has been dedicated to optimizing data load strategies of modern CPUs
 \par
 
-It is important to grasp the strengths and weaknesses of modern CPUs to
-recognize the computational benefits of GPUs (\underline{G}raphical \underline{P}rocessing \underline{U}nits)
+It is important to grasp the strengths and weaknesses of modern \Glspl{CPU} to
+recognize the computational benefits of \Glspl{GPU}
 for modern computations problems.  As the name aludes, GPUs were originally developed
 as dedicated computational units for 3D graphics\cite{Sanders}.  This heritage,
 defined the strategy modern GPUs take towards computation.  Unlike CPUs, where a
@@ -128,7 +128,13 @@ These are standard terminologies in GPU programing. GPUs are comprised of four m
 \end{description}\cite{Wilt}
 
 \subsubsection{Streaming Multiprocessors}
-Each GPC contains a cluster of SM's
+Each GPC contains a cluster of SM's.
+
+%TODO list table with modern examples
+
+Each SM contains execution units for 32-bit integer, as well as single and double
+precision arithmetic. Special function units for log/exp sin/cos and sqrt functions.
+
 
 
 \subsubsection{Memory Structures}

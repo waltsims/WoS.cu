@@ -36,6 +36,8 @@
 % include commands
 \input{components/commands}
 
+%include glossary
+\input{components/glossary}
 
 %\makeindex
 	%% inter line spacing
@@ -46,6 +48,7 @@
 \begin{document}
 
 	\frontmatter
+
 
 
 	%\input{components/cover}
@@ -59,12 +62,12 @@
 
 	\input{components/titlepage}
 
-
 	\input{components/disclaimer}
 
 	\input{components/acknowledgements}
 
 	\input{components/abstract}
+
 
 	\tableofcontents
 
@@ -110,6 +113,11 @@
 
 
   \clearemptydoublepage
+
+	\printglossaries
+
+	%TODO print real glossary as well as acronyms?
+
 
 	\bibliography{bibliography/literature}
 
