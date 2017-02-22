@@ -28,7 +28,7 @@ Traditionally, the concept of Parallel Computing was simple; in order to improve
 (reduce) computation time, one should separate independent steps of a given algorithm
 and execute them concurrently upon unique processing units.  In doing so, for a given
 problem, which traditionally would have taken time \textit{T}, in the optimal case,
-the calculation could be completed in \textit{T/N} time, where \textit{N} discribes
+the calculation could be completed in \textit{T/N} time, where \textit{N} describes
 the number of unique processing units being utilized.  This observation was formalized
 by Gene Amdahl in 1967\cite{Wilt}:
 %
@@ -39,7 +39,7 @@ by Gene Amdahl in 1967\cite{Wilt}:
 \end{equation}
 %
 where \textit{Speedup} embodies the factor of temporal acceleration a program
-exhibits when additional computational resources are dedicated to it's exicution.
+exhibits when additional computational resources are dedicated to it's execution.
  \textit{$r_{s}$} and \textit{$ r_{p} $} represent the ratio of the algorithm that must be executed serially or in parallel, respectively.  Amdahl's Law describes a problem of a fixed dimensin,
 and the effects that more parallel computing resources have on execution time.
 This strategy of optimization, in which the size of the problem is constant,
@@ -54,10 +54,10 @@ In extreme cases unlimited resources, the greatest speed up of a given algorithm
 This description of optimal Speedup does not take into account issues of physical
 distance of computing cores or the communication and facilitation overhead between
 cores that can occur in real applications, which can lead to lower parallel efficiency.
-Nevertheless, the model can serve as a useful tool when analyzing algorithmic parallelization and and the greatest
-attainable Speedup for a given problem.\par
+Nevertheless, the model can serve as a useful tool when analyzing algorithmic
+parallelization and and the greatest attainable Speedup for a given problem.\par
 
-  One further method of quantifying parallelism, is Gustafson's Law\cite{Gustafson}.
+One further method of quantifying parallelism, is Gustafson's Law\cite{Gustafson}.
 %
 \begin{equation}
   \tag{Gustofson's Law}
@@ -69,19 +69,70 @@ size scales with the number of processes'', and therefore
 ``assume[s] run time, not problem size, is constant''.
 of the given problem. In other words, as the problem size grows, a proportional
 amount of resources should be devoted to keep the execution time constant.
-
 Both of these laws, assist in the quantification of parallel efficiency and
 expected gains.
 
 
 
-\subsection{An Architectural Comparison of CPU's and GPU's}
+\subsection{An Architectural Comparison of CPUs and GPUs}
 
-By design, CPU's are designed to handle general purpose computing workloads, where as GPU's are
-specifically designed to handle workloads on large Data sets (traditionally these
+By design, CPUs (\underline{C}entral \underline{P}rocessing \underline{U}nits) are designed
+to handle general purpose computing workloads.
+By design, each ALU (\underline{A}rithmatic \underline{L}ogic \underline{U}nit) of a modern CPU can execute general computational
+tasks on an individual Datum or vectorized data in parallel.
+The goal of modern CPU computation strategies, is to always ensure that the data
+necessary for a computation is at hand, ready to be used, when requested by the ALU.
+As transfer times from Random Access Memory
+(RAM) are be orders of magnitude greater than the computation clock frequency of
+a CPU, it advantageous to load data onto the CPUs cache. Cache is a level of
+SRAM (\underline{S}tatic \underline{R}andom \underline{A}ccess \underline{M}emory)
+that is etched on the same silicon wafer as the CPU itself.  This spacial locality,
+along with the higher read and write speeds compared to DRAM, lessen the transfer
+time of Data, and therefore increase the effective ability of the ALU to complete computations.
+Due to the greater production cost of on-chip Cache, it's size is limited, and therefore
+much research has been dedicated to optimizing data load strategies of modern CPUs
+\par
+
+It is important to grasp the strengths and weaknesses of modern CPUs to
+recognize the computational benefits of GPUs (\underline{G}raphical \underline{P}rocessing \underline{U}nits)
+for modern computations problems.  As the name aludes, GPUs were originally developed
+as dedicated computational units for 3D graphics\cite{Sanders}.  This heritage,
+defined the strategy modern GPUs take towards computation.  Unlike CPUs, where a
+single ALU works on multiple data successively, the GPUs have multiple, less robust
+arithmetic units, that perform an individual instruction set on more well defined data.
+For images, this strategy was advantageous,
+This strategy, place
+The GPU specifically designed to handle workloads on large Data sets (traditionally these
 data sets were individual color values for digital images, and the workload as
 the transformation of image data to modulate the output on a digital screen).
-\subsection{Architecture}
+\subsection{GPU Architecture}
+The GPU hardware architecture and terminology of said architecture varies from
+vendor to vendor.  For the sake of uniformity, this document will adopt the
+terminology employed by the manufacturer, NVIDIA.  To begin, in the following passages the CPU
+will be referred to as the \textbf{host} while the GPU will be called \textbf{device}.
+These are standard terminologies in GPU programing. GPUs are comprised of four major components:
+\begin{description}
+  \item[Host interface] moderates communications between the host and the device.
+  Commands are dispatched to the necessary hardware, and synchronization between
+  host and device is managed through this interface.
+  \item[Copy Engine] manages the bidirectional transfer of data between the host
+  and device.  Modern hardware can have 0-2 Copy Engines per device in order to
+  manage the conversion of linear memory to CUDA arrays while saturating the PCI
+  bus.  The independence of the Copy Engine(s) allows for concurrent data transfers
+  and computation.
+  \item[DRAM Interface] a memory interface with a bandwidth of up to 100Gb/sec.
+  Some interfaces also support device side L2 caches usage.
+  \item[TCPs \& GPCs] \underline{T}exture \underline{P}rocessing \underline{C}luster
+  and \underline{G}raphics \underline{P}rocessing \underline{C}lusters are an assembly
+  of Streaming Mulitprocessors (SM's) along with cache for computation.
+\end{description}\cite{Wilt}
+
+\subsubsection{Streaming Multiprocessors}
+Each GPC contains a cluster of SM's
+
+
+\subsubsection{Memory Structures}
+
 \subsection{Computing Model}
 
 \section{Parallel Computing with CUDA}
