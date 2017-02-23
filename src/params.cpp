@@ -19,6 +19,10 @@ void Parameters::updateNumThreads() {
 //         (mod == 0) ? wos.x0.dimension : (wos.x0.dimension + (32 - mod));
 //   }
 // }
+void Parameters::updateEps() {
+  // TODO different strategies for eps
+  wos.eps = 1.0 / (float)sqrt(wos.x0.dimension);
+}
 
 void Parameters::updateSizeSharedMemory() {
 
@@ -31,9 +35,9 @@ void Parameters::outputParameters(int count) {
   printf("Running Simulation with %d arguments\n", count);
   printf("CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
          "totalPaths:\t\t%d\n\tnumber of blocks:\t%d\n"
-         "\tPaths per blocks:\t%d\n\tnumThreads:\t\t%d\n",
+         "\tPaths per blocks:\t%d\n\tnumThreads:\t\t%d\n\t\teps:\t%f\n",
          wos.x0.value, wos.x0.dimension, wos.totalPaths, wos.numberBlocks,
-         wos.pathsPerBlock, wos.numThreads);
+         wos.pathsPerBlock, wos.numThreads, wos.eps);
 }
 
 void Parameters::updatePathsPerBlock() {
@@ -53,8 +57,8 @@ void Parameters::updatePathsPerBlock() {
       (i < wos.totalPaths / i) ? wos.totalPaths / i : i; // 21845;
   wos.pathsPerBlock = wos.totalPaths / wos.numberBlocks;
 
-  // wos.pathsPerBlock = 10000000;
-  // wos.numberBlocks = 100;
+  // wos.pathsPerBlock = 5;
+  // wos.numberBlocks = 20000;
 
   // wos.pathsPerBlock = 1;
   // wos.numberBlocks = wos.totalPaths;

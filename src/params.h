@@ -53,11 +53,13 @@ public:
     updateNumBlocksAndThreads();
     updateNumThreads();
     updateSizeSharedMemory();
+    updateEps();
   };
 
   void outputParameters(int count);
 
 private:
+  void updateEps();
   void updateNumBlocksAndThreads();
   void updateNumThreads();
   void updatePathsPerBlock();
