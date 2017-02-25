@@ -72,7 +72,7 @@ amount of resources should be devoted to keep the execution time constant.
 Both of these laws, assist in the quantification of parallel efficiency and
 expected gains.
 
-\subsection{An Architectural Comparison of CPUs and GPUs}
+\subsection{GPU Hardware}
 By design, \Glspl{CPU} are designed
 to handle general purpose computing workloads.
 By design, each \Gls{ALU} of a modern CPU can execute general computational
@@ -144,6 +144,46 @@ This basic overview of the architecture of the hardware is important to understa
 how the the programming API maps to the available hardware.
 
 \section{Parallel Computing with CUDA}
-\subsubsection{Execution }
+\subsection{CUDA Software}
+
+The CUDA parallel computing environment is a c++ language wrapper with built in
+pragmas to interact with the NVIDIA hardware.  Although CUDA is modeled on the
+hardware it runs on, it is not wholly analogous with the hardware architecture,
+and higher level concepts have been added to aid in the implementation of CUDA code.
+%TODO insert diagram of CUDA stack.
+\par
+ The CUDA ecosystem stack is comprised of five layers, five of which are accessible, by the user.
+These layers are the CUDA application itself, CUDA Libraries, CURA Runtime otherwise
+known as CUDART, and the CUDA Driver. The highest level of this stack is occupied
+of CUDA libraries. When looking to optimize code with CUDA, a
+first step should be the implementation of CUDA Libraries.  These highly optimized
+and user friendly libraries, such as CUBLAS and CUDA Thrust, allow the use of
+CUDA hardware, with minimal understanding of the hardware below.  These can prove
+to be indispensable tools for beginner users or those looking to quickly and
+efficiently prototype a problem. The author recommends their use as the first step
+in any CUDA based undertaking. They provide the ability to create a quick proof
+of concept for a project, as well as a highly optimized base line, should further
+development be planned.
+\par
+Moving down the Stack, CUDA runtime provides an interface to the user which mirrors
+standard C++ functionality such as malloc and memcpy.  These functions differentiate
+themselves from host functions with the preface \textit{``cuda''} or \textit{``cu''}
+e.g. cudaMalloc and cudaMemcpy.  Functions that are to be excited on the
+device, are called kernels or kernel functions, which can be differentiated from
+host functions via the triple angle bracket syntax, ``$<<< >>>$''.
+%TODO example of basic CUDA kernel
+Kernel parameters can be specified in these triple angle brackets.  These parameters
+include number of blocks per grid, threads per blocks, size of shared memory and
+stream, all topics witch shall be discussed later in this document. %TODO cite where.
+
+
+
+
+\subsection{Compilation}
+
+CUDA programs are written in CUDA flavor C++.  The CUDA wrapper of C++ is nvcc.
+Files containing CUDA pragmas are assigned the .cu ending format, and split upon
+compilation into device and host sections.
+\subsubsection{Execution}
 
 \subsubsection{Memory Structures}

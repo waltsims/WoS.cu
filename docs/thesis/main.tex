@@ -1,15 +1,15 @@
- % The main file for CAMP reports
- % Don't put any content in here.
- % Don't even include content files by using \input or \inlcude.
- % Put your content to TEXT.TEX or include it there using \input.
- % Uses:
- %		SETTINGS.TEX	contains the settings for this document
- %		COMMANDS.TEX	contains commands which can be used while writing
- %		INFO.TEX			contains the author, title and so on for the cover
- %		COVER.TEX			formats the front cover of the document
- %		ABSTRACT.TEX	contains the abstract to be included (if needed)
- %		TEXT.TEX			contains the actual content of the document
- %		BIB.BIB				containt the BibTeX entries for the document
+% The main file for CAMP reports
+% Don't put any content in here.
+% Don't even include content files by using \input or \inlcude.
+% Put your content to TEXT.TEX or include it there using \input.
+% Uses:
+%		SETTINGS.TEX	contains the settings for this document
+%		COMMANDS.TEX	contains commands which can be used while writing
+%		INFO.TEX			contains the author, title and so on for the cover
+%		COVER.TEX			formats the front cover of the document
+%		ABSTRACT.TEX	contains the abstract to be included (if needed)
+%		TEXT.TEX			contains the actual content of the document
+%		BIB.BIB				containt the BibTeX entries for the document
 
 
 %% Draft document mode
@@ -21,8 +21,8 @@
 % KOMA-Optionen:
 %  bibtotoc: include bibliography in table of contents
 %  idxtotoc: include index in table of contents
-%  headsepline: use horizontalline under heading
-%  BCOR: binding correcion (Bindungskorrektur) (e.g.: BCOR5mm)
+%  headsepline: use horizontal line under heading
+%  BCOR: binding correction (Bindungskorrektur) (e.g.: BCOR5mm)
 %  DIV: Number of sheet sections (used for layout) (e.g.: DIV12)
 
 
@@ -40,86 +40,86 @@
 \input{components/glossary}
 
 %\makeindex
-	%% inter line spacing
+ %% inter line spacing
 %\linespread{1.0}
 
 \makeglossary
 
 \begin{document}
 
-	\frontmatter
+ \frontmatter
 
 
 
-	%\input{components/cover}
+ %\input{components/cover}
 %	\clearemptydoublepage
 %
 %	\input{components/titlepage}
 
 
 %	\input{components/cover_maschmeyer}
-	%\clearemptydoublepage
+ %\clearemptydoublepage
 
-	\input{components/titlepage}
+ \input{components/titlepage}
 
-	\input{components/disclaimer}
+ \input{components/disclaimer}
 
-	\input{components/acknowledgements}
+ \input{components/acknowledgements}
 
-	\input{components/abstract}
-
-
-	\tableofcontents
-
-  \input{components/outline}
-
-	\mainmatter
+ \input{components/abstract}
 
 
-		% ---------------------------------------------------------------------------
-		%
-		%Introduction and Background Theory
-		%
-		% ---------------------------------------------------------------------------
-		\part[Introduction and Theory]{Introduction and Theory}
-		\label{part:introAndBackgroundTheory}
-		\input{chapters/Introduction}
+ \tableofcontents
+
+ \input{components/outline}
+
+ \mainmatter
 
 
-		%
-		%% ---------------------------------------------------------------------------
-		%%
-		%% Fully Automated Calibration for Ultrasound
-		%%
-		%%% ---------------------------------------------------------------------------
-		\part[The 2nd Part]{The Second Part}
-		\label{part:secondP}
+	 % ---------------------------------------------------------------------------
+	 %
+	 %Introduction and Background Theory
+	 %
+	 % ---------------------------------------------------------------------------
+	 \part[Introduction and Theory]{Introduction and Theory}
+	 \label{part:introAndBackgroundTheory}
+	 \input{chapters/Introduction}
 
 
-		% ---------------------------------------------------------------------------
-		%
-		% Appendix
-		%
-		% ---------------------------------------------------------------------------
-
-		\part*{Appendix}
-		\addcontentsline{toc}{part}{Appendix}
-
-		\appendix %---------------------------------------
-
-		\input{chapters/oneAppendix}
+	 %
+	 %% ---------------------------------------------------------------------------
+	 %%
+	 %% Fully Automated Calibration for Ultrasound
+	 %%
+	 %%% ---------------------------------------------------------------------------
+	 \part[The 2nd Part]{The Second Part}
+	 \label{part:secondP}
 
 
+	 % ---------------------------------------------------------------------------
+	 %
+	 % Appendix
+	 %
+	 % ---------------------------------------------------------------------------
+
+	 \part*{Appendix}
+	 \addcontentsline{toc}{part}{Appendix}
+
+	 \appendix %---------------------------------------
+
+	 \input{chapters/oneAppendix}
 
 
-  \clearemptydoublepage
-
-	\printglossaries
-
-	%TODO print real glossary as well as acronyms?
 
 
-	\bibliography{bibliography/literature}
+ \clearemptydoublepage
+
+ \printglossaries
+
+ %TODO print real glossary as well as acronyms?
+
+
+ \bibliography{bibliography/literature}
 
 
 \end{document}
