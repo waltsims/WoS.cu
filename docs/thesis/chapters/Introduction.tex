@@ -6,6 +6,13 @@
 Here starts the thesis with an introduction. Please use nice latex and bibtex entries\cite{Sabelfeld}. Do not spend time on formatting your thesis, but on its content.
 
 \section{The Walking On Spheres algorithm}
+%practical analogy of how head dispersion from a point in a material or nuclear
+%fusion also take a random path from a point and defuse randomly.
+%physical analogy of the algorithm. integration of all paths could represent a single
+% state at one time point.
+
+% second analogy would be not being able to put sensors inside a system and want
+%want to extrapolated data from boundary sensors
 \subsection{Harmonic Functions}
 \subsubsection{Mean Value Property}
 \subsubsection{The Maximum Principle}
@@ -154,17 +161,23 @@ and higher level concepts have been added to aid in the implementation of CUDA c
 \par
  The CUDA ecosystem stack is comprised of five layers, five of which are accessible, by the user.
 These layers are the CUDA application itself, CUDA Libraries, CURA Runtime otherwise
-known as CUDART, and the CUDA Driver. The highest level of this stack is occupied
+known as CUDART, and the CUDA Driver.
+
+
+\subsubsection{CUDA Libraries}
+
+The highest level of this stack is occupied
 of CUDA libraries. When looking to optimize code with CUDA, a
 first step should be the implementation of CUDA Libraries.  These highly optimized
 and user friendly libraries, such as CUBLAS and CUDA Thrust, allow the use of
-CUDA hardware, with minimal understanding of the hardware below.  These can prove
+CUDA hardware, with minimal understanding of the hardware or exicution strategy.  These can prove
 to be indispensable tools for beginner users or those looking to quickly and
 efficiently prototype a problem. The author recommends their use as the first step
 in any CUDA based undertaking. They provide the ability to create a quick proof
 of concept for a project, as well as a highly optimized base line, should further
 development be planned.
-\par
+\subsubsection{CUDA Runtime}
+
 Moving down the Stack, CUDA runtime provides an interface to the user which mirrors
 standard C++ functionality such as malloc and memcpy.  These functions differentiate
 themselves from host functions with the preface \textit{``cuda''} or \textit{``cu''}
@@ -176,14 +189,20 @@ Kernel parameters can be specified in these triple angle brackets.  These parame
 include number of blocks per grid, threads per blocks, size of shared memory and
 stream, all topics witch shall be discussed later in this document. %TODO cite where.
 
-
+%TODO describe blocks and threads
+\subsubsection{CUDA Driver}
+The CUDA driver is the interface to lower lever API , that allows more detailed control
+of kernel calls and memory allocation. Many of the same functionalities are possible,
+but execution is more tedious and can take more steps.
 
 
 \subsection{Compilation}
 
-CUDA programs are written in CUDA flavor C++.  The CUDA wrapper of C++ is nvcc.
+CUDA programs are written in CUDA flavor C++.  The CUDA wrapper of C++ is the
+compiler driver nvcc, which can compile, link and execute CUDA code
 Files containing CUDA pragmas are assigned the .cu ending format, and split upon
-compilation into device and host sections.
+compilation into device and host sections, which are subsequently compiled separately.
+
 \subsubsection{Execution}
 
 \subsubsection{Memory Structures}
