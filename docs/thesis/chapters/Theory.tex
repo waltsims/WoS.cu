@@ -1,0 +1,366 @@
+\chapter{Theory}
+\label{chapter:Theory}
+
+
+This is the theory part.
+\section{The Walking On Spheres algorithm}
+%practical analogy of how head dispersion from a point in a material or nuclear
+%fusion also take a random path from a point and defuse randomly.
+%physical analogy of the algorithm. integration of all paths could represent a single
+% state at one time point.
+
+% second analogy would be not being able to put sensors inside a system and want
+%want to extrapolated data from boundary sensors
+\subsection{Harmonic Functions}
+\subsubsection{Mean Value Property}
+\subsubsection{The Maximum Principle}
+\subsection{Brownian Motion}
+\subsubsection{Excursion in Uniform Distributions on Spheres}
+\subsection{Markov Chains}
+\subsection{The Algorithm}
+
+
+
+\section{The Basics of Parallel Computing}
+In recent years, the convergence towards the physical limits of Moors law has lead to a
+trend towards Parallel Computing\cite{Kumar}\cite{Markov}.  By most accounts, the
+field of Parallel Computing conceived in the early 1958\cite{Gill}, but has
+since bloomed into the State of the Art, for high-dimensional simulations in
+High Performance Computing as hardware technology has caught up to the first
+theoretical speculation of half a century prior. \par
+
+Traditionally, the concept of Parallel Computing was simple; in order to improve
+(reduce) computation time, one should separate independent steps of a given algorithm
+and execute them concurrently upon unique processing units.  In doing so, for a given
+problem, which traditionally would have taken time \textit{T}, in the optimal case,
+the calculation could be completed in \textit{T/N} time, where \textit{N} describes
+the number of unique processing units being utilized.  This observation was formalized
+by Gene Amdahl in 1967\cite{Wilt}:
+%
+\begin{equation}
+  \tag{Amdahl's Law}
+  Speedup = S_{latency}(s)= \frac{1}{(r_{s} + \frac{r_{p}}{N})} = \frac{N}{N(1-r_{p})-r_{p}}
+  \label{egn:Amdahl}
+\end{equation}
+%
+where \textit{Speedup} embodies the factor of temporal acceleration a program
+exhibits when additional computational resources are dedicated to it's execution.
+ \textit{$r_{s}$} and \textit{$ r_{p} $} represent the ratio of the algorithm that must be executed serially or in parallel, respectively.  Amdahl's Law describes a problem of a fixed dimensin,
+and the effects that more parallel computing resources have on execution time.
+This strategy of optimization, in which the size of the problem is constant,
+ is called Strong Scaling.
+In extreme cases unlimited resources, the greatest speed up of a given algorithm
+ is limited by it's serial component.
+%
+\begin{equation}
+ \lim_{N\to\infty}  \frac{1}{(r_{s} + \frac{r_{p}}{N})} = \frac{1}{r_{s}} = \frac{1}{1-r_{p}}
+\end{equation}
+%
+This description of optimal Speedup does not take into account issues of physical
+distance of computing cores or the communication and facilitation overhead between
+cores that can occur in real applications, which can lead to lower parallel efficiency.
+Nevertheless, the model can serve as a useful tool when analyzing algorithmic
+parallelization and and the greatest attainable Speedup for a given problem.\par
+
+One further method of quantifying parallelism, is Gustafson's Law\cite{Gustafson}.
+%
+\begin{equation}
+  \tag{Gustofson's Law}
+  Speedup = S_{latency}(s) = r_{s} + (1 - r_{p})N
+\end{equation}
+%
+This view of parallelism maintains that `` in practice, the problem
+size scales with the number of processes'', and therefore
+``assume[s] run time, not problem size, is constant''.
+of the given problem. In other words, as the problem size grows, a proportional
+amount of resources should be devoted to keep the execution time constant.
+Both of these laws, assist in the quantification of parallel efficiency and
+expected gains.
+
+\subsection{GPU Hardware}
+
+Modern computing architecture was first proposed by John Von Neumann in 1945.
+This architecture is composed of three separate sections: the \Gls{CPU}, memory, and \Gls{I/O}.
+Modern \Glspl{CPU} are comprised of an \Gls{ALU} comprised of electrical circuits
+perform basic mathematical operations, such as addition, subtraction, multiplication and division,
+registers, which store the data used for computation by the ALU and Cache, which is a more modern development to improve data locality.
+\par
+By design, \Glspl{CPU} are designed
+to handle general purpose computing workloads.
+An \Gls{ALU} computational
+tasks on an individual datum. By the nature of this
+generalized strategy, upcoming computation steps and which data are therefore required,
+is not known to the CPU. If the ALU does not have the data necessary for a computation,
+it has to wait for the data to be fetched from memory which can greatly increase computation time.
+\par
+Transfer times from \Gls{RAM}
+are be orders of magnitude greater than the computation clock frequency of
+a CPU.  This is due to the relatively large physical separation between the CPU and memory,
+ the communication overhead needed to fetch the data, and
+the nature of \Gls{DRAM}, which electrically refreshes data values at a designated rate.
+These problems together are referred to the Von Neumann Bottleneck\cite{Backus}.
+It is important therefore to work to predict which data will be required by upcoming operations.
+The goal of modern CPU computation strategies, is to always ensure that the data
+necessary for a computation is at hand, ready to be used, when requested by the \Gls{ALU}.
+These strategies are called caching strategies.
+\par
+Cache is a bank of \Gls{SRAM}
+that is etched on the same silicon wafer as the CPU itself.  This physical locality,
+along with the higher read and write speeds compared to DRAM, lessen the transfer
+time of data to the registers, and therefore increase the effective ability of the \Gls{ALU} to complete computations.
+Due to the greater production cost of on-chip Cache, it's size is limited, and therefore
+much research has been dedicated to optimizing cache load strategies of modern CPUs. %TODO cite
+\par
+
+It is important to grasp the strengths and weaknesses of modern \Glspl{CPU} to
+recognize the computational benefits of \Glspl{GPU}
+for modern computations problems.  As the name eludes, \Glspl{GPU} were originally developed
+as dedicated computational units for 3D graphics\cite{Sanders}.  They are housed on the same
+communication bus as the \Gls{CPU} and memory, and assigned image computational work,
+to lessen the load of the CPU. %TODO: insert
+The GPU specifically designed to handle workloads on large data sets (traditionally these
+data sets were individual color values for digital images, and the workload as
+the transformation of image data to modulate the output on a digital screen).
+This heritage,
+defined the strategy modern GPUs take towards computation.
+The image data was was relatively high dimensional with intensity values for every pixel in the image.
+Each pixel was at least three dimensional (one dimension per color value of red, green and or blue) and
+some had a fourth value for alpha transparency.\cite{?}  These values would often all undergo
+well defined modulation, that could be formulated in an individual instruction.
+In the early 2000's these functions were named shaders, and later kernel functions.\cite{?}
+Due to the independent nature of the execution of kernel functions, the GPUs have multiple, less robust
+arithmetic units, that perform an individual instruction set on more well defined data.
+Also, due to the dimensionality of the data being computed, \Glspl{GPU} have larger register\cite{?} sizes,
+which allow for fewer context switches, and therefore greater \gls{ai}.
+
+%TODO: expand
+\subsection{GPU Architecture}\label{ssec:gpu_architecture}
+The GPU hardware architecture and terminology of said architecture varies from
+vendor to vendor.  For the sake of uniformity, this document will adopt the
+terminology employed by the manufacturer, NVIDIA.  To begin, in the following passages the CPU
+will be referred to as the \textbf{host} while the GPU will be called \textbf{device}.
+These are standard terminologies in GPU programing. GPUs are comprised of four major components:
+\begin{description}
+  \item[Host interface] moderates communications between the host and the device.
+  Commands are dispatched to the necessary hardware, and synchronization between
+  host and device is managed through this interface.
+  \item[Copy Engine] manages the bidirectional transfer of data between the host
+  and device.  Modern hardware can have 0-2 Copy Engines per device in order to
+  manage the conversion of linear memory to CUDA arrays while saturating the PCI
+  bus.  The independence of the Copy Engine(s) allows for concurrent data transfers
+  and computation.
+  \item[DRAM Interface] a memory interface with a bandwidth of up to 100Gb/sec.
+  Some interfaces also support device side L2 caches usage.
+  \item[TCPs \& GPCs] \underline{T}exture \underline{P}rocessing \underline{C}luster
+  and \underline{G}raphics \underline{P}rocessing \underline{C}lusters are an assembly
+  of \Glspl{SM} along with cache for computation.
+\end{description}\cite{Wilt}
+
+\subsubsection{Streaming Multiprocessors}
+Each GPC contains a cluster of SM's.  The number of SM's per cluster varies by
+model of GPU. Some examples can be found in %table bellow
+
+%TODO list table with modern examples
+
+Each SM is comprised of: \cite{Wilt}
+\begin{itemize}
+  \item execution units for 32-bit integer, as well as single and double precision arithmetic.
+  \item Special function units for log/exp sin/cos and sqrt functions.
+  \item a warp scheduler to coordinate the dispatch of threads.
+  \item a constant cache to broadcast data to SM's.
+  \item shared memory accessible by all threads.
+  \item texture mapping hardware.
+\end{itemize}
+
+This basic overview of the architecture of the hardware is important to understand
+how the the programming API maps to the available hardware.
+
+%TODO: discuss streaming processing.
+
+\section{Parallel Computing with CUDA}
+\subsection{CUDA Software}
+
+The CUDA parallel computing environment is a c++ language wrapper with built in
+pragmas to interact with the NVIDIA hardware.  Although CUDA is modeled on the
+hardware it runs on, it is not wholly analogous with the hardware architecture,
+and higher level concepts have been added to aid in the implementation of CUDA code.
+%TODO insert diagram of CUDA stack.
+\par
+The CUDA ecosystem stack is comprised of five layers, five of which are accessible, by the user.
+These layers are the CUDA application itself, CUDA Libraries, CURA Runtime otherwise
+known as CUDART, and the CUDA Driver.
+
+
+\subsubsection{CUDA Libraries}
+
+The highest level of this stack is occupied
+of CUDA libraries. When looking to optimize code with CUDA, a
+first step should be the implementation of CUDA Libraries.  These highly optimized
+and user friendly libraries, such as CUBLAS and CUDA Thrust, allow the use of
+CUDA hardware, with minimal understanding of the hardware or execution strategy.  These can prove
+to be indispensable tools for beginner users or those looking to quickly and
+efficiently prototype a problem. The author recommends their use as the first step
+in any CUDA based undertaking. They provide the ability to create a quick proof
+of concept for a project, as well as a highly optimized base line, should further
+development be planned.
+\subsubsection{CUDA Runtime}
+
+Moving down the Stack, CUDA runtime provides an interface to the user which mirrors
+standard C++ functionality such as malloc and memcpy.  These functions differentiate
+themselves from host functions with the preface \textit{``cuda''} or \textit{``cu''}
+e.g. cudaMalloc and cudaMemcpy.  Functions that are to be excited on the
+device, are called kernels or kernel functions, which can be differentiated from
+host functions via the triple angle bracket syntax, ``$<<< >>>$''.
+%TODO example of basic CUDA kernel
+Kernel parameters can be specified in these triple angle brackets.  These parameters
+include number of blocks per grid, threads per blocks, size of shared memory and
+stream, all topics witch shall be discussed later in this document. %TODO cite where.
+
+%TODO describe blocks and threads
+\subsubsection{CUDA Driver API}
+The CUDA driver API is the interface to lower lever command sets used by the CUDA driver, which allows more detailed control
+of kernel calls and memory allocation. Many of the same functionalities are possible,
+but execution is more tedious and requires steps \cite{driver}. This granularity of control can nevertheless be
+helpful when tuning a program and striving for higher execution performance.
+\subsubsection{CUDA Driver}
+
+The CUDA driver is the lowest level of integration between the host and the device
+and facilitates communication between the \Gls{GPU} and the rest of the computer via the bus. %TODO: define Bus.
+
+
+\subsection{Compilation and Execution}
+
+%TODO: Make diagram. CUDA book page 58
+
+CUDA programs are written in CUDA flavor C++.  The CUDA wrapper of C++ is the
+compiler driver nvcc, which can compile, link and execute CUDA code.  This process occurs
+ in three main steps. First,
+files containing CUDA pragmas are assigned the .cu ending format, and split upon
+compilation into device and host sections.  Second, these files are subsequently
+compiled separately into to host and device machine code respectively.
+Lastly, both compilates are merged into a single executable, to be run on the host.
+\par
+Device machine code, is referred to as \hyphenation{mi-cro-code} microcode, which is compiled for a specific
+NVIDIA device model's architecture. In order to be able to execute the same executable
+on multiple \Glspl{GPU} and to allow backwards compatibility of CUDA features, CUDA code is
+first compiled into \Gls{PTX}, a pseudo-assembly language.  \Gls{PTX} is then
+further compiled in to device microcode and writen into a CUDA binary file called .cubin. This can either happen offline, at compile time,
+or online, at runtime, in a \gls{jit} fashion at compiled time.  By default, both
+the microcode for the local device at compilation and the generalized \gls{PTX} compilates are added to the to the executable file.
+this way, should the executable be run on a different device, the \gls{PTX} can
+be recompiled appropriately with \Gls{jit} compilation, and executed on the a desired device\cite{Wilt}.
+
+\subsection{Programming CUDA}
+
+There are many parallel contexts when programming CUDA. To help developers conquer
+the challenges of parallel programming, CUDA offers a multi-contexts development
+environment to help break problems down into sub problems, that can be then translated
+by the compiler into parallel code. The following explanation, is only meant to
+give the reader insight into the CUDA syntax, thereby allowing comprehention of
+the following work. For a more complete and elaborate explination of CUDA, other
+more extensive resources are recommended\cite[e.g.]{Wilt,Sanders,driver}.
+%separate address space from CPU --> mem copies
+%blocks and threads
+\subsubsection{Blocks, Threads and Grids}
+%TODO: insert diagram of threads blocks and grids
+The two main contexts of parallelism in CUDA are CUDA blocks and CUDA threads.
+Nevertheless, for the sake of explanation, this analogy will
+will be implemented, though not extrapolated any further than this work describes.
+Threads can be thought of as individual registers, with an assortment of computational
+functionality.  Threads should be considered to be completely independent from one another,
+and only synchronized through explicit call to synchronization functions.Threads, like
+registers, can only work on one datum at a time, but are all excited simultaneously*.
+Threads are, in turn, organized into blocks, and a collection of blocks comprises a grid.
+Blocks could be explained as a process on an SM. If resources allow, multiple blocks can
+be executed on an \Gls{SM} simultaneously. Since neither the number of blocks nor the
+number of threads are limited by the limited by the number of registers and \Glspl{SM},
+but rather can exceed hardware values, the analogy stops here.  Both
+threads and blocks can be described by an abstraction of a hardware feature, although one should try to
+consider hardware and software separately from one another, as to reduce the number
+of false assumptions.
+\par
+For ease of programming, the current thread or block ID can be retrieved using
+ threadIdx.\{x,y,z\} and BlockIdx.\{x,y,z\}. As can be deduced via the nomenclature,
+ these variables are multi-dimensional, a feature that can be advantageous in some
+ applications such as computer vision, but is not a necessity in other applications
+where the problem does not map to a 2 or 3D euclidian space. Further variables,
+for the dimension of the grid and block are also available. %TODO: Create table as on page 213
+The number of threads and blocks assigned to a problem is relatively arbitrary and can
+be designated by the developer before hand, or dynamically.  There are however limits
+to this flexibly that are described in the CUDA documentation\cite{?}.  Also, minor performance
+repercussions could be experienced, if the dimensionality of the framework is poorly
+chosen.
+%TODO: stream processing?
+%kernel syntax
+\subsubsection{Kernels}
+
+At the core of any CUDA program, is the kernel. Kernels make up the basic instruction
+set what one often finds in any other serial program as well, the only difference being,
+where as in a serial program one would iterate over data by means of a loop,
+CUDA kernels are executed on every data in an array.
+
+%TODO: vector addition example
+
+The angle brackets in front of the kernel call, identify the function as a kernel,
+and allow syntax  identification during compilation of a program.  Depending on
+whether a device kernel is to be called from the host, or internally from the device,
+kernels can be labeled with the pragma \_\_global\_\_ or \_\_device\_\_  respectively.
+Kernels declared \_\_global\_\_ can be called from both the host and device, while \_\_device\_\_
+kernels are only available from the device. %TODO: why is this the case? why is this important?
+The identifier \_\_host\_\_ allow for kernels to be called from and run on the host.
+
+The parameters in the triple angle brackets are in order, grid size or number of blocks,
+block size or number of threads, size of shared memory, and stream ID.  While grid and block size,
+are required values, the size of shared memory can also be statically allocated from within
+a kernel (more on shared memory in \ref{sssec:memories}).  Dynamic allocation though requires the kernel to be called parameterized with
+the size, and the value to be initialization from within the kernel function.  The stream
+parameter also is set to main stream by default, but must be set by the user when
+working with multiple streams (more on streams in: \ref{sssec:streams}).
+%shared vs. global memory
+\subsubsection{Memories}\label{sssec:memories}
+GPU memory does not benefit from features such as virtual
+memory or paging, as one might expect from CPU memory. instead devices have an
+address space completely separate from the host address space, where every address is assigned a physical space in memory.
+In many cases memory consists of a dedicated chip on the device that is controlled
+by the memory controller.  This memory must be managed by the user when programming in CUDA.
+\par
+Not all memories are created equal when working with GPU's.  Similarly to \Glspl{CPU},
+different memories have varying strengths and weaknesses.  By preallocating memory for a variable,
+that is either read only, or read and written often, one can greatly increase the
+performance of ones program.   %TODO: CUDA attempts to avoid lazy allocation--> performance gains.
+There are four main types of CUDA memories.
+\begin{description}
+  \item [Global memory] Memory on the Device with bandwidth of up to 100 Gb/sec.
+  Global memory is allocated dynamically by the user via cudaMalloc() and cudaFree() functions.
+  Dynamic allocation is normally performed in host code, due to large performance short fall
+  when implemented in a kernel call.
+  %TODO: coalescing?
+  \item [Constant memory] optimizes for read only memory on device for higher
+  read speeds.  The constant declaration is beneficial for broadcast style data
+  reads, in other words, when every thread is to receive the same data.
+  \item [Texture memory] Constant declaration of global memory with dedicated
+   texture access pattern controller.  Texture memory allows performance benefits
+   for uncoelessed variable access, which would normal lead to large performance
+   degradation with normal global memory.
+  \item [Shared memory] User managed cache located on every \Gls{SM}.  Shared memory access
+  normally benefits from a 10x speed increase over global memory access, while it remains
+  10x slower than register reads.\cite{Wilt} %TODO: shared memory coalescing.
+  \item [Local memory] local memory contains the program stack for every thread
+  in a CUDA program. Should a program run out of registers for thread local variables,
+  local memory is  used to store overflow variables. This variable overflow is often
+  linked to detrimental performance losses and should be avoided.\cite{Wilt}
+  \item [registers] Memory units on \Gls{SM} used to store thread local variables,
+                    and variables for current computation.
+\end{description}
+
+%streams
+\subsubsection{Streams}\label{sssec:streams}
+CUDA Streams enable the coarsest level of concurrency in the CUDA API.  Streams
+are consist of a series of commands that are to run in series.  Commands assigned
+a different set of streams can be executed in parallel. Memory transfers and
+kernels can be separate stream in order to create a workflow pipeline and increase
+the overlap between data copying and data modulation. This is made possible by the
+independent Copy engine as mentioned in \ref{ssec:gpu_architecture}.  Furthermore,
+on systems with more than one \Gls{GPU}, streams can allow both data transfers and
+kernels to be excited concurrently on separate \Glspl{GPU}, leading to even greater
+performance.
