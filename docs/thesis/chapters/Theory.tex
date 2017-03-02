@@ -1,30 +1,141 @@
 \chapter{Theory}
 \label{chapter:Theory}
 
+By training, the author would describe himself as an Engineer.  Nevertheless,
+the following excursion into "Theory" reflects his search for deeper understanding
+of the theory which he applies.  The following commentary is meant to offer the reader
+insight into the authors understanding, and manner of dealing with relative complexity,
+and not to revolutionize the fields of Mathematics or Computer Science.  The
+experience of completing this work and composing this document has been a humbling one.
 
-This is the theory part.
-\section{The Walking On Spheres algorithm}
-%practical analogy of how head dispersion from a point in a material or nuclear
-%fusion also take a random path from a point and defuse randomly.
-%physical analogy of the algorithm. integration of all paths could represent a single
-% state at one time point.
+\section{The Random Walks On Spheres Algorithm}
 
-% second analogy would be not being able to put sensors inside a system and want
-%want to extrapolated data from boundary sensors
-\subsection{Harmonic Functions}
-\subsubsection{Mean Value Property}
-\subsubsection{The Maximum Principle}
-\subsection{Brownian Motion}
-\subsubsection{Excursion in Uniform Distributions on Spheres}
-\subsection{Markov Chains}
-\subsection{The Algorithm}
+\Gls{RWoS} is a numerical Monte Carlo Method which employs Brownian Motion
+to stochastically and discretely solve
+harmonic \glspl{PDE}.  Many elliptic \glspl{PDE} can be transformed into harmonic \glspl{PDE},
+thereby increasing the applicability of this solving algorithm\cite{?}. \Glspl{RWoS} is highly parallel, %discribe how eliptic pds can be transformed.
+and enjoy greater efficiency and practicality than more common solvers e.g.
+finite differences or multi-grid when sparse solutions regions are of
+interest in higher dimensions \cite{DeLaurentis}.  The Random Walks on Spheres Algorithm
+gained it's name, due to the combination of Brownian Motion, a numerical model
+of the random motions of particles, and the the mathematical connection between
+harmonic functions and spheres\cite{Axler1992}, to iteratively traverse a Markov
+Chain of spheres in random directions dictated by Brownian Motion in order to solve a given harmonic PDE.
+Brownian Motion (see \ref{sssec:brownian}) was first %TODO: glossary Gaussian plane
+proposed by Shizuo Kakutani in 1944\cite{kakutani}, where it was shown to be an effective tool
+in solving harmonic functions in the two dimensional Gaussian plane.  This methodology has since been
+shown to be applicable to N-Dimensional harmonic PDE's \cite{DeLaurentis}.  During the 1960's
+and 70's it was applied to calculate hotspots in nuclear reactors\cite{Bornemann}.
+Though the applications are great, and the individual steps are simple, it is important to
+ gain a basic and intuitive the intricacies of the Random Walking on Spheres Algorithms.
+The following passages will practically explore the theory and history behind this method,
+while also touching on the mathematical foundations on which the algorithm is based.
+
+\subsection{Harmonic Functions}\label{sssec:harmonics}
+%definition and background from
+Harmonic functions are defined by Axler as:
+\begin{quote} given $\Omega$ defined as an open, non-empty subset of
+  $\mathbb{R}^{n}$, with $n \in \mathbb{N}\setminus \{0,1\}$
+  a function $u$ is \textit{haromonic} given it is twice continuously differentiable
+  and fulfills \begin{equation}\tag{Laplace's Equation} \bigtriangleup u \equiv 0 \label{eq:laplace}\end{equation}
+  where $\bigtriangleup$ or the "Laplacian" is defined as:
+  \begin{equation}
+    \bigtriangleup = \bigtriangledown^{2} = \sum_{j=1}^{n} \frac{\partial^{2}}{\partial{x_{j}}}
+  \end{equation} or the second partial derivative of the with respect to the $j^{th}$ coordinate variable
+  \cite{Axler1992}
+  \end{quote}
+\ref{eq:laplace} is a special case of the more general \ref{eq:poisson},
+\begin{equation}
+\tag{Poisson's Equation} \bigtriangleup u = \sigma(x), \label{eq:poisson}
+\end{equation}
+differing only in the fact that the source term $\sigma(x)$ is set to zero\cite{Hunt}.
+  % discuss properties
+
+  \subsubsection{Mean Value Property}\label{sssec:meanvalue}
+  %just describe it don't prove it... don't reinvent the wheel
+  For a harmonic $u$ on the closed ball $\bar{B}(a,r)$, centered at $a$ with a radius of $r$,
+  it can be proven that $u(a)$ equals the average over $\partial \bar{B}(a,r)$\cite{Axler1992,Bornemann}.
+\begin{equation}
+  \tag{Mean Value Property}
+  u(a) = \int_{S} u(a + r\zeta)d\sigma(\zeta)
+  \label{eq:mean}
+\end{equation}
+
+The following example (see figure \ref{fig:swingPlot}\ref{fig:swingSolve}) is meant to illustrate
+the mean value property of harmonic \Glspl{PDE}.
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}[b]{0.4\textwidth}
+  \includegraphics[width=5cm]{styles/sinBoundarysovle.png}
+  \caption{$u_{sol}(x)$}%{Plot of harmonic function}
+  \label{fig:swingSolve}
+\end{minipage}
+  \begin{minipage}[b]{0.4\textwidth}
+  \includegraphics[width=5cm]{styles/swing_function_plot.png}
+  \caption{$u(x)$}%{Numerically solved solution}
+  \label{fig:swingPlot}
+  \end{minipage}
+\end{figure}
+
+On the left, the numerically solved solution of harmonic \GLS{PDE} given the boundary
+function $u(\phi)=10*\sin(4*\phi)$.  On the right, the solution function $u(r,\phi)=r^{4}*\sin(4*\phi)$
+can be seen. Both plots are defined on the 2D unit circle $\Omega$.
+
+Should one integrate over the
+boundary $\partial \Omega$, it follows that \begin{equation}
+u(a) = \int_{S}u(a + r\zeta)d\sigma(\zeta) = \int_{0}^{2\pi} 10*\sin(4*\phi)d\phi = 0,
+\end{equation}
+which is the solution of $u$ at the center of the 2D unit circle,
+namely a =(0,0).
+%TODO: discuss the rotational independence as can be seen by the independenc of
+% the solution from r==> wichtig für step size beliebigkeit.
+  \subsubsection{The Maximum Principle}\label{sssec:maximum}
+  % how this follows from the mean value principle
+  Given \ref{eq:laplace},
+  \subsubsection{Weighted Mean Value Principle}
+  % weights can be compared to probability of hitting a certain boundary based on Brownian motion.
+
+  \subsubsection{Excursion in Uniform Distributions on Spheres}
+  %proof using definitions of sin and cosine similar to the inverse of Tschebychev points
+
+\subsection{Monte Carlo Methods}\label{sssec:montecarlo}
+Monte Carlo Methods are statistical algorithms that are based on the sampling a
+large number of random system states and classifying the resulting set\cite{Metropolis}.
+These methods became popular in nuclear research in the 1940's when practical
+experiments were limited and analytical solutions were not unknown.  Monte Carlo
+Methods were found to be useful when analyzing the time independent Schrödinger
+Equation\cite{Metropolis}. Muller defined
+Monte Carlo Methods in 1956 as: \begin{quote}[a method which for] an unknown solution to a given physical
+problems being estimated by a method which essentially depends on statistical sampling technique.
+This approach requires the utilization of random variables of an appropriate
+stochastic process such that samples of the process yield valid statistical results\cite{Muller}.\end{quote}
+This approach is the basis of The Random Walks on Spheres, when solving harmonic \Glspl{PDE} as described in the
+following passages.
+
+%TODO pi example?
+
+\subsection{Markov Chains}\label{sssec:markov}
+\subsection{Brownian Motion}\label{sssec:brownian}
 
 
+\subsection{The Algorithm}\label{sssec:algorithm}
+Now that some of the building blocks have been covered, the individual steps of
+the algorithm can be discussed.  For N samples of a
+domain $D \in \mathbb{R}^{n}$, with $n \in \mathbb{N}\setminus \{0,1\}$
+one performs N iterations of the following steps:
 
+\begin{enumerate}
+  \item
+\end{enumerate}
+
+\cite{Muller}
+\cite{DeLaurentis}
 \section{The Basics of Parallel Computing}
 In recent years, the convergence towards the physical limits of Moors law has lead to a
 trend towards Parallel Computing\cite{Kumar}\cite{Markov}.  By most accounts, the
-field of Parallel Computing conceived in the early 1958\cite{Gill}, but has
+field of Parallel Computing conceived in the early 1958\cite{Gill}, but had previously
+been discussed (e.g. Metropolis \cite{Metropolis}) but has
 since bloomed into the State of the Art, for high-dimensional simulations in
 High Performance Computing as hardware technology has caught up to the first
 theoretical speculation of half a century prior. \par
@@ -205,7 +316,7 @@ of concept for a project, as well as a highly optimized base line, should furthe
 development be planned.
 \subsubsection{CUDA Runtime}
 
-Moving down the Stack, CUDA runtime provides an interface to the user which mirrors
+Moving down the Stack, CUDA runtime provides an interface to the user, which mirrors
 standard C++ functionality such as malloc and memcpy.  These functions differentiate
 themselves from host functions with the preface \textit{``cuda''} or \textit{``cu''}
 e.g. cudaMalloc and cudaMemcpy.  Functions that are to be excited on the
@@ -254,7 +365,7 @@ be recompiled appropriately with \Gls{jit} compilation, and executed on the a de
 
 There are many parallel contexts when programming CUDA. To help developers conquer
 the challenges of parallel programming, CUDA offers a multi-contexts development
-environment to help break problems down into sub problems, that can be then translated
+environment to help break problems down into sub-problems, that can be then translated
 by the compiler into parallel code. The following explanation, is only meant to
 give the reader insight into the CUDA syntax, thereby allowing comprehention of
 the following work. For a more complete and elaborate explination of CUDA, other
