@@ -296,7 +296,10 @@ __device__ void project2Boundary(float *s_x, float *cache, size_t dim,
   broadcast(cache, tid);
 
   // TODO: could be faster if index of min was known
-  s_x[tid] = ((1.0 - abs(s_x[tid])) == cache[tid]) ? 1.0 : s_x[tid];
+  s_x[tid] = ((1.0 - abs(s_x[tid])) == cache[tid])
+                 ? 1.0
+                 : s_x[tid]; // poor float comparison. unclear that this is
+                             // boundary distance again.
   __syncthreads();
 }
 
