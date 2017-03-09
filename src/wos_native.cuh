@@ -15,9 +15,7 @@ __device__ void broadcast(float *sdata, int tid);
 
 __device__ void project2Boundary(float *s_x, float *cache, size_t dim, int tid);
 
-__device__ void norm2(float *s_radius, int tid);
-
-__device__ void normalize(float *s_radius, float *cache, size_t dim, int tid);
+__device__ void norm2(float *s_radius, float *s_cache, int tid);
 
 __device__ void getBoundaryDistance(float *s_cache, float *d_x, int tid);
 
@@ -90,7 +88,7 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
     bvp.s_direction[tid] = (tid < dim) * curand_normal(&s);
 
     // normalize direction with L2 norm
-    normalize(bvp.s_direction, bvp.s_cache, dim, tid);
+    norm2(bvp.s_direction, bvp.s_cache, tid);
 
     // next x point
     bvp.s_x[tid] += r * bvp.s_direction[tid];
@@ -313,15 +311,7 @@ __device__ void norm2(float *s_radius, float *s_cache, int tid) {
 
   warpSumReduce(s_cache, tid);
 
-  if (tid == 0)
-    s_cache[tid] = sqrt(s_cache[tid]);
-  __syncthreads();
-}
-
-__device__ void normalize(float *s_radius, float *cache, size_t dim, int tid) {
-
-  norm2(s_radius, cache, tid);
-  s_radius[tid] /= cache[0];
+  s_radius[tid] /= sqrt(s_cache[0]);
   __syncthreads(); // needed for race check
 }
 
