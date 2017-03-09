@@ -36,8 +36,7 @@ __device__ void calcSubPointers(BlockVariablePointers *bvp, size_t len,
   bvp->s_result = 4 * len + buff;
 }
 
-__device__ BlockVariablePointers smemInit(BlockVariablePointers bvp,
-                                          float *d_x0, int tid) {
+__device__ void smemInit(BlockVariablePointers bvp, float *d_x0, int tid) {
   // initialize shared memory
   bvp.s_direction[tid] = 0.0;
   bvp.s_cache[tid] = 0.0;
@@ -46,8 +45,6 @@ __device__ BlockVariablePointers smemInit(BlockVariablePointers bvp,
   bvp.s_x[tid] = d_x0[tid];
   if (threadIdx.x == 0)
     bvp.s_result[0] = 0.0;
-  __syncthreads();
-  return bvp;
 }
 
 __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
@@ -65,7 +62,6 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
   if (tid == 0)
     printf("[WOS]: d_global[%d] before:\t%f\n", blockIdx.x,
            d_global[blockIdx.x]);
-  __syncthreads();
 #endif
 
   curandState s;
@@ -312,7 +308,7 @@ __device__ void norm2(float *s_direction, float *s_cache, int tid) {
   warpSumReduce(s_cache, tid);
 
   s_direction[tid] /= sqrt(s_cache[0]);
-  //__syncthreads(); // needed for race check
+  __syncthreads(); // needed for race check
 }
 
 __device__ void getBoundaryDistance(float *s_radius, float *d_x, int tid) {
