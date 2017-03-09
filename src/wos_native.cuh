@@ -15,9 +15,9 @@ __device__ void broadcast(float *sdata, int tid);
 
 __device__ void project2Boundary(float *s_x, float *cache, size_t dim, int tid);
 
-__device__ void norm2(float *s_radius, float *s_cache, int tid);
+__device__ void norm2(float *s_direction, float *s_cache, int tid);
 
-__device__ void getBoundaryDistance(float *s_cache, float *d_x, int tid);
+__device__ void getBoundaryDistance(float *s_radius, float *d_x, int tid);
 
 __device__ void evaluateBoundaryValue(float *s_x, float *s_cache,
                                       float &s_result, const size_t dim,
@@ -113,7 +113,7 @@ __device__ void warpMinReduce(float *sdata, int tid) {
   float myMin = sdata[tid];
   unsigned int blockSize = blockDim.x;
 
-  __syncthreads();
+  __syncthreads(); // ensure data is ready
 
   // do reduction in shared mem
   if ((blockSize >= 512) && (tid < 256)) {
@@ -304,19 +304,19 @@ __device__ void project2Boundary(float *s_x, float *cache, size_t dim,
   __syncthreads();
 }
 
-__device__ void norm2(float *s_radius, float *s_cache, int tid) {
+__device__ void norm2(float *s_direction, float *s_cache, int tid) {
 
   // square vals and copy to cache
-  s_cache[tid] = s_radius[tid] * s_radius[tid];
+  s_cache[tid] = s_direction[tid] * s_direction[tid];
 
   warpSumReduce(s_cache, tid);
 
-  s_radius[tid] /= sqrt(s_cache[0]);
-  __syncthreads(); // needed for race check
+  s_direction[tid] /= sqrt(s_cache[0]);
+  //__syncthreads(); // needed for race check
 }
 
-__device__ void getBoundaryDistance(float *s_cache, float *d_x, int tid) {
-  s_cache[tid] = 1.0 - abs(d_x[tid]);
+__device__ void getBoundaryDistance(float *s_radius, float *d_x, int tid) {
+  s_radius[tid] = 1.0 - abs(d_x[tid]);
 }
 
 __device__ void evaluateBoundaryValue(float *s_x, float *s_cache,
