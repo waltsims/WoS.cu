@@ -23,7 +23,6 @@ class X0 {
 public:
   X0() : value(0.0), dimension(512) {}
   size_t dimension;
-  size_t length;
 
   // TODO: should be a template param. hard to impliment
 
@@ -36,6 +35,7 @@ public:
 
   X0 x0;
   unsigned int totalPaths;
+  unsigned int numThreads;
   unsigned int pathsPerBlock;
   size_t size_SharedMemory;
   // TODO: Question: what effect does the d_eps have on practical convergence?
@@ -50,7 +50,7 @@ public:
 
   void update() {
     updateNumBlocksAndThreads();
-    updateLength();
+    updateNumThreads();
     updateSizeSharedMemory();
   };
 
@@ -58,7 +58,7 @@ public:
 
 private:
   void updateNumBlocksAndThreads();
-  void updateLength();
+  void updateNumThreads();
   void updatePathsPerBlock();
   void updateSizeSharedMemory();
 };

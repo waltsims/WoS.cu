@@ -58,7 +58,6 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
   calcSubPointers(&bvp, blockDim.x, buff);
   smemInit(bvp, d_x0, tid);
   if (tid < dim) {
-
 #ifdef DEBUG
     if (tid == 0)
       printf("[WOS]: d_global[%d] before:\t%f\n", blockIdx.x,
@@ -114,6 +113,12 @@ __device__ void warpMinReduce(float *sdata, int tid) {
   __syncthreads(); // ensure data is ready
 
   // do reduction in shared mem
+  if ((blockSize == 1024) && (tid < 512)) {
+    sdata[tid] = myMin =
+        ((abs(myMin)) < abs(sdata[tid + 512])) ? myMin : sdata[tid + 512];
+  }
+  __syncthreads();
+
   if ((blockSize >= 512) && (tid < 256)) {
     sdata[tid] = myMin =
         ((abs(myMin)) < abs(sdata[tid + 256])) ? myMin : sdata[tid + 256];
@@ -205,8 +210,8 @@ __device__ void warpSumReduce(float *sdata, int tid) {
 
   // do reduction in shared mem
 
-  if ((blockSize >= 1024) && (tid < 512)) {
-    sdata[tid] = mySum = mySum + sdata[tid + 256];
+  if ((blockSize == 1024) && (tid < 512)) {
+    sdata[tid] = mySum = mySum + sdata[tid + 512];
   }
 
   __syncthreads();
@@ -339,25 +344,26 @@ __device__ void evaluateBoundaryValue(float *s_x, float *s_cache,
 }
 
 //==============================================================================
-void initX0(float *x0, size_t dim, size_t len, float val);
+void initX0(float *x0, size_t dim, float val);
 
 float wosNative(Timers &timers, Parameters &p) {
 
   // declare local array variabls
   float *h_x0;
   checkCudaErrors(
-      cudaMallocHost((void **)&h_x0, sizeof(float) * p.wos.x0.length));
+      cudaMallocHost((void **)&h_x0, sizeof(float) * p.wos.x0.dimension));
   // declare pointers for device variables
   float *d_x0 = NULL;
   float *d_paths = NULL;
   // init our point on host
   float d_eps = p.wos.eps;
-  initX0(h_x0, p.wos.x0.dimension, p.wos.x0.length, p.wos.x0.value);
+  initX0(h_x0, p.wos.x0.dimension, p.wos.x0.value);
 
   timers.memorySetupTimer.start();
 
   // maloc device memory
-  checkCudaErrors(cudaMalloc((void **)&d_x0, p.wos.x0.length * sizeof(float)));
+  checkCudaErrors(
+      cudaMalloc((void **)&d_x0, p.wos.x0.dimension * sizeof(float)));
 
   printInfo("initializing d_paths");
 
@@ -367,7 +373,7 @@ float wosNative(Timers &timers, Parameters &p) {
   checkCudaErrors(cudaMemset(d_paths, 0.0, p.wos.totalPaths * sizeof(float)));
 
   // Let's bring our data to the Device
-  checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.x0.length * sizeof(float),
+  checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.x0.dimension * sizeof(float),
                              cudaMemcpyHostToDevice));
   cudaFreeHost(h_x0);
 
@@ -375,7 +381,7 @@ float wosNative(Timers &timers, Parameters &p) {
   timers.computationTimer.start();
 
   printInfo("setting up problem");
-  dim3 dimBlock(p.wos.x0.length, 1, 1);
+  dim3 dimBlock(p.wos.numThreads, 1, 1);
   dim3 dimGrid(p.wos.totalPaths, 1, 1);
 
   cudaError err;
@@ -421,11 +427,11 @@ float wosNative(Timers &timers, Parameters &p) {
   return gpu_result;
 }
 
-void initX0(float *h_x0, size_t dim, size_t len, float val) {
+void initX0(float *h_x0, size_t dim, float val) {
   // init our point on host
   for (unsigned int i = 0; i < dim; i++)
     // h_x0[i] = i == 1 ? 0.22 : 0;
     h_x0[i] = val;
-  for (unsigned int i = dim; i < len; i++)
-    h_x0[i] = 0.0;
+  // for (unsigned int i = dim; i < len; i++)
+  //   h_x0[i] = 0.0;
 }

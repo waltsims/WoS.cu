@@ -2,25 +2,35 @@
 #include "helper.hpp"
 
 #include <cuda_runtime.h>
-void Parameters::updateLength() {
-  wos.x0.length = (isPow2(wos.x0.dimension)) ? wos.x0.dimension
-                                             : nextPow2(wos.x0.dimension);
+
+void Parameters::updateNumThreads() {
+  wos.numThreads = (isPow2(wos.x0.dimension)) ? wos.x0.dimension
+                                              : nextPow2(wos.x0.dimension);
 }
+
+// void Parameters::updateNumThreads() {
+//
+//   if (wos.x0.dimension < 32) {
+//     wos.numThreads = 32;
+//   } else {
+//     int mod = wos.x0.dimension % 32;
+//     wos.numThreads =
+//         (mod == 0) ? wos.x0.dimension : (wos.x0.dimension + (32 - mod));
+//   }
+// }
 
 void Parameters::updateSizeSharedMemory() {
 
   // definition of total size needed for variable in buffer dependent on the
   // length of the data transefered
-  wos.size_SharedMemory = (4 * wos.x0.length + 1) * sizeof(double);
+  wos.size_SharedMemory = (4 * wos.x0.dimension + 1) * sizeof(double);
 }
 
 void Parameters::outputParameters(int count) {
   printf("Running Simulation with %d arguments\n", count);
   printf("CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
-         "totalPaths:\t\t%d\n\tReduction blocks:\t%d\n\tReductions "
-         "threads:\t%d\n",
-         wos.x0.value, wos.x0.dimension, wos.totalPaths, reduction.blocks,
-         reduction.threads);
+         "totalPaths:\t\t%d\n\tnumThreads:\t\t%d\n",
+         wos.x0.value, wos.x0.dimension, wos.totalPaths, wos.numThreads);
 }
 
 void Parameters::updatePathsPerBlock() {
