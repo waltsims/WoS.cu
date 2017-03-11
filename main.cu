@@ -9,6 +9,7 @@
 #include "timers.h"
 #include "src/export.h"
 #include "src/parse.h"
+#include "src/helper.hpp"
 
 #include "src/wos_wrapper.cuh"
 

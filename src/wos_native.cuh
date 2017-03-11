@@ -1,8 +1,8 @@
 #include <curand_kernel.h>
 #include <iostream>
 
+#include "cpuReduce.h"
 #include "params.h"
-#include "reduce_kernel.cuh"
 
 #define MAX_THREADS 1024
 #define MAX_BLOCKS 65535
@@ -391,7 +391,7 @@ float wosNative(Timers &timers, Parameters &p) {
 
   printInfo("setting up problem");
   dim3 dimBlock(p.wos.numThreads, 1, 1);
-  dim3 dimGrid(p.wos.totalPaths, 1, 1);
+  dim3 dimGrid(p.wos.numberBlocks, 1, 1);
 
   cudaError err;
 
