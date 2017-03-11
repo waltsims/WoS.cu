@@ -9,16 +9,6 @@ void Parameters::updateNumThreads() {
                                               : nextPow2(wos.x0.dimension);
 }
 
-// void Parameters::updateNumThreads() {
-//
-//   if (wos.x0.dimension < 32) {
-//     wos.numThreads = 32;
-//   } else {
-//     int mod = wos.x0.dimension % 32;
-//     wos.numThreads =
-//         (mod == 0) ? wos.x0.dimension : (wos.x0.dimension + (32 - mod));
-//   }
-// }
 void Parameters::updateEps() {
   // TODO different strategies for eps
   // wos.eps = 1.0 / (float)sqrt(wos.x0.dimension);
@@ -57,52 +47,12 @@ void Parameters::updatePathsPerBlock() {
     wos.blockIterations = ceil((wos.totalPaths / (float)MAX_BLOCKS));
     wos.blockRemainder = wos.totalPaths % MAX_BLOCKS;
   }
-
-  // wos.pathsPerBlock = 1000;
-  // wos.numberBlocks = 10000;
-  // wos.totalPaths = wos.pathsPerBlock * wos.numberBlocks;
-
-  // wos.pathsPerBlock = 1;
-  // wos.numberBlocks = wos.totalPaths;
 }
 
 void Parameters::updateNumBlocksAndThreads() {
 
   // get device capability, to avoid block/grid size exceed the upper bound
-
-  // dead code for reduce
-  cudaDeviceProp prop;
-  int maxBlocks = MAX_BLOCKS;
-  int maxThreads = MAX_THREADS;
-  int &blocks = reduction.blocks;
-  int &threads = reduction.threads;
+  cudaDeviceProp prop; // for more than one graphics card
 
   updatePathsPerBlock();
-
-  // int device;
-  // cudaGetDevice(&device);
-  // cudaGetDeviceProperties(&prop, device);
-  //
-  // // TODO implicit type conversion with nextPow2 to int
-  // TODO fix reduce if neccisarry.
-  // threads = (n < maxThreads * 2) ? nextPow2((n + 1) / 2) : maxThreads;
-  // blocks = (n + (threads * 2 - 1)) / (threads * 2);
-  //
-  // if ((float)threads * blocks >
-  //     (float)prop.maxGridSize[0] * prop.maxThreadsPerBlock) {
-  //   printf("n is too large, please choose a smaller number!\n");
-  // }
-  //
-  // if (blocks > prop.maxGridSize[0]) {
-  //   printf("Grid size <%d> exceeds the device capability <%d>, set block
-  //   size
-  //   "
-  //          "as %d (original %d)\n",
-  //          blocks, prop.maxGridSize[0], threads * 2, threads);
-  //
-  //   blocks /= 2;
-  //   threads *= 2;
-  // }
-  //
-  // blocks = (maxBlocks < blocks) ? maxBlocks : blocks;
 }

@@ -10,14 +10,7 @@
 
 enum SimulationTypes { nativeWos, thrustWos, hostWos };
 
-template <bool isDouble>
 size_t getSizeSharedMem(size_t len);
-
-class ReductionParameters {
-public:
-  int blocks;
-  int threads;
-};
 
 class X0 {
 public:
@@ -47,7 +40,6 @@ public:
 
 class Parameters {
 public:
-  ReductionParameters reduction;
   WoSParameters wos;
 
   void update() {

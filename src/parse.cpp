@@ -21,10 +21,6 @@ static void show_usage(char *argv[]) {
       << "Usage: " << argv[0] << " <option(s)> SOURCES"
       << "Options:\n"
       << "\t-h,\t--help\t\t\t\tShow this help message\n"
-      << "\t-nbr,\t--numBlocks <NUMBLOCKS>\t\tspecify number of blocks for "
-         "reduction\n"
-      << "\t-ntr,\t--numThreads <NUMTHREADS>\tspecify number of threads "
-         "for reduction\n"
       << "\t-x0,\t--x0Value\t\t\tdefine consant value for x0\n"
       << "\t-dim,\t--dimension\t\t\tdefine the dimension of the problem. "
          "(ergo length of vector x0)\n"
@@ -38,32 +34,12 @@ static void show_usage(char *argv[]) {
 int parseParams(int argc, char *argv[], Parameters &p) {
   // set default values
   unsigned int count = 0;
-  // p.reduction.threads = 256; // is curently overwriten
-  // p.reduction.blocks = 2;    // is curently overwriten
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if ((arg == "-h") || (arg == "--help")) {
       show_usage(argv);
       return 0;
-    } else if ((arg == "-nbr") || (arg == "--numBlocks")) {
-      if (i + 1 < argc) {
-        i++;
-        count++;
-        p.reduction.blocks = atoi(argv[i]);
-      } else {
-        std::cerr << "--numBlocks option requires one argument." << std::endl;
-        return 0;
-      }
-    } else if ((arg == "-ntr") || (arg == "--numThreads")) {
-      if (i + 1 < argc) {
-        i++;
-        count++;
-        p.reduction.threads = atoi(argv[i]);
-      } else {
-        std::cerr << "--numThreads option requires one argument." << std::endl;
-        return 0;
-      }
     } else if ((arg == "-x0") || (arg == "--x0Value")) {
       if (i + 1 < argc) {
         i++;
