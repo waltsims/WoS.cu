@@ -36,7 +36,8 @@ public:
   X0 x0;
   unsigned int numThreads;
   unsigned long int totalPaths;
-  int pathsPerBlock;
+  int blockIterations;
+  int blockRemainder;
   unsigned int numberBlocks;
   size_t size_SharedMemory;
   // TODO: Question: what effect does the d_eps have on practical convergence?

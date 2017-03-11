@@ -21,7 +21,8 @@ void Parameters::updateNumThreads() {
 // }
 void Parameters::updateEps() {
   // TODO different strategies for eps
-  wos.eps = 1.0 / (float)sqrt(wos.x0.dimension);
+  // wos.eps = 1.0 / (float)sqrt(wos.x0.dimension);
+  wos.eps = 0.01;
 }
 
 void Parameters::updateSizeSharedMemory() {
@@ -34,10 +35,11 @@ void Parameters::updateSizeSharedMemory() {
 void Parameters::outputParameters(int count) {
   printf("Running Simulation with %d arguments\n", count);
   printf("CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
-         "totalPaths:\t\t%d\n\tnumber of blocks:\t%d\n"
-         "\tPaths per blocks:\t%d\n\tnumThreads:\t\t%d\n\t\teps:\t%f\n",
+         "totalPaths:\t\t%ld\n\tnumber of blocks:\t%d\n"
+         "\tIterations per blocks:\t%d\n\tremainder per "
+         "blocks:\t%d\n\tnumThreads:\t\t%d\n\teps:\t\t\t%f\n",
          wos.x0.value, wos.x0.dimension, wos.totalPaths, wos.numberBlocks,
-         wos.pathsPerBlock, wos.numThreads, wos.eps);
+         wos.blockIterations, wos.blockRemainder, wos.numThreads, wos.eps);
 }
 
 void Parameters::updatePathsPerBlock() {
@@ -46,19 +48,19 @@ void Parameters::updatePathsPerBlock() {
   cudaDeviceProp devProp;
   cudaGetDeviceProperties(&devProp, 0); // assume one device for now
 
-  unsigned int i = floor(sqrt(wos.totalPaths));
-  printf("max grid size : %d\n", devProp.maxGridSize[1]);
-  while (wos.totalPaths % i != 0) {
-    i--;
+  if (wos.totalPaths <= MAX_BLOCKS) {
+    wos.numberBlocks = wos.totalPaths;
+    wos.blockIterations = 1;
+    wos.blockRemainder = wos.numberBlocks;
+  } else {
+    wos.numberBlocks = MAX_BLOCKS;
+    wos.blockIterations = ceil((wos.totalPaths / (float)MAX_BLOCKS));
+    wos.blockRemainder = wos.totalPaths % MAX_BLOCKS;
   }
 
-  // TODO ensure number blocks smaller than maxGridSize
-  wos.numberBlocks =
-      (i < wos.totalPaths / i) ? wos.totalPaths / i : i; // 21845;
-  wos.pathsPerBlock = wos.totalPaths / wos.numberBlocks;
-
-  // wos.pathsPerBlock = 5;
-  // wos.numberBlocks = 20000;
+  // wos.pathsPerBlock = 1000;
+  // wos.numberBlocks = 10000;
+  // wos.totalPaths = wos.pathsPerBlock * wos.numberBlocks;
 
   // wos.pathsPerBlock = 1;
   // wos.numberBlocks = wos.totalPaths;

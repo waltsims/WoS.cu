@@ -48,7 +48,7 @@ __device__ void smemInit(BlockVariablePointers bvp, float *d_x0, int tid) {
 }
 
 __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
-                    int pathsPerBlock) {
+                    int blockIterations, int blockRemainder) {
 
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
@@ -72,36 +72,38 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
              d_global[blockIdx.x]);
 #endif
 
-    for (int blockPath = 0; blockPath < pathsPerBlock; blockPath++) {
-      bvp.s_x[tid] = x0;
+    for (int it = 0; it < blockIterations; it++) {
+      if ((blockIdx.x < blockRemainder) || (it < blockIterations - 1)) {
+        bvp.s_x[tid] = x0;
 
-      // TODO: x0 in texture meomry
-      r = INFINITY;
+        // TODO: x0 in texture meomry
+        r = INFINITY;
 
-      // max step size
-      while (d_eps < r) {
+        // max step size
+        while (d_eps < r) {
 
-        getBoundaryDistance(bvp.s_radius, bvp.s_x, tid);
+          getBoundaryDistance(bvp.s_radius, bvp.s_x, tid);
 
-        warpMinReduce(bvp.s_radius, tid);
-        // local copy of radius
-        r = bvp.s_radius[0];
+          warpMinReduce(bvp.s_radius, tid);
+          // local copy of radius
+          r = bvp.s_radius[0];
 
-        // random next step_direction
-        bvp.s_direction[tid] = curand_normal(&s);
+          // random next step_direction
+          bvp.s_direction[tid] = curand_normal(&s);
 
-        // normalize direction with L2 norm
-        norm2(bvp.s_direction, bvp.s_cache, tid);
+          // normalize direction with L2 norm
+          norm2(bvp.s_direction, bvp.s_cache, tid);
 
-        // next x point
-        bvp.s_x[tid] += r * bvp.s_direction[tid];
+          // next x point
+          bvp.s_x[tid] += r * bvp.s_direction[tid];
+        }
+
+        // find closest boundary point
+        project2Boundary(bvp.s_x, bvp.s_cache, dim, tid);
+
+        // boundary eval and return do global memory
+        evaluateBoundaryValue(bvp.s_x, bvp.s_cache, bvp.s_result[0], dim, tid);
       }
-
-      // find closest boundary point
-      project2Boundary(bvp.s_x, bvp.s_cache, dim, tid);
-
-      // boundary eval and return do global memory
-      evaluateBoundaryValue(bvp.s_x, bvp.s_cache, bvp.s_result[0], dim, tid);
     }
     if (tid == 0) {
       d_global[blockIdx.x] = bvp.s_result[tid];
@@ -397,7 +399,8 @@ float wosNative(Timers &timers, Parameters &p) {
 
   printInfo("running simulation");
   WoS<<<dimGrid, dimBlock, p.wos.size_SharedMemory>>>(
-      d_x0, d_paths, d_eps, p.wos.x0.dimension, p.wos.pathsPerBlock);
+      d_x0, d_paths, d_eps, p.wos.x0.dimension, p.wos.blockIterations,
+      p.wos.blockRemainder);
   err = cudaGetLastError();
   if (cudaSuccess != err) {
     printf("Wos Kernel returned an error:\n %s\n", cudaGetErrorString(err));
