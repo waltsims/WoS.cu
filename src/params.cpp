@@ -22,7 +22,7 @@ void Parameters::updateNumThreads() {
 void Parameters::updateEps() {
   // TODO different strategies for eps
   // wos.eps = 1.0 / (float)sqrt(wos.x0.dimension);
-  wos.eps = 0.01;
+  // wos.eps = 0.01;
 }
 
 void Parameters::updateSizeSharedMemory() {

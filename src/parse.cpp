@@ -30,6 +30,7 @@ static void show_usage(char *argv[]) {
          "(ergo length of vector x0)\n"
       << "\t-it,\t--totalPaths\t\t\tdefine the number of iterations for the "
          "algorithm.\n"
+      << "\t-eps,\t--eps\t\t\tdefine epsilon value for the algorithm.\n"
       << "\t-st,\t--simulation-type\t\t[thrust | native | host]\n"
       << std::endl;
 }
@@ -88,6 +89,15 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         p.wos.totalPaths = atoi(argv[i]);
       } else {
         std::cerr << "--itterations option requires one argument." << std::endl;
+        return 0;
+      }
+    } else if ((arg == "-eps") || (arg == "--eps")) {
+      if (i + 1 < argc) {
+        i++;
+        count++;
+        p.wos.eps = atof(argv[i]);
+      } else {
+        std::cerr << "--eps option requires one argument." << std::endl;
         return 0;
       }
     } else if ((arg == "-st") || (arg == "--simulation-type")) {
