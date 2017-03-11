@@ -354,26 +354,25 @@ __device__ void evaluateBoundaryValue(float *s_x, float *s_cache,
 }
 
 //==============================================================================
-void initX0(float *x0, size_t dim, float val);
+void initX0(float *x0, size_t dim, size_t len, float val);
 
 float wosNative(Timers &timers, Parameters &p) {
 
   // declare local array variabls
   float *h_x0;
   checkCudaErrors(
-      cudaMallocHost((void **)&h_x0, sizeof(float) * p.wos.x0.dimension));
+      cudaMallocHost((void **)&h_x0, sizeof(float) * p.wos.numThreads));
   // declare pointers for device variables
   float *d_x0 = NULL;
   float *d_paths = NULL;
   // init our point on host
   float d_eps = p.wos.eps;
-  initX0(h_x0, p.wos.x0.dimension, p.wos.x0.value);
+  initX0(h_x0, p.wos.x0.dimension, p.wos.numThreads, p.wos.x0.value);
 
   timers.memorySetupTimer.start();
 
   // maloc device memory
-  checkCudaErrors(
-      cudaMalloc((void **)&d_x0, p.wos.x0.dimension * sizeof(float)));
+  checkCudaErrors(cudaMalloc((void **)&d_x0, p.wos.numThreads * sizeof(float)));
 
   printInfo("initializing d_paths");
 
@@ -384,7 +383,7 @@ float wosNative(Timers &timers, Parameters &p) {
   // sizeof(float)));
 
   // Let's bring our data to the Device
-  checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.x0.dimension * sizeof(float),
+  checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.wos.numThreads * sizeof(float),
                              cudaMemcpyHostToDevice));
   cudaFreeHost(h_x0);
 
@@ -440,11 +439,11 @@ float wosNative(Timers &timers, Parameters &p) {
   return gpu_result;
 }
 
-void initX0(float *h_x0, size_t dim, float val) {
+void initX0(float *h_x0, size_t dim, size_t len, float val) {
   // init our point on host
   for (unsigned int i = 0; i < dim; i++)
     // h_x0[i] = i == 1 ? 0.22 : 0;
     h_x0[i] = val;
-  // for (unsigned int i = dim; i < len; i++)
-  //   h_x0[i] = 0.0;
+  for (unsigned int i = dim; i < len; i++)
+    h_x0[i] = 0.0;
 }
