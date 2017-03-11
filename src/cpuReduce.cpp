@@ -11,16 +11,12 @@ bool smallerAbs(const float &a, const float &b) {
   return (std::abs(a) > std::abs(b));
 }
 
-float reduceCPU(float *data, int size) {
+float heapReduce(float *data, int size) {
   bool odd = (bool)(size % 2);
   int stride = (odd) ? (size - 1) / 2 : size / 2;
   float sum = 0;
   std::vector<float> v(data, data + size);
   std::make_heap(v.begin(), v.end(), smallerAbs);
-
-  // for (auto i : v) {
-  //   std::cout << i << std::endl;
-  // }
 
   while (v.size() > 1) {
     std::pop_heap(v.begin(), v.end(), smallerAbs);
@@ -34,10 +30,29 @@ float reduceCPU(float *data, int size) {
 
     push_heap(v.begin(), v.end(), smallerAbs);
   }
-  // for (auto i : v) {
-  //   std::cout << i << std::endl;
-  // }
 
   return v.back();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//! Compute sum reduction on CPU
+//! We use Kahan summation for an accurate sum of large arrays.
+//! http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+//!
+//! @param data       pointer to input data
+//! @param size       number of input data elements
+////////////////////////////////////////////////////////////////////////////////
+float reduceCPU(float *data, int size) {
+  float sum = data[0];
+  float c = 0.f;
+
+  // TODO declare outside of for loop!
+  for (int i = 1; i < size; i++) {
+    float y = data[i] - c;
+    float t = sum + y;
+    c = (t - sum) - y;
+    sum = t;
+  }
+  return sum;
 }
 #endif // CPU_REDUCE

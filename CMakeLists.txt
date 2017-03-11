@@ -31,7 +31,7 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS}  --compiler-options -Wall -std=c++11 -linei
 		add_subdirectory(src/host)
 
 		file(GLOB SRC src/wos_thrust.cuh src/cpuReduce.cpp src/helper.cpp  main.cu src/export.cpp  src/params.cpp src/parse.cpp )
-		file(GLOB LIB src/wos_thrust.h src/helper.hpp src/cpuReduce.h src/clock.h src/export.h	src/params.h src/parse.h src/reduce_kernel.cuh src/wos_wrapper.cuh src/wos_native.cuh)
+		file(GLOB LIB src/wos_thrust.h src/helper.hpp src/cpuReduce.h src/clock.h src/export.h	src/params.h src/parse.h src/wos_wrapper.cuh src/wos_native.cuh)
 		cuda_add_executable(wos ${SRC} ${LIB} ${INC})
 		target_link_libraries(wos ${CUDA_LIBARIES} host)
 		set_property(TARGET wos PROPERTY CXX_STANDARD 14)
