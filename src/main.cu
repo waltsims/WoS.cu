@@ -7,14 +7,10 @@
 
 #include "export.h"
 #include "helper.hpp"
-#include "helper_cuda.h"
 #include "parse.h"
 #include "timers.h"
 
 #include "wos_wrapper.cuh"
-
-#include <limits>
-#include <math_functions.h>
 
 // initialize h_x0 vector of size dim and fill with val
 
