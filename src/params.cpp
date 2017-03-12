@@ -1,5 +1,5 @@
 #include "params.h"
-#include "helper.hpp"
+#include "helper.h"
 #include <cmath>
 
 #include <cuda_runtime.h>

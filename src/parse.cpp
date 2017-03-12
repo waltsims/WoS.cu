@@ -1,4 +1,4 @@
-#include "helper.hpp"
+#include "helper.h"
 #include "params.h"
 
 #include <iostream>

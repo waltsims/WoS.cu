@@ -6,7 +6,7 @@
 #endif
 
 #include "export.h"
-#include "helper.hpp"
+#include "helper.h"
 #include "parse.h"
 #include "timers.h"
 

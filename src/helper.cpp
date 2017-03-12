@@ -1,4 +1,4 @@
-#include "helper.hpp"
+#include "helper.h"
 
 #include <cmath>
 #include <cstddef>
@@ -82,7 +82,7 @@ void testResults(float gpu_result, Parameters &p) {
   printf(" ----------------------------------------------------------------"
          "------------------------------\n");
 
-  float EPS = 0.00001;
+  float EPS = p.wos.eps;
   float x0 = p.wos.x0.value;
 
   if (fabs(x0 - 0.0) < EPS) {
