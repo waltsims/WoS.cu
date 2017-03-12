@@ -124,17 +124,17 @@ float wosThrust(Timers &timers, Parameters &p) {
       thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
                         getBoundaryDistanceThrust(1.f));
 
-      // calculate mimimun radius
-      // #if (CUDART_VERSION == 8000)
-      //       // Source:
-      //       //
-      //       http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
-      //       Thrust::device_vector<float>::iterator iter =
-      //           thrust::min_element(d_radius.begin(), d_radius.end());
-      // #elif (CUDART_VERSION == 7050)
+// calculate mimimun radius
+#if (CUDART_VERSION == 8000)
+      // Source:
+      //
+      // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+      thrust::device_vector<float>::iterator iter =
+          thrust::min_element(d_radius.begin(), d_radius.end());
+#elif (CUDART_VERSION == 7050)
       thrust::detail::normal_iterator<thrust::device_ptr<float>> iter =
           thrust::min_element(d_radius.begin(), d_radius.end());
-      // #endif
+#endif
       radius = *iter;
 
       // std::cout << " before step:" << std::endl;
@@ -158,16 +158,16 @@ float wosThrust(Timers &timers, Parameters &p) {
     thrust::transform(d_x.begin(), d_x.end(), d_radius.begin(),
                       getBoundaryDistanceThrust(1.f));
 
-    // #if (CUDART_VERSION == 8000)
-    //     // Source:
-    //     //
-    //     http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
-    //     Thrust::device_vector<float>::iterator iter =
-    //         thrust::min_element(d_radius.begin(), d_radius.end());
-    // #elif (CUDART_VERSION == 7050)
+#if (CUDART_VERSION == 8000)
+    // Source:
+    //
+    // http://stackoverflow.com/questions/7709181/finding-the-maximum-element-value-and-its-position-using-cuda-thrust
+    thrust::device_vector<float>::iterator iter =
+        thrust::min_element(d_radius.begin(), d_radius.end());
+#elif (CUDART_VERSION == 7050)
     thrust::detail::normal_iterator<thrust::device_ptr<float>> iter =
         thrust::min_element(d_radius.begin(), d_radius.end());
-    // #endif
+#endif
 
     position = iter - d_radius.begin();
     radius = *iter;

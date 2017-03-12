@@ -5,13 +5,13 @@
 #define MAX_BLOCKS 65535
 #endif
 
+#include "export.h"
+#include "helper.hpp"
 #include "helper_cuda.h"
+#include "parse.h"
 #include "timers.h"
-#include "src/export.h"
-#include "src/parse.h"
-#include "src/helper.hpp"
 
-#include "src/wos_wrapper.cuh"
+#include "wos_wrapper.cuh"
 
 #include <limits>
 #include <math_functions.h>
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   printTitle();
   printInfo("initializing");
 
-// TODO: call WoS template wraper function
+  // TODO: call WoS template wraper function
 
   Parameters p;
 
