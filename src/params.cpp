@@ -5,20 +5,19 @@
 #include <cuda_runtime.h>
 
 void Parameters::updateNumThreads() {
-  wos.numThreads = (isPow2(wos.x0.dimension)) ? wos.x0.dimension
-                                              : nextPow2(wos.x0.dimension);
+  numThreads = (isPow2(x0.dimension)) ? x0.dimension : nextPow2(x0.dimension);
 }
 
 void Parameters::updateEps() {
   // TODO different strategies for eps
-  // wos.eps = 1.0 / (float)sqrt(wos.x0.dimension);
-  // wos.eps = 0.01;
+  // eps = 1.0 / (float)sqrt(x0.dimension);
+  // eps = 0.01;
 }
 
 void Parameters::updateSizeSharedMemory() {
   // definition of total size needed for variable in buffer dependent on the
   // length of the data transefered
-  wos.size_SharedMemory = (4 * wos.numThreads + 1) * sizeof(float);
+  size_SharedMemory = (4 * numThreads + 1) * sizeof(float);
 }
 
 void Parameters::outputParameters(int count) {
@@ -27,8 +26,8 @@ void Parameters::outputParameters(int count) {
          "totalPaths:\t\t%ld\n\tnumber of blocks:\t%d\n"
          "\tIterations per blocks:\t%d\n\tremainder per "
          "blocks:\t%d\n\tnumThreads:\t\t%d\n\teps:\t\t\t%f\n",
-         wos.x0.value, wos.x0.dimension, wos.totalPaths, wos.numberBlocks,
-         wos.blockIterations, wos.blockRemainder, wos.numThreads, wos.eps);
+         x0.value, x0.dimension, totalPaths, numberBlocks, blockIterations,
+         blockRemainder, numThreads, eps);
 }
 
 void Parameters::updatePathsPerBlock() {
@@ -37,14 +36,14 @@ void Parameters::updatePathsPerBlock() {
   cudaDeviceProp devProp;
   cudaGetDeviceProperties(&devProp, 0); // assume one device for now
 
-  if (wos.totalPaths <= MAX_BLOCKS) {
-    wos.numberBlocks = wos.totalPaths;
-    wos.blockIterations = 1;
-    wos.blockRemainder = wos.numberBlocks;
+  if (totalPaths <= MAX_BLOCKS) {
+    numberBlocks = totalPaths;
+    blockIterations = 1;
+    blockRemainder = numberBlocks;
   } else {
-    wos.numberBlocks = MAX_BLOCKS;
-    wos.blockIterations = ceil((wos.totalPaths / (float)MAX_BLOCKS));
-    wos.blockRemainder = wos.totalPaths % MAX_BLOCKS;
+    numberBlocks = MAX_BLOCKS;
+    blockIterations = ceil((totalPaths / (float)MAX_BLOCKS));
+    blockRemainder = totalPaths % MAX_BLOCKS;
   }
 }
 

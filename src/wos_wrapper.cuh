@@ -7,7 +7,7 @@
 #include <math_functions.h>
 
 float wosWrapper(Timers &timers, Parameters &p) {
-  switch (p.wos.simulation) {
+  switch (p.simulation) {
   case (nativeWos):
     return wosNative(timers, p);
   case (thrustWos):

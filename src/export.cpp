@@ -42,11 +42,10 @@ void logData(float result, Timers &timers, Parameters &p) {
     outputHeader(file);
   }
 
-  file << p.wos.x0.dimension << "," << p.wos.numThreads << ","
-       << p.wos.totalPaths << "," << result << "," << relError << ","
-       << exactSolution << "," << p.wos.eps << ","
-       << timers.computationTimer.get() << "," << timers.totalTimer.get() << ","
-       << timers.memorySetupTimer.get() << ","
+  file << p.x0.dimension << "," << p.numThreads << "," << p.totalPaths << ","
+       << result << "," << relError << "," << exactSolution << "," << p.eps
+       << "," << timers.computationTimer.get() << "," << timers.totalTimer.get()
+       << "," << timers.memorySetupTimer.get() << ","
        << timers.memoryDownloadTimer.get() << std::endl;
   file.close();
 }

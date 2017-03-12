@@ -15,15 +15,15 @@ float wosHost(Timers &timers, Parameters &p) {
   // declare local array variabls
   // init our point on host
   timers.memorySetupTimer.start();
-  float *h_x0 = (float *)malloc(p.wos.x0.dimension * sizeof(float));
-  float *h_results = (float *)malloc(p.wos.totalPaths * sizeof(float));
-  float *h_x = (float *)malloc(p.wos.x0.dimension * sizeof(float));
-  float *radius = (float *)malloc(p.wos.x0.dimension * sizeof(float));
-  float *h_direction = (float *)malloc(p.wos.x0.dimension * sizeof(float));
+  float *h_x0 = (float *)malloc(p.x0.dimension * sizeof(float));
+  float *h_results = (float *)malloc(p.totalPaths * sizeof(float));
+  float *h_x = (float *)malloc(p.x0.dimension * sizeof(float));
+  float *radius = (float *)malloc(p.x0.dimension * sizeof(float));
+  float *h_direction = (float *)malloc(p.x0.dimension * sizeof(float));
 
   // init x0
-  for (unsigned int i = 0; i < p.wos.x0.dimension; i++) {
-    h_x0[i] = p.wos.x0.value;
+  for (unsigned int i = 0; i < p.x0.dimension; i++) {
+    h_x0[i] = p.x0.value;
   }
 
   float r;
@@ -38,18 +38,18 @@ float wosHost(Timers &timers, Parameters &p) {
   std::default_random_engine generator;
   std::normal_distribution<float> distribution(0, 1);
 
-  for (unsigned int currentPath = 0; currentPath < p.wos.totalPaths;
+  for (unsigned int currentPath = 0; currentPath < p.totalPaths;
        currentPath++) {
 
-    std::memcpy((void *)h_x, (void *)h_x0, p.wos.x0.dimension * sizeof(float));
+    std::memcpy((void *)h_x, (void *)h_x0, p.x0.dimension * sizeof(float));
     r = INFINITY;
 
-    while (p.wos.eps < r) {
+    while (p.eps < r) {
 
       // printf("path: %d\n", currentPath);
       // std::memcpy((void *)cache, (void *)h_x, dimension * sizeof(float));
 
-      for (unsigned int i = 0; i < p.wos.x0.dimension; i++) {
+      for (unsigned int i = 0; i < p.x0.dimension; i++) {
         radius[i] = 1 - fabs(h_x[i]);
         r = (radius[i] < r) ? radius[i] : r;
         h_direction[i] = distribution(generator);
@@ -58,7 +58,7 @@ float wosHost(Timers &timers, Parameters &p) {
 
       norm = sqrt(norm);
 
-      for (unsigned int i = 0; i < p.wos.x0.dimension; i++) {
+      for (unsigned int i = 0; i < p.x0.dimension; i++) {
         h_x[i] += r * h_direction[i] / norm;
       }
       // for (unsigned int i = 0; i < dimension; i++) {
@@ -74,7 +74,7 @@ float wosHost(Timers &timers, Parameters &p) {
     // printf("\n");
 
     minIndex = 0;
-    for (unsigned int i = 0; i < p.wos.x0.dimension; i++) {
+    for (unsigned int i = 0; i < p.x0.dimension; i++) {
       radius[i] = 1 - fabs(h_x[i]);
       minIndex = (radius[i] < radius[minIndex]) ? i : minIndex;
     }
@@ -87,15 +87,15 @@ float wosHost(Timers &timers, Parameters &p) {
     // printf("\n");
 
     temp = 0.0;
-    for (unsigned int i = 0; i < p.wos.x0.dimension; i++) {
+    for (unsigned int i = 0; i < p.x0.dimension; i++) {
       temp += h_x[i] * h_x[i];
     }
-    host_result += temp / (2 * p.wos.x0.dimension);
+    host_result += temp / (2 * p.x0.dimension);
     // printf("result on iteration %d: %f\n", currentPath, temp / (2 *
     // dimension));
   }
 
-  host_result /= (p.wos.totalPaths);
+  host_result /= (p.totalPaths);
   timers.computationTimer.end();
 
   timers.memoryDownloadTimer.start();

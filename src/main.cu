@@ -18,8 +18,6 @@ int main(int argc, char *argv[]) {
   printTitle();
   printInfo("initializing");
 
-  // TODO: call WoS template wraper function
-
   Parameters p;
 
   // TODO this should/could go in parameter constructor
@@ -33,7 +31,6 @@ int main(int argc, char *argv[]) {
   timers.totalTimer.start();
 
   // Calling WoS kernel
-
   float gpu_result = wosWrapper(timers, p);
 
   timers.totalTimer.end();

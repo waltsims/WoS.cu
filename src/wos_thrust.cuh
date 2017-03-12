@@ -45,21 +45,21 @@ struct getBoundaryDistanceThrust {
 float wosThrust(Timers &timers, Parameters &p) {
 
   timers.memorySetupTimer.start();
-  thrust::host_vector<float> h_x0(p.wos.x0.dimension);
-  thrust::device_vector<float> d_x(p.wos.x0.dimension);
-  thrust::device_vector<float> d_x0(p.wos.x0.dimension);
-  thrust::fill_n(d_x0.begin(), p.wos.x0.dimension, p.wos.x0.value);
-  thrust::device_vector<float> d_radius(p.wos.x0.dimension);
+  thrust::host_vector<float> h_x0(p.x0.dimension);
+  thrust::device_vector<float> d_x(p.x0.dimension);
+  thrust::device_vector<float> d_x0(p.x0.dimension);
+  thrust::fill_n(d_x0.begin(), p.x0.dimension, p.x0.value);
+  thrust::device_vector<float> d_radius(p.x0.dimension);
   thrust::fill(d_radius.begin(), d_radius.end(), INFINITY);
-  thrust::device_vector<float> d_direction(p.wos.x0.dimension);
+  thrust::device_vector<float> d_direction(p.x0.dimension);
   thrust::fill(d_direction.begin(), d_direction.end(), 0.0);
-  thrust::device_vector<float> d_paths(p.wos.totalPaths);
+  thrust::device_vector<float> d_paths(p.totalPaths);
   thrust::fill(d_paths.begin(), d_paths.end(), 0.0);
 
 #ifdef OUT
-// thrust::device_vector<float> d_exitX(p.wos.totalPaths);
+// thrust::device_vector<float> d_exitX(p.totalPaths);
 // thrust::fill(d_exitX.begin(), d_exitX.end(), 0.0);
-// thrust::device_vector<float> d_exitY(p.wos.totalPaths);
+// thrust::device_vector<float> d_exitY(p.totalPaths);
 // thrust::fill(d_exitY.begin(), d_exitY.end(), 0.0);
 #endif // OUT
 
@@ -69,14 +69,14 @@ float wosThrust(Timers &timers, Parameters &p) {
   float norm = 0.0;
   unsigned int position;
   float gpu_result = 0;
-  double d_eps = p.wos.eps;
+  double d_eps = p.eps;
   // float sum = 0.0;
   // float squaredSum = 0.0;
   unsigned int counter = 0;
   unsigned int randCount = 0;
 
   thrust::counting_iterator<unsigned int> index_sequence_begin(0);
-  for (unsigned int i = 0; i < p.wos.totalPaths; i++) {
+  for (unsigned int i = 0; i < p.totalPaths; i++) {
     thrust::copy(d_x0.begin(), d_x0.end(), d_x.begin());
 
     radius = INFINITY;
@@ -90,7 +90,7 @@ float wosThrust(Timers &timers, Parameters &p) {
       // std::cout << "\n" << std::endl;
       // create random direction
       thrust::transform(index_sequence_begin + randCount,
-                        index_sequence_begin + p.wos.x0.dimension + randCount,
+                        index_sequence_begin + p.x0.dimension + randCount,
                         d_direction.begin(), prg(0.0, 1.0));
       // std::cout << " direction after rand:" << std::endl;
       // thrust::copy(d_direction.begin(), d_direction.end(),
@@ -100,7 +100,7 @@ float wosThrust(Timers &timers, Parameters &p) {
       // sum += thrust::reduce(d_direction.begin(), d_direction.end());
       // squaredSum += thrust::inner_product(
       //    d_direction.begin(), d_direction.end(), d_direction.begin(), 0.f);
-      randCount += p.wos.x0.dimension;
+      randCount += p.x0.dimension;
 
       // normalize random direction
       // Source:
@@ -181,7 +181,7 @@ float wosThrust(Timers &timers, Parameters &p) {
     // project closest dimension to boundary
     thrust::fill(d_x.begin() + position, d_x.begin() + position + 1, 1.f);
 #ifdef OUT
-// if (p.wos.x0.dimension == 2) {
+// if (p.x0.dimension == 2) {
 //   d_exitX[i] = d_x[0];
 //   d_exitY[i] = d_x[1];
 // }
@@ -194,7 +194,7 @@ float wosThrust(Timers &timers, Parameters &p) {
     // evaluate boundary value
     d_paths[i] =
         thrust::inner_product(d_x.begin(), d_x.end(), d_x.begin(), 0.f) /
-        (p.wos.x0.dimension * 2);
+        (p.x0.dimension * 2);
 
     // std::cout << "result vector in iteration " << i << " : " << std::endl;
     // thrust::copy(d_paths.begin(), d_paths.end(),
@@ -211,7 +211,7 @@ float wosThrust(Timers &timers, Parameters &p) {
 #elif (CUDART_VERSION == 8000)
   gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());
 #endif
-  gpu_result /= p.wos.totalPaths;
+  gpu_result /= p.totalPaths;
 
   return gpu_result;
 }

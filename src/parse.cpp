@@ -44,7 +44,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
       if (i + 1 < argc) {
         i++;
         count++;
-        p.wos.x0.value = atof(argv[i]);
+        p.x0.value = atof(argv[i]);
       } else {
         std::cerr << "--x0Value option requires one argument." << std::endl;
         return 0;
@@ -53,7 +53,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
       if (i + 1 < argc) {
         i++;
         count++;
-        p.wos.x0.dimension = atoi(argv[i]);
+        p.x0.dimension = atoi(argv[i]);
       } else {
         std::cerr << "--dimension option requires one argument." << std::endl;
         return 0;
@@ -62,7 +62,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
       if (i + 1 < argc) {
         i++;
         count++;
-        p.wos.totalPaths = atoi(argv[i]);
+        p.totalPaths = atoi(argv[i]);
       } else {
         std::cerr << "--itterations option requires one argument." << std::endl;
         return 0;
@@ -71,7 +71,7 @@ int parseParams(int argc, char *argv[], Parameters &p) {
       if (i + 1 < argc) {
         i++;
         count++;
-        p.wos.eps = atof(argv[i]);
+        p.eps = atof(argv[i]);
       } else {
         std::cerr << "--eps option requires one argument." << std::endl;
         return 0;
@@ -81,11 +81,11 @@ int parseParams(int argc, char *argv[], Parameters &p) {
         i++;
         count++;
         if (!strcmp(argv[i], "thrust"))
-          p.wos.simulation = thrustWos;
+          p.simulation = thrustWos;
         else if (!strcmp(argv[i], "native"))
-          p.wos.simulation = nativeWos;
+          p.simulation = nativeWos;
         else if (!strcmp(argv[i], "host"))
-          p.wos.simulation = hostWos;
+          p.simulation = hostWos;
         else {
           std::cerr
               << "--simulation-type option requires one argument.[thrust | "
