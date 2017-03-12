@@ -57,10 +57,10 @@ float wosThrust(Timers &timers, Parameters &p) {
   thrust::fill(d_paths.begin(), d_paths.end(), 0.0);
 
 #ifdef OUT
-  thrust::device_vector<float> d_exitX(p.wos.totalPaths);
-  thrust::fill(d_exitX.begin(), d_exitX.end(), 0.0);
-  thrust::device_vector<float> d_exitY(p.wos.totalPaths);
-  thrust::fill(d_exitY.begin(), d_exitY.end(), 0.0);
+// thrust::device_vector<float> d_exitX(p.wos.totalPaths);
+// thrust::fill(d_exitX.begin(), d_exitX.end(), 0.0);
+// thrust::device_vector<float> d_exitY(p.wos.totalPaths);
+// thrust::fill(d_exitY.begin(), d_exitY.end(), 0.0);
 #endif // OUT
 
   timers.memorySetupTimer.end();
@@ -70,8 +70,8 @@ float wosThrust(Timers &timers, Parameters &p) {
   unsigned int position;
   float gpu_result = 0;
   double d_eps = p.wos.eps;
-  float sum = 0.0;
-  float squaredSum = 0.0;
+  // float sum = 0.0;
+  // float squaredSum = 0.0;
   unsigned int counter = 0;
   unsigned int randCount = 0;
 
@@ -97,9 +97,9 @@ float wosThrust(Timers &timers, Parameters &p) {
       //              std::ostream_iterator<float>(std::cout, " "));
       // std::cout << "\n" << std::endl;
 
-      sum += thrust::reduce(d_direction.begin(), d_direction.end());
-      squaredSum += thrust::inner_product(
-          d_direction.begin(), d_direction.end(), d_direction.begin(), 0.f);
+      // sum += thrust::reduce(d_direction.begin(), d_direction.end());
+      // squaredSum += thrust::inner_product(
+      //    d_direction.begin(), d_direction.end(), d_direction.begin(), 0.f);
       randCount += p.wos.x0.dimension;
 
       // normalize random direction
@@ -181,10 +181,10 @@ float wosThrust(Timers &timers, Parameters &p) {
     // project closest dimension to boundary
     thrust::fill(d_x.begin() + position, d_x.begin() + position + 1, 1.f);
 #ifdef OUT
-    if (p.wos.x0.dimension == 2) {
-      d_exitX[i] = d_x[0];
-      d_exitY[i] = d_x[1];
-    }
+// if (p.wos.x0.dimension == 2) {
+//   d_exitX[i] = d_x[0];
+//   d_exitY[i] = d_x[1];
+// }
 #endif
     // std::cout << "before boundary eval:" << std::endl;
     // thrust::copy(d_x.begin(), d_x.end(),
@@ -201,23 +201,24 @@ float wosThrust(Timers &timers, Parameters &p) {
     //              std::ostream_iterator<float>(std::cout, " "));
     // std::cout << "\n" << std::endl;
   }
-  std::cout << "mean: " << sum / randCount << std::endl;
-  std::cout << "standard deviation: "
-            << sqrt(pow(sum / randCount, 2) + squaredSum / randCount)
-            << std::endl;
+  // std::cout << "mean: " << sum / randCount << std::endl;
+  // std::cout << "standard deviation: "
+  //          << sqrt(pow(sum / randCount, 2) + squaredSum / randCount)
+  //          << std::endl;
   timers.computationTimer.end();
 #ifdef OUT
   thrust::host_vector<float> h_paths(p.wos.totalPaths);
-  thrust::host_vector<float> h_exitPoints(p.wos.x0.dimension *
-                                          p.wos.totalPaths);
-  thrust::host_vector<float> h_exitX(p.wos.totalPaths);
-  thrust::host_vector<float> h_exitY(p.wos.totalPaths);
-  thrust::copy(d_paths.begin(), d_paths.end(), h_paths.begin());
-  thrust::copy(d_exitX.begin(), d_exitX.end(), h_exitX.begin());
-  thrust::copy(d_exitY.begin(), d_exitY.end(), h_exitY.begin());
+  // thrust::host_vector<float> h_exitPoints(p.wos.x0.dimension *
+  //                                         p.wos.totalPaths);
+  // thrust::host_vector<float> h_exitX(p.wos.totalPaths);
+  // thrust::host_vector<float> h_exitY(p.wos.totalPaths);
+  // thrust::copy(d_paths.begin(), d_paths.end(), h_paths.begin());
+  // thrust::copy(d_exitX.begin(), d_exitX.end(), h_exitX.begin());
+  // thrust::copy(d_exitY.begin(), d_exitY.end(), h_exitY.begin());
 
-  exportData(h_paths.data(), h_exitX.data(), h_exitY.data(), p);
+  // exportData(h_paths.data(), h_exitX.data(), h_exitY.data(), p);
 
+  exportData(h_paths.data(), p);
 #endif // OUT
 #if (CUDART_VERSION == 7050)
   gpu_result = thrust::reduce(d_paths.begin(), d_paths.end());
