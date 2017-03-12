@@ -38,10 +38,13 @@ int main(int argc, char *argv[]) {
 
   timers.totalTimer.end();
 
+#ifdef OUT
+  logData(gpu_result, timers, p);
+#endif
+
   testResults(gpu_result, p);
   printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
               timers.totalTimer.get(), timers.memoryDownloadTimer.get());
-  exportTime(timers, p);
 
   return (0);
 }

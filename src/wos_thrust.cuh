@@ -206,27 +206,12 @@ float wosThrust(Timers &timers, Parameters &p) {
   //          << sqrt(pow(sum / randCount, 2) + squaredSum / randCount)
   //          << std::endl;
   timers.computationTimer.end();
-#ifdef OUT
-  thrust::host_vector<float> h_paths(p.wos.totalPaths);
-  // thrust::host_vector<float> h_exitPoints(p.wos.x0.dimension *
-  //                                         p.wos.totalPaths);
-  // thrust::host_vector<float> h_exitX(p.wos.totalPaths);
-  // thrust::host_vector<float> h_exitY(p.wos.totalPaths);
-  // thrust::copy(d_paths.begin(), d_paths.end(), h_paths.begin());
-  // thrust::copy(d_exitX.begin(), d_exitX.end(), h_exitX.begin());
-  // thrust::copy(d_exitY.begin(), d_exitY.end(), h_exitY.begin());
-
-  // exportData(h_paths.data(), h_exitX.data(), h_exitY.data(), p);
-
-  exportData(h_paths.data(), p);
-#endif // OUT
 #if (CUDART_VERSION == 7050)
   gpu_result = thrust::reduce(d_paths.begin(), d_paths.end());
 #elif (CUDART_VERSION == 8000)
   gpu_result = thrust::reduce(thrust::device, d_paths.begin(), d_paths.end());
 #endif
   gpu_result /= p.wos.totalPaths;
-  timers.totalTimer.end();
 
   return gpu_result;
 }

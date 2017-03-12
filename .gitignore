@@ -13,8 +13,8 @@ cmake_install.cmake
 #binary
 wos
 #data files
-*.dat
-*.csv
+#*.dat
+#*.csv
 #latex to pdf helper files
 *.*~
 *.tmp

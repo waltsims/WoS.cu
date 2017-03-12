@@ -421,10 +421,6 @@ float wosNative(Timers &timers, Parameters &p) {
 
   timers.memoryDownloadTimer.end();
 
-#ifdef OUT
-  exportData(h_paths, p);
-#endif // OUT
-
   printInfo("reduce data on CPU");
   float gpu_result = reduceCPU(h_paths, p.wos.numberBlocks) / p.wos.totalPaths;
 
