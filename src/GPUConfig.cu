@@ -1,6 +1,7 @@
 
 #include "GPUConfig.h"
 #include "helper.h"
+#include "helper_cuda.h"
 
 GPUConfig GPUConfig::createConfig(Parameters p) {
   unsigned long int gpuPaths;
@@ -18,22 +19,21 @@ GPUConfig GPUConfig::createConfig(Parameters p) {
   // definition of total size needed for variable in buffer dependent on the
   // length of the data transefered
   size_SharedMemory = (4 * numThreads + 1) * sizeof(float);
-  // source::https://devblogs.nvidia.com/parallelforall/how-query-device-properties-and-handle-errors-cuda-cc/
-  // uppdate paths per block
 
-  if (p.totalPaths <= MAX_BLOCKS) {
-    numberBlocks = p.totalPaths;
+  // TODO: set GPUpaths, nGPU,
+  checkCudaErrors(cudaGetDeviceCount(&nGPU));
+  gpuPaths = p.totalPaths / nGPU;
+
+  // uppdate paths per block
+  if (gpuPaths <= MAX_BLOCKS) {
+    numberBlocks = gpuPaths;
     blockIterations = 1;
     blockRemainder = numberBlocks;
   } else {
     numberBlocks = MAX_BLOCKS;
-    blockIterations = ceil((p.totalPaths / (float)MAX_BLOCKS));
-    blockRemainder = p.totalPaths % MAX_BLOCKS;
+    blockIterations = ceil((gpuPaths / (float)MAX_BLOCKS));
+    blockRemainder = gpuPaths % MAX_BLOCKS;
   }
-
-  // TODO: set GPUpaths, nGPU,
-  nGPU = 1;
-  gpuPaths = p.totalPaths;
 
   return GPUConfig(numThreads, gpuPaths, blockIterations, blockRemainder,
                    numberBlocks, nGPU, size_SharedMemory);

@@ -49,14 +49,14 @@ __device__ void smemInit(BlockVariablePointers bvp, float *d_x0, int tid) {
 }
 
 __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
-                    int blockIterations, int blockRemainder) {
+                    int blockIterations, int blockRemainder, int gpu) {
 
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
 
   // seed for random number generation
   curandState s;
-  unsigned int seed = index;
+  unsigned int seed = index * gpu;
   curand_init(seed, 0, 0, &s);
 
   extern __shared__ float buff[];
@@ -357,6 +357,12 @@ __device__ void evaluateBoundaryValue(float *s_x, float *s_cache,
 //==============================================================================
 void initX0(float *x0, size_t dim, size_t len, float val);
 
+typedef struct {
+  float *d_x0;
+  float *d_paths;
+  cudaStream_t stream;
+} MultiGPU;
+
 float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
 
   // declare local array variabls
@@ -364,65 +370,82 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
   checkCudaErrors(
       cudaMallocHost((void **)&h_x0, sizeof(float) * gpu.numThreads));
   // declare pointers for device variables
-  float *d_x0 = NULL;
-  float *d_paths = NULL;
+  MultiGPU multiGPU[gpu.nGPU];
+
   // init our point on host
   initX0(h_x0, p.x0.dimension, gpu.numThreads, p.x0.value);
 
   timers.memorySetupTimer.start();
 
-  // maloc device memory
-  checkCudaErrors(cudaMalloc((void **)&d_x0, gpu.numThreads * sizeof(float)));
-
   printInfo("initializing d_paths");
 
-  checkCudaErrors(
-      cudaMalloc((void **)&d_paths, gpu.numberBlocks * sizeof(float)));
+  for (int i = 0; i < gpu.nGPU; i++) {
+    checkCudaErrors(cudaSetDevice(i));
+    checkCudaErrors(cudaStreamCreate(&multiGPU[i].stream));
 
-  // checkCudaErrors(cudaMemset(d_paths, 0.0, p.numberBlocks *
-  // sizeof(float)));
+    // maloc device memory
+    checkCudaErrors(
+        cudaMalloc((void **)&multiGPU[i].d_x0, gpu.numThreads * sizeof(float)));
 
-  // Let's bring our data to the Device
-  checkCudaErrors(cudaMemcpy(d_x0, h_x0, gpu.numThreads * sizeof(float),
-                             cudaMemcpyHostToDevice));
-  cudaFreeHost(h_x0);
+    checkCudaErrors(cudaMalloc((void **)&multiGPU[i].d_paths,
+                               gpu.numberBlocks * sizeof(float)));
+
+    // Let's bring our data to the Device
+    checkCudaErrors(
+        cudaMemcpyAsync(multiGPU[i].d_x0, h_x0, gpu.numThreads * sizeof(float),
+                        cudaMemcpyHostToDevice, multiGPU[i].stream));
+  }
 
   timers.memorySetupTimer.end();
   timers.computationTimer.start();
-
   printInfo("setting up problem");
-  dim3 dimBlock(gpu.numThreads, 1, 1);
-  dim3 dimGrid(gpu.numberBlocks, 1, 1);
-
-  cudaError err;
 
   printInfo("running simulation");
-  WoS<<<dimGrid, dimBlock, gpu.size_SharedMemory>>>(
-      d_x0, d_paths, p.eps, p.x0.dimension, gpu.blockIterations,
-      gpu.blockRemainder);
-  err = cudaGetLastError();
-  if (cudaSuccess != err) {
-    printf("Wos Kernel returned an error:\n %s\n", cudaGetErrorString(err));
+  for (int i = 0; i < gpu.nGPU; i++) {
+    checkCudaErrors(cudaSetDevice(i));
+
+    dim3 dimBlock(gpu.numThreads, 1, 1);
+    dim3 dimGrid(gpu.numberBlocks, 1, 1);
+
+    cudaError err;
+
+    WoS<<<dimGrid, dimBlock, gpu.size_SharedMemory, multiGPU[i].stream>>>(
+        multiGPU[i].d_x0, multiGPU[i].d_paths, p.eps, p.x0.dimension,
+        gpu.blockIterations, gpu.blockRemainder, i +  1);
+    err = cudaGetLastError();
+    if (cudaSuccess != err) {
+      printf("Wos Kernel returned an error on device %d:\n %s\n", i,
+             cudaGetErrorString(err));
+    }
   }
 
-  cudaDeviceSynchronize();
+  cudaFreeHost(h_x0);
   timers.computationTimer.end();
 
   // We don't need d_x0 anymore, only to reduce solution data
-  cudaFree(d_x0);
 
   printInfo("downloading path data");
   timers.memoryDownloadTimer.start();
-  float h_paths[gpu.numberBlocks];
-  // Download paths data
-  checkCudaErrors(cudaMemcpyAsync(&h_paths, d_paths,
-                                  gpu.numberBlocks * sizeof(float),
-                                  cudaMemcpyDeviceToHost));
+  float *h_paths = (float *)malloc(sizeof(float) * gpu.nGPU * gpu.numberBlocks);
 
+  for (int i = 0; i < gpu.nGPU; i++) {
+    cudaFree(multiGPU[i].d_x0);
+    printf("dounload %d\n", i);
+    checkCudaErrors(cudaSetDevice(i));
+    // Download paths data
+    checkCudaErrors(
+        cudaMemcpyAsync(h_paths + i * gpu.numberBlocks, multiGPU[i].d_paths,
+                        gpu.numberBlocks * sizeof(float),
+                        cudaMemcpyDeviceToHost, multiGPU[i].stream));
+    cudaFree(multiGPU[i].d_paths);
+  }
+  cudaDeviceSynchronize();
   timers.memoryDownloadTimer.end();
 
   printInfo("reduce data on CPU");
-  float gpu_result = reduceCPU(h_paths, gpu.numberBlocks) / p.totalPaths;
+  float gpu_result =
+      reduceCPU(h_paths, gpu.nGPU * gpu.numberBlocks) / p.totalPaths;
+  free(h_paths);
 
 #ifdef DEBUG
   printf("[MAIN]: results values after copy:\n");
@@ -431,7 +454,6 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
   }
 #endif
 
-  cudaFree(d_paths);
   return gpu_result;
 }
 
