@@ -11,12 +11,17 @@
 
 #include "wos_wrapper.cuh"
 
+void printConfig(Parameters p, GPUConfig gpu);
+
 int main(int argc, char *argv[]) {
   printTitle();
   printInfo("initializing");
 
   // initialize parameters object
   Parameters p = Parameters::parseParams(argc, argv);
+  GPUConfig gpu = GPUConfig::createConfig(p);
+  // TODO: simulationConfig class
+  printConfig(p, gpu);
 
   // instantiate timers
   Timers timers;
@@ -24,12 +29,12 @@ int main(int argc, char *argv[]) {
   timers.totalTimer.start();
 
   // Calling WoS kernel
-  float gpu_result = wosWrapper(timers, p);
+  float gpu_result = wosWrapper(timers, p, gpu);
 
   timers.totalTimer.end();
 
 #ifdef OUT
-  logData(gpu_result, timers, p);
+  logData(gpu_result, timers, p, gpu);
 #endif
 
   testResults(gpu_result, p);
@@ -37,4 +42,15 @@ int main(int argc, char *argv[]) {
               timers.totalTimer.get(), timers.memoryDownloadTimer.get());
 
   return (0);
+}
+
+// output params
+void printConfig(Parameters p, GPUConfig gpu) {
+  printf("CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
+         "totalPaths:\t\t%ld\n\tnumber of blocks:\t%d\n"
+         "\tIterations per blocks:\t%d\n\tremainder per "
+         "blocks:\t%d\n\tnumThreads:\t\t%d\n\teps:\t\t\t%f\n\tlogging:\t\t%s\n",
+         p.x0.value, p.x0.dimension, p.totalPaths, gpu.numberBlocks,
+         gpu.blockIterations, gpu.blockRemainder, gpu.numThreads, p.eps,
+         (p.logging) ? "true" : "false");
 }

@@ -1,8 +1,10 @@
-
+#include "export.h"
 #include "helper.h"
 #include "timers.h"
+
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <math.h>
 #include <sys/stat.h>
 
@@ -29,7 +31,7 @@ void outputHeader(std::ofstream &file) {
        << std::endl;
 }
 
-void logData(float result, Timers &timers, Parameters &p) {
+void logData(float result, Timers &timers, Parameters &p, GPUConfig gpu) {
   // write time header
   const char *filename = "docs/data/wos_log.csv";
   float exactSolution = 0.29468541312605526226;
@@ -42,7 +44,7 @@ void logData(float result, Timers &timers, Parameters &p) {
     outputHeader(file);
   }
 
-  file << p.x0.dimension << "," << p.numThreads << "," << p.totalPaths << ","
+  file << p.x0.dimension << "," << gpu.numThreads << "," << p.totalPaths << ","
        << result << "," << relError << "," << exactSolution << "," << p.eps
        << "," << timers.computationTimer.get() << "," << timers.totalTimer.get()
        << "," << timers.memorySetupTimer.get() << ","

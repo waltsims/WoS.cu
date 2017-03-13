@@ -1,12 +1,10 @@
+#include "params.h"
+
 #include <cmath>
 #include <cuda_runtime.h>
 #include <iostream>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "helper.h"
-#include "params.h"
 
 // Source: http://www.cplusplus.com/articles/DEN36Up4/
 
@@ -29,21 +27,14 @@ static void show_usage(char *argv[]) {
 Parameters Parameters::parseParams(int argc, char *argv[]) {
   unsigned int count = 0;
   // set default values
-  // TODO: types are needed here
-  unsigned long int totalPaths = 65535;
   float eps = 0.01;
   SimulationTypes simulation = nativeWos;
   size_t x0Dimension = 512;
   float x0Value = 0.0;
-  int nGPU = 1;
-  unsigned int numThreads;
-  size_t size_SharedMemory;
-  int blockRemainder;
-  unsigned int numberBlocks;
-  int blockIterations;
-  unsigned long int gpuPaths;
+  bool logging = false;
 
-  // TODO use exceptions
+  unsigned long int totalPaths = 65535;
+
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     try {
@@ -107,37 +98,7 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
     }
   }
 
-  // updaate numThreads
-  numThreads = (isPow2(x0Dimension)) ? x0Dimension : nextPow2(x0Dimension);
-  // update size of shared memory
-  // definition of total size needed for variable in buffer dependent on the
-  // length of the data transefered
-  size_SharedMemory = (4 * numThreads + 1) * sizeof(float);
-  // source::https://devblogs.nvidia.com/parallelforall/how-query-device-properties-and-handle-errors-cuda-cc/
-  // uppdate paths per block
-  cudaDeviceProp devProp;
-  cudaGetDeviceProperties(&devProp, 0); // assume one device for now
-
-  if (totalPaths <= MAX_BLOCKS) {
-    numberBlocks = totalPaths;
-    blockIterations = 1;
-    blockRemainder = numberBlocks;
-  } else {
-    numberBlocks = MAX_BLOCKS;
-    blockIterations = ceil((totalPaths / (float)MAX_BLOCKS));
-    blockRemainder = totalPaths % MAX_BLOCKS;
-  }
-
-  // output params
   printf("Running Simulation with %d arguments\n", count);
-  printf("CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
-         "totalPaths:\t\t%ld\n\tnumber of blocks:\t%d\n"
-         "\tIterations per blocks:\t%d\n\tremainder per "
-         "blocks:\t%d\n\tnumThreads:\t\t%d\n\teps:\t\t\t%f\n",
-         x0Value, x0Dimension, totalPaths, numberBlocks, blockIterations,
-         blockRemainder, numThreads, eps);
 
-  return Parameters(numThreads, totalPaths, gpuPaths, blockIterations,
-                    blockRemainder, numberBlocks, nGPU, size_SharedMemory, eps,
-                    simulation, x0Dimension, x0Value);
+  return Parameters(totalPaths, eps, simulation, x0Dimension, x0Value, logging);
 }

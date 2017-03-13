@@ -1,6 +1,7 @@
 #include <curand_kernel.h>
 #include <iostream>
 
+#include "GPUConfig.h"
 #include "cpuReduce.h"
 #include "params.h"
 
@@ -356,33 +357,33 @@ __device__ void evaluateBoundaryValue(float *s_x, float *s_cache,
 //==============================================================================
 void initX0(float *x0, size_t dim, size_t len, float val);
 
-float wosNative(Timers &timers, Parameters &p) {
+float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
 
   // declare local array variabls
   float *h_x0;
-  checkCudaErrors(cudaMallocHost((void **)&h_x0, sizeof(float) * p.numThreads));
+  checkCudaErrors(
+      cudaMallocHost((void **)&h_x0, sizeof(float) * gpu.numThreads));
   // declare pointers for device variables
   float *d_x0 = NULL;
   float *d_paths = NULL;
   // init our point on host
-  float d_eps = p.eps;
-  initX0(h_x0, p.x0.dimension, p.numThreads, p.x0.value);
+  initX0(h_x0, p.x0.dimension, gpu.numThreads, p.x0.value);
 
   timers.memorySetupTimer.start();
 
   // maloc device memory
-  checkCudaErrors(cudaMalloc((void **)&d_x0, p.numThreads * sizeof(float)));
+  checkCudaErrors(cudaMalloc((void **)&d_x0, gpu.numThreads * sizeof(float)));
 
   printInfo("initializing d_paths");
 
   checkCudaErrors(
-      cudaMalloc((void **)&d_paths, p.numberBlocks * sizeof(float)));
+      cudaMalloc((void **)&d_paths, gpu.numberBlocks * sizeof(float)));
 
   // checkCudaErrors(cudaMemset(d_paths, 0.0, p.numberBlocks *
   // sizeof(float)));
 
   // Let's bring our data to the Device
-  checkCudaErrors(cudaMemcpy(d_x0, h_x0, p.numThreads * sizeof(float),
+  checkCudaErrors(cudaMemcpy(d_x0, h_x0, gpu.numThreads * sizeof(float),
                              cudaMemcpyHostToDevice));
   cudaFreeHost(h_x0);
 
@@ -390,15 +391,15 @@ float wosNative(Timers &timers, Parameters &p) {
   timers.computationTimer.start();
 
   printInfo("setting up problem");
-  dim3 dimBlock(p.numThreads, 1, 1);
-  dim3 dimGrid(p.numberBlocks, 1, 1);
+  dim3 dimBlock(gpu.numThreads, 1, 1);
+  dim3 dimGrid(gpu.numberBlocks, 1, 1);
 
   cudaError err;
 
   printInfo("running simulation");
-  WoS<<<dimGrid, dimBlock, p.size_SharedMemory>>>(
-      d_x0, d_paths, d_eps, p.x0.dimension, p.blockIterations,
-      p.blockRemainder);
+  WoS<<<dimGrid, dimBlock, gpu.size_SharedMemory>>>(
+      d_x0, d_paths, p.eps, p.x0.dimension, gpu.blockIterations,
+      gpu.blockRemainder);
   err = cudaGetLastError();
   if (cudaSuccess != err) {
     printf("Wos Kernel returned an error:\n %s\n", cudaGetErrorString(err));
@@ -412,20 +413,20 @@ float wosNative(Timers &timers, Parameters &p) {
 
   printInfo("downloading path data");
   timers.memoryDownloadTimer.start();
-  float h_paths[p.numberBlocks];
+  float h_paths[gpu.numberBlocks];
   // Download paths data
   checkCudaErrors(cudaMemcpyAsync(&h_paths, d_paths,
-                                  p.numberBlocks * sizeof(float),
+                                  gpu.numberBlocks * sizeof(float),
                                   cudaMemcpyDeviceToHost));
 
   timers.memoryDownloadTimer.end();
 
   printInfo("reduce data on CPU");
-  float gpu_result = reduceCPU(h_paths, p.numberBlocks) / p.totalPaths;
+  float gpu_result = reduceCPU(h_paths, gpu.numberBlocks) / p.totalPaths;
 
 #ifdef DEBUG
   printf("[MAIN]: results values after copy:\n");
-  for (unsigned int n = 0; n < p.numberBlocks; n++) {
+  for (unsigned int n = 0; n < gpu.numberBlocks; n++) {
     printf("%f\n", h_paths[n]);
   }
 #endif

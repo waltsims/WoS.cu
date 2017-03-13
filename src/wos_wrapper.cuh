@@ -6,10 +6,10 @@
 #include <limits>
 #include <math_functions.h>
 
-float wosWrapper(Timers &timers, Parameters &p) {
+float wosWrapper(Timers &timers, Parameters &p, GPUConfig gpu) {
   switch (p.simulation) {
   case (nativeWos):
-    return wosNative(timers, p);
+    return wosNative(timers, p, gpu);
   case (thrustWos):
     return wosThrust(timers, p);
   case (hostWos):
