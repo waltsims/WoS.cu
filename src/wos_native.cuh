@@ -360,8 +360,7 @@ float wosNative(Timers &timers, Parameters &p) {
 
   // declare local array variabls
   float *h_x0;
-  checkCudaErrors(
-      cudaMallocHost((void **)&h_x0, sizeof(float) * p.numThreads));
+  checkCudaErrors(cudaMallocHost((void **)&h_x0, sizeof(float) * p.numThreads));
   // declare pointers for device variables
   float *d_x0 = NULL;
   float *d_paths = NULL;

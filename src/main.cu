@@ -7,23 +7,16 @@
 
 #include "export.h"
 #include "helper.h"
-#include "parse.h"
 #include "timers.h"
 
 #include "wos_wrapper.cuh"
-
-// initialize h_x0 vector of size dim and fill with val
 
 int main(int argc, char *argv[]) {
   printTitle();
   printInfo("initializing");
 
-  Parameters p;
-
-  // TODO this should/could go in parameter constructor
-  int parseStatus = parseParams(argc, argv, p);
-  if (parseStatus == 0)
-    return 0;
+  // initialize parameters object
+  Parameters p = Parameters::parseParams(argc, argv);
 
   // instantiate timers
   Timers timers;

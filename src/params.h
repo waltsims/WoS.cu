@@ -12,45 +12,41 @@ size_t getSizeSharedMem(size_t len);
 
 class X0 {
 public:
-  X0() : value(0.0), dimension(512) {}
   size_t dimension;
-
   float value;
 };
 
 class Parameters {
 public:
-  Parameters() : totalPaths(65535), eps(0.01), simulation(nativeWos) {}
-
   X0 x0;
-  unsigned int numThreads;
-  unsigned long int totalPaths;
-  unsigned long int gpuPaths;
-  int blockIterations;
-  int blockRemainder;
-  unsigned int numberBlocks;
-  unsigned int nGPU;
-  size_t size_SharedMemory;
-  // TODO: Question: what effect does the d_eps have on practical convergence?
-  float eps;
-  SimulationTypes simulation;
+  const unsigned long int totalPaths;
+  const SimulationTypes simulation;
+  const float eps; // eps could change with successive itterations
 
-  void update() {
-    updateNumBlocksAndThreads();
-    updateNumThreads();
-    updateSizeSharedMemory();
-    updateEps();
-  };
+  // all device dependent, only const with two same Graphics cards
+  const unsigned long int gpuPaths;
+  const int blockIterations;
+  const unsigned int numThreads;
+  const int blockRemainder;
+  const unsigned int numberBlocks;
+  const int nGPU;
+  const size_t size_SharedMemory;
 
-  void outputParameters(int count);
+  static Parameters parseParams(int argc, char *argv[]);
 
 private:
-  void updateEps();
-  void updateNumBlocksAndThreads();
-  void updateNumThreads();
-  void updatePathsPerBlock();
-  void updateSizeSharedMemory();
-  unsigned int primeFactor();
+  Parameters(const unsigned int numThreads, const unsigned long int totalPaths,
+             const unsigned long int gpuPaths, const int blockIterations,
+             const int blockRemainder, const unsigned int numberBlocks,
+             const int nGPU, const size_t size_SharedMemory, const float eps,
+             const SimulationTypes simulation, const size_t x0Dimension,
+             const float x0Value)
+      : numThreads(numThreads), totalPaths(totalPaths), gpuPaths(gpuPaths),
+        blockIterations(blockIterations), blockRemainder(blockRemainder),
+        numberBlocks(numberBlocks), nGPU(nGPU),
+        size_SharedMemory(size_SharedMemory), eps(eps), simulation(simulation) {
+    x0.dimension = x0Dimension;
+    x0.value = x0Value;
+  }
 };
-
 #endif // PARAMS_H
