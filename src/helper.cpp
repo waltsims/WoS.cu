@@ -92,12 +92,12 @@ void testResults(float gpu_result, Parameters &p) {
     // desired = (float)(d_eps == 0.01) * 0.042535;
     // Julia value [0.0415682]
     if (fabs(gpu_result - desired) < EPS) {
-      printf("|%-15lu|%-15f|%-15f|%-15f|%-15f|", p.totalPaths, desired,
+      printf("|%-15lu|%15.8f|%15.8f|%15.8f|%15.8f|", p.totalPaths, desired,
              gpu_result, EPS, fabs(gpu_result - desired));
       printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
       printf("|\n");
     } else {
-      printf("|%-15lu|%-15f|%-15f|%-15f|%-15f|", p.totalPaths, desired,
+      printf("|%-15lu|%15.8f|%15.8f|%15.8f|%15.8f|", p.totalPaths, desired,
              gpu_result, EPS, fabs(gpu_result - desired));
       printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
       printf("|\n");
@@ -105,12 +105,12 @@ void testResults(float gpu_result, Parameters &p) {
   } else if (fabs(x0 - 1.0) < EPS) {
     float desired = 0.5;
     if (fabs(gpu_result - desired) < EPS) {
-      printf("|%-15lu|%-15f|%-15f|%-15f|%-15f|", p.totalPaths, desired,
+      printf("|%-15lu|%15.8f|%15.8f|%15.8f|%15.8f|", p.totalPaths, desired,
              gpu_result, EPS, fabs(gpu_result - desired));
       printf(ANSI_GREEN "%-14s" ANSI_RESET, "TEST PASSED!");
       printf("|\n");
     } else {
-      printf("|%-15lu|%-15f|%-15f|%-15f|%-15f|", p.totalPaths, desired,
+      printf("|%-15lu|%15.8f|%15.8f|%15.8f|%15.8f|", p.totalPaths, desired,
              gpu_result, EPS, fabs(gpu_result - desired));
       printf(ANSI_RED "%-14s" ANSI_RESET, "TEST FAILED!");
       printf("|\n");
