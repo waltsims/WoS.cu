@@ -21,15 +21,16 @@ public:
   const SimulationTypes simulation;
   const float eps; // eps could change with successive itterations
   const bool logging;
+  const bool avgPath;
 
   static Parameters parseParams(int argc, char *argv[]);
 
 private:
   Parameters(const unsigned long int totalPaths, const float eps,
              const SimulationTypes simulation, const size_t x0Dimension,
-             const float x0Value, const bool logging)
+             const float x0Value, const bool logging, const bool avgPath)
       : totalPaths(totalPaths), eps(eps), simulation(simulation),
-        logging(logging) {
+        logging(logging), avgPath(avgPath) {
     x0.dimension = x0Dimension;
     x0.value = x0Value;
   }

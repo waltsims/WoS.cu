@@ -48,8 +48,9 @@ __device__ void smemInit(BlockVariablePointers bvp, float *d_x0, int tid) {
     bvp.s_result[0] = 0.0;
 }
 
-__global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
-                    int blockIterations, int blockRemainder, int gpu) {
+__global__ void WoS(float *d_x0, float *d_global, float *d_avgPath, float d_eps,
+                    size_t dim, bool avgPath, int blockIterations,
+                    int blockRemainder, int gpu) {
 
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
@@ -66,6 +67,11 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
   if (tid < dim) {
     float x0 = bvp.s_x[tid]; // only works as long as dim x = dim block
     float r;
+    float distance;
+
+    if (avgPath) {
+      distance = 0.0;
+    }
 
 #ifdef DEBUG
     if (tid == 0)
@@ -97,6 +103,9 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
 
           // next x point
           bvp.s_x[tid] += r * bvp.s_direction[tid];
+          if (avgPath && tid == 0) {
+            distance += r;
+          }
         }
 
         // find closest boundary point
@@ -108,6 +117,9 @@ __global__ void WoS(float *d_x0, float *d_global, float d_eps, size_t dim,
     }
     if (tid == 0) {
       d_global[blockIdx.x] = bvp.s_result[tid];
+      if (avgPath) {
+        d_avgPath[blockIdx.x] = distance; 
+      }
 #ifdef DEBUG
       printf("[WOS]: result on block %d:\n%f\n", blockIdx.x, bvp.s_result[0]);
 #endif
@@ -360,6 +372,7 @@ void initX0(float *x0, size_t dim, size_t len, float val);
 typedef struct {
   float *d_x0;
   float *d_paths;
+  float *d_avgPath;
   cudaStream_t stream;
 } MultiGPU;
 
@@ -390,6 +403,11 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
     checkCudaErrors(cudaMalloc((void **)&multiGPU[i].d_paths,
                                gpu.numberBlocks * sizeof(float)));
 
+    if (p.avgPath) {
+      checkCudaErrors(cudaMalloc((void **)&multiGPU[i].d_avgPath,
+                                 gpu.numberBlocks * sizeof(float)));
+    }
+
     // Let's bring our data to the Device
     checkCudaErrors(
         cudaMemcpyAsync(multiGPU[i].d_x0, h_x0, gpu.numThreads * sizeof(float),
@@ -410,8 +428,9 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
     cudaError err;
 
     WoS<<<dimGrid, dimBlock, gpu.size_SharedMemory, multiGPU[i].stream>>>(
-        multiGPU[i].d_x0, multiGPU[i].d_paths, p.eps, p.x0.dimension,
-        gpu.blockIterations, gpu.blockRemainder, i +  1);
+        multiGPU[i].d_x0, multiGPU[i].d_paths, multiGPU[i].d_avgPath, p.eps,
+        p.x0.dimension, p.avgPath, gpu.blockIterations, gpu.blockRemainder,
+        i + 1);
     err = cudaGetLastError();
     if (cudaSuccess != err) {
       printf("Wos Kernel returned an error on device %d:\n %s\n", i,
@@ -427,6 +446,10 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
   printInfo("downloading path data");
   timers.memoryDownloadTimer.start();
   float *h_paths = (float *)malloc(sizeof(float) * gpu.nGPU * gpu.numberBlocks);
+  float *h_avgPaths;
+  if (p.avgPath) {
+    h_avgPaths = (float *)malloc(sizeof(float) * gpu.nGPU * gpu.numberBlocks);
+  }
 
   for (int i = 0; i < gpu.nGPU; i++) {
     cudaFree(multiGPU[i].d_x0);
@@ -438,6 +461,13 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
                         gpu.numberBlocks * sizeof(float),
                         cudaMemcpyDeviceToHost, multiGPU[i].stream));
     cudaFree(multiGPU[i].d_paths);
+    if (p.avgPath) {
+      checkCudaErrors(cudaMemcpyAsync(
+          h_avgPaths + i * gpu.numberBlocks, multiGPU[i].d_avgPath,
+          gpu.numberBlocks * sizeof(float), cudaMemcpyDeviceToHost,
+          multiGPU[i].stream));
+      cudaFree(multiGPU[i].d_avgPath);
+    }
   }
   cudaDeviceSynchronize();
   timers.memoryDownloadTimer.end();
@@ -445,6 +475,11 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
   printInfo("reduce data on CPU");
   float gpu_result =
       reduceCPU(h_paths, gpu.nGPU * gpu.numberBlocks) / p.totalPaths;
+  if (p.avgPath) {
+    float avgPathDistance =
+        reduceCPU(h_avgPaths, gpu.nGPU * gpu.numberBlocks) / p.totalPaths;
+    printf("avgerage path length is: %8f\n", avgPathDistance);
+  }
   free(h_paths);
 
 #ifdef DEBUG

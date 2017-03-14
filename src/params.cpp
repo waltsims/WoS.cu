@@ -14,6 +14,8 @@ static void show_usage(char *argv[]) {
       << "Usage: " << argv[0] << " <option(s)> SOURCES"
       << "Options:\n"
       << "\t-h,\t--help\t\t\t\tShow this help message\n"
+      << "\t-p,\t--path\t\t\t\tFlag to calculate average path length\n"
+      << "\t-l,\t--log\t\t\t\tFlag to calculate average path length\n"
       << "\t-x0,\t--x0Value\t\t\tdefine consant value for x0\n"
       << "\t-dim,\t--dimension\t\t\tdefine the dimension of the problem. "
          "(ergo length of vector x0)\n"
@@ -32,6 +34,7 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
   size_t x0Dimension = 512;
   float x0Value = 0.0;
   bool logging = false;
+  bool avgPath = false;
 
   unsigned long int totalPaths = 65535;
 
@@ -48,6 +51,10 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
         } else {
           throw(std::runtime_error("--x0Value option requires one argument."));
         }
+      } else if ((arg == "-p") || (arg == "--path")) {
+        avgPath = true;
+      } else if ((arg == "-l") || (arg == "--log")) {
+        logging = true;
       } else if ((arg == "-dim") || (arg == "--dimension")) {
         if (i + 1 < argc) {
           i++;
@@ -100,5 +107,6 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
 
   printf("Running Simulation with %d arguments\n", count);
 
-  return Parameters(totalPaths, eps, simulation, x0Dimension, x0Value, logging);
+  return Parameters(totalPaths, eps, simulation, x0Dimension, x0Value, logging,
+                    avgPath);
 }

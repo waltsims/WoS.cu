@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   // initialize parameters object
   Parameters p = Parameters::parseParams(argc, argv);
   GPUConfig gpu = GPUConfig::createConfig(p);
-  //TODO: simulationConfig class
+  // TODO: simulationConfig class
   printConfig(p, gpu);
 
   // instantiate timers
@@ -46,11 +46,13 @@ int main(int argc, char *argv[]) {
 
 // output params
 void printConfig(Parameters p, GPUConfig gpu) {
-  printf("CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
-         "totalPaths:\t\t%ld\n\tnumber of GPUs:\t\t%d\n\tnumber of blocks:\t%d\n"
-         "\tIterations per blocks:\t%d\n\tremainder per "
-         "blocks:\t%d\n\tnumThreads:\t\t%d\n\teps:\t\t\t%f\n\tlogging:\t\t%s\n",
-         p.x0.value, p.x0.dimension, p.totalPaths,gpu.nGPU, gpu.numberBlocks,
-         gpu.blockIterations, gpu.blockRemainder, gpu.numThreads, p.eps,
-         (p.logging) ? "true" : "false");
+  printf(
+      "CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
+      "totalPaths:\t\t%ld\n\tnumber of GPUs:\t\t%d\n\tnumber of blocks:\t%d\n"
+      "\tIterations per blocks:\t%d\n\tremainder per "
+      "blocks:\t%d\n\tnumThreads:\t\t%d\n\teps:\t\t\t%f\n\tlogging:\t\t%"
+      "s\n\tPath integration:\t%s\n",
+      p.x0.value, p.x0.dimension, p.totalPaths, gpu.nGPU, gpu.numberBlocks,
+      gpu.blockIterations, gpu.blockRemainder, gpu.numThreads, p.eps,
+      (p.logging) ? "true" : "false", (p.avgPath) ? "true" : "false");
 }
