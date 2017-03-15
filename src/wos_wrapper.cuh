@@ -2,14 +2,15 @@
 #include "host/wos_host.h"
 #include "wos_native.cuh"
 #include "wos_thrust.cuh"
+#include "data_logger.h"
 
 #include <limits>
 #include <math_functions.h>
 
-float wosWrapper(Timers &timers, Parameters &p, GPUConfig gpu) {
+float wosWrapper(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
   switch (p.simulation) {
   case (nativeWos):
-    return wosNative(timers, p, gpu);
+    return wosNative(timers, p, gpu, dl);
   case (thrustWos):
     return wosThrust(timers, p);
   case (hostWos):

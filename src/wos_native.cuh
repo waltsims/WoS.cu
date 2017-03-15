@@ -384,7 +384,7 @@ typedef struct {
   cudaStream_t stream;
 } MultiGPU;
 
-float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
+float wosNative(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
 
   // declare local array variabls
   float *h_x0;
@@ -495,10 +495,12 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
     float avgPathDistance =
         reduceCPU(h_avgPaths, gpu.nGPU * gpu.numberBlocks) / p.totalPaths;
     printf("avgerage path length is: %8f\n", avgPathDistance);
+    dl.setAvgPathSet(avgPathDistance);
     float avgStepCount =
         (float)std::accumulate(h_stepCount.begin(), h_stepCount.end(), 0.0) /
         p.totalPaths;
     printf("avgerage number of steps per path: %8f\n", avgStepCount);
+    dl.setAvgNumSteps(avgStepCount);
   }
   free(h_paths);
 
@@ -508,6 +510,7 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
     printf("%f\n", h_paths[n]);
   }
 #endif
+  dl.setResult(gpu_result);
 
   return gpu_result;
 }

@@ -5,7 +5,7 @@
 #define MAX_BLOCKS 65535
 #endif
 
-#include "export.h"
+#include "data_logger.h"
 #include "helper.h"
 #include "timers.h"
 
@@ -18,24 +18,25 @@ int main(int argc, char *argv[]) {
   printInfo("initializing");
 
   // initialize parameters object
+  Timers timers;
   Parameters p = Parameters::parseParams(argc, argv);
   GPUConfig gpu = GPUConfig::createConfig(p);
-  // TODO: simulationConfig class
+  DataLogger dl(timers, p, gpu);
   printConfig(p, gpu);
 
   // instantiate timers
-  Timers timers;
 
   timers.totalTimer.start();
 
   // Calling WoS kernel
-  float gpu_result = wosWrapper(timers, p, gpu);
+  // TODO: return struct with stats and results
+  float gpu_result = wosWrapper(timers, p, gpu, dl);
 
   timers.totalTimer.end();
 
-#ifdef OUT
-  logData(gpu_result, timers, p, gpu);
-#endif
+  if (p.logging) {
+    dl.logData();
+  }
 
   testResults(gpu_result, p);
   printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
