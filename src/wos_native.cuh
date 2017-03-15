@@ -1,5 +1,7 @@
 #include <curand_kernel.h>
 #include <iostream>
+#include <numeric>
+#include <vector>
 
 #include "GPUConfig.h"
 #include "cpuReduce.h"
@@ -48,9 +50,10 @@ __device__ void smemInit(BlockVariablePointers bvp, float *d_x0, int tid) {
     bvp.s_result[0] = 0.0;
 }
 
-__global__ void WoS(float *d_x0, float *d_global, float *d_avgPath, float d_eps,
-                    size_t dim, bool avgPath, int blockIterations,
-                    int blockRemainder, int gpu) {
+__global__ void WoS(float *d_x0, float *d_global, float *d_avgPath,
+                    unsigned int *d_stepCount, float d_eps, size_t dim,
+                    bool avgPath, int blockIterations, int blockRemainder,
+                    int gpu) {
 
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
@@ -68,9 +71,11 @@ __global__ void WoS(float *d_x0, float *d_global, float *d_avgPath, float d_eps,
     float x0 = bvp.s_x[tid]; // only works as long as dim x = dim block
     float r;
     float distance;
+    unsigned int stepCount;
 
     if (avgPath) {
       distance = 0.0;
+      stepCount = 0;
     }
 
 #ifdef DEBUG
@@ -105,6 +110,7 @@ __global__ void WoS(float *d_x0, float *d_global, float *d_avgPath, float d_eps,
           bvp.s_x[tid] += r * bvp.s_direction[tid];
           if (avgPath && tid == 0) {
             distance += r;
+            stepCount++;
           }
         }
 
@@ -118,7 +124,8 @@ __global__ void WoS(float *d_x0, float *d_global, float *d_avgPath, float d_eps,
     if (tid == 0) {
       d_global[blockIdx.x] = bvp.s_result[tid];
       if (avgPath) {
-        d_avgPath[blockIdx.x] = distance; 
+        d_avgPath[blockIdx.x] = distance;
+        d_stepCount[blockIdx.x] = stepCount;
       }
 #ifdef DEBUG
       printf("[WOS]: result on block %d:\n%f\n", blockIdx.x, bvp.s_result[0]);
@@ -373,6 +380,7 @@ typedef struct {
   float *d_x0;
   float *d_paths;
   float *d_avgPath;
+  unsigned int *d_stepCount;
   cudaStream_t stream;
 } MultiGPU;
 
@@ -406,6 +414,9 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
     if (p.avgPath) {
       checkCudaErrors(cudaMalloc((void **)&multiGPU[i].d_avgPath,
                                  gpu.numberBlocks * sizeof(float)));
+
+      checkCudaErrors(cudaMalloc((void **)&multiGPU[i].d_stepCount,
+                                 gpu.numberBlocks * sizeof(unsigned int)));
     }
 
     // Let's bring our data to the Device
@@ -428,9 +439,9 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
     cudaError err;
 
     WoS<<<dimGrid, dimBlock, gpu.size_SharedMemory, multiGPU[i].stream>>>(
-        multiGPU[i].d_x0, multiGPU[i].d_paths, multiGPU[i].d_avgPath, p.eps,
-        p.x0.dimension, p.avgPath, gpu.blockIterations, gpu.blockRemainder,
-        i + 1);
+        multiGPU[i].d_x0, multiGPU[i].d_paths, multiGPU[i].d_avgPath,
+        multiGPU[i].d_stepCount, p.eps, p.x0.dimension, p.avgPath,
+        gpu.blockIterations, gpu.blockRemainder, i + 1);
     err = cudaGetLastError();
     if (cudaSuccess != err) {
       printf("Wos Kernel returned an error on device %d:\n %s\n", i,
@@ -447,6 +458,7 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
   timers.memoryDownloadTimer.start();
   float *h_paths = (float *)malloc(sizeof(float) * gpu.nGPU * gpu.numberBlocks);
   float *h_avgPaths;
+  std::vector<unsigned int> h_stepCount(gpu.nGPU * gpu.numberBlocks);
   if (p.avgPath) {
     h_avgPaths = (float *)malloc(sizeof(float) * gpu.nGPU * gpu.numberBlocks);
   }
@@ -466,6 +478,10 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
           h_avgPaths + i * gpu.numberBlocks, multiGPU[i].d_avgPath,
           gpu.numberBlocks * sizeof(float), cudaMemcpyDeviceToHost,
           multiGPU[i].stream));
+      checkCudaErrors(cudaMemcpyAsync(
+          h_stepCount.data() + i * gpu.numberBlocks, multiGPU[i].d_stepCount,
+          gpu.numberBlocks * sizeof(unsigned int), cudaMemcpyDeviceToHost,
+          multiGPU[i].stream));
       cudaFree(multiGPU[i].d_avgPath);
     }
   }
@@ -479,6 +495,10 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu) {
     float avgPathDistance =
         reduceCPU(h_avgPaths, gpu.nGPU * gpu.numberBlocks) / p.totalPaths;
     printf("avgerage path length is: %8f\n", avgPathDistance);
+    float avgStepCount =
+        (float)std::accumulate(h_stepCount.begin(), h_stepCount.end(), 0.0) /
+        p.totalPaths;
+    printf("avgerage number of steps per path: %8f\n", avgStepCount);
   }
   free(h_paths);
 
