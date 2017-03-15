@@ -15,8 +15,8 @@ set(STANDARD_FLAGS ${STANDARD_FLAGS}  --compiler-options -Wall -lineinfo -D_MWAI
 		# Specify the binary name and the source files to build
 		add_subdirectory(host)
 
-		file(GLOB SRC GPUConfig.cu wos_thrust.cuh cpuReduce.cpp helper.cpp  main.cu data_logger.cpp  params.cpp)
-		file(GLOB LIB GPUConfig.h wos_thrust.h helper.h cpuReduce.h clock.h data_logger.h params.h wos_wrapper.cuh wos_native.cuh)
+		file(GLOB SRC gpu_config.cu wos_thrust.cuh cpu_reduce.cpp helper.cpp  main.cu data_logger.cpp  parameters.cpp)
+		file(GLOB LIB gpu_config.h wos_thrust.h helper.h cpu_reduce.h clock.h data_logger.h parameters.h wos_wrapper.cuh wos_native.cuh)
 		cuda_add_library(src ${SRC} ${LIB} ${INC})
 		target_link_libraries(src ${CUDA_LIBARIES} host)
 		target_include_directories (src PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

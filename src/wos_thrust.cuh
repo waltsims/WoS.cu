@@ -2,7 +2,7 @@
 #ifndef THRUST
 #define THRUST
 
-#include "params.h"
+#include "parameters.h"
 #include "timers.h"
 
 #include <cuda_runtime_api.h>

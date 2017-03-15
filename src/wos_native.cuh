@@ -3,9 +3,9 @@
 #include <numeric>
 #include <vector>
 
-#include "GPUConfig.h"
-#include "cpuReduce.h"
-#include "params.h"
+#include "gpu_config.h"
+#include "cpu_reduce.h"
+#include "parameters.h"
 
 #define MAX_THREADS 1024
 #define MAX_BLOCKS 65535

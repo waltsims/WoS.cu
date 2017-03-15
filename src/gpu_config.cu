@@ -1,5 +1,5 @@
 
-#include "GPUConfig.h"
+#include "gpu_config.h"
 #include "helper.h"
 #include "helper_cuda.h"
 

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../params.h"
+#include "../parameters.h"
 #include "timers.h"
 
 float wosHost(Timers &timers, Parameters &p) {

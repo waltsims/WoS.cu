@@ -1,4 +1,4 @@
-#include "params.h"
+#include "parameters.h"
 
 #include <cmath>
 #include <cuda_runtime.h>

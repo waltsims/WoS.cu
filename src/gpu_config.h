@@ -1,6 +1,6 @@
 #ifndef GPUCONFIG_H
 #define GPUCONFIG_H
-#include "params.h"
+#include "parameters.h"
 
 class GPUConfig {
 public:

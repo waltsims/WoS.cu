@@ -6,7 +6,7 @@
 #ifndef MAX_BLOCKS
 #define MAX_BLOCKS 65535
 #endif
-#include "params.h"
+#include "parameters.h"
 
 #include <stdio.h>
 

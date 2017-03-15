@@ -1,7 +1,7 @@
 #ifndef DATALOGGER_H
 #define DATALOGGER_H
-#include "GPUConfig.h"
-#include "params.h"
+#include "gpu_config.h"
+#include "parameters.h"
 #include "timers.h"
 #include <fstream>
 
