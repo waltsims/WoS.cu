@@ -17,7 +17,7 @@ public:
 class Parameters {
 public:
   X0 x0;
-  const unsigned long int totalPaths;
+  const unsigned long long int totalPaths;
   const SimulationTypes simulation;
   const float eps; // eps could change with successive itterations
   const bool logging;
@@ -26,7 +26,7 @@ public:
   static Parameters parseParams(int argc, char *argv[]);
 
 private:
-  Parameters(const unsigned long int totalPaths, const float eps,
+  Parameters(const unsigned long long int totalPaths, const float eps,
              const SimulationTypes simulation, const size_t x0Dimension,
              const float x0Value, const bool logging, const bool avgPath)
       : totalPaths(totalPaths), eps(eps), simulation(simulation),
