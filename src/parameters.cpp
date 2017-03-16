@@ -21,7 +21,6 @@ static void show_usage(char *argv[]) {
          "(ergo length of vector x0)\n"
       << "\t-it,\t--totalPaths\t\t\tdefine the number of iterations for the "
          "algorithm.\n"
-      << "\t-eps,\t--eps\t\t\tdefine epsilon value for the algorithm.\n"
       << "\t-st,\t--simulation-type\t\t[thrust | native | host]\n"
       << std::endl;
 }
@@ -29,7 +28,6 @@ static void show_usage(char *argv[]) {
 Parameters Parameters::parseParams(int argc, char *argv[]) {
   unsigned int count = 0;
   // set default values
-  float eps = 0.01;
   SimulationTypes simulation = nativeWos;
   size_t x0Dimension = 512;
   float x0Value = 0.0;
@@ -42,7 +40,7 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
     std::string arg = argv[i];
     try {
       if ((arg == "-h") || (arg == "--help")) {
-        throw(std::runtime_error("please try again"));
+        throw(std::invalid_argument("please try again"));
       } else if ((arg == "-x0") || (arg == "--x0Value")) {
         if (i + 1 < argc) {
           i++;
@@ -73,14 +71,6 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
           throw(std::runtime_error(
               "--itterations option requires one argument."));
         }
-      } else if ((arg == "-eps") || (arg == "--eps")) {
-        if (i + 1 < argc) {
-          i++;
-          count++;
-          eps = atof(argv[i]);
-        } else {
-          throw(std::runtime_error("--eps option requires one argument."));
-        }
       } else if ((arg == "-st") || (arg == "--simulation-type")) {
         if (i + 1 < argc) {
           i++;
@@ -99,14 +89,14 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
           throw(std::runtime_error("please try again"));
         }
       }
-    } catch (...) {
+    } catch (const std::exception &e) {
+      std::cout << "parsing error: " << e.what() << std::endl;
       show_usage(argv);
-      std::terminate();
+      std::exit(EXIT_FAILURE);
     }
   }
-
+  float eps = 1 / sqrt(totalPaths);
   printf("Running Simulation with %d arguments\n", count);
-
   return Parameters(totalPaths, eps, simulation, x0Dimension, x0Value, logging,
                     avgPath);
 }
