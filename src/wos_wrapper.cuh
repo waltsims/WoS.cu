@@ -7,7 +7,7 @@
 #include <limits>
 #include <math_functions.h>
 
-float wosWrapper(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
+float wosWrapper(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger &dl) {
   switch (p.simulation) {
   case (nativeWos):
     return wosNative(timers, p, gpu, dl);

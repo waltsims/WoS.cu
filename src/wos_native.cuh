@@ -384,7 +384,7 @@ typedef struct {
   cudaStream_t stream;
 } MultiGPU;
 
-float wosNative(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
+float wosNative(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger &dl) {
 
   // declare local array variabls
   float *h_x0;

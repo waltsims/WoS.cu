@@ -10,9 +10,12 @@ public:
   DataLogger(Timers &timers, const Parameters p, const GPUConfig gpu)
       : timers(timers), p(p), gpu(gpu), simulationResult(0.0f), avgPath(0.0f),
         avgNumSteps(0.0f) {}
-  void setAvgPathSet(float avgPath) { avgPath = avgPath; }
-  void setAvgNumSteps(float avgNumSteps) { avgNumSteps = avgNumSteps; }
-  void setResult(float result) { result = result; }
+  void setAvgPathSet(float input) { avgPath = input; }
+  void setAvgNumSteps(float input) { avgNumSteps = input; }
+  void setResult(float result) { simulationResult = result; }
+  float getResult() { return simulationResult; }
+  float getNumSteps() { return avgNumSteps; }
+  float getPath() { return avgPath; }
 
   void logData();
 

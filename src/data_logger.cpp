@@ -2,8 +2,6 @@
 #include "helper.h"
 #include "timers.h"
 
-#include <cstring>
-#include <fstream>
 #include <iostream>
 #include <math.h>
 #include <sys/stat.h>
@@ -20,22 +18,22 @@ off_t DataLogger::fsize(const char *filename) {
 
 // callculate the relative error
 float DataLogger::calcRelativeError(float result, float exactSolution) {
-  return fabs((result - exactSolution) / exactSolution);
+  return fabs(result - exactSolution) / exactSolution;
 }
 
 void DataLogger::outputHeader(std::ofstream &file) {
   file << "number of dimensions, number of Threads, number of "
           "paths, result, relative errror, exacltSolution, eps,avgPath,"
           " avgNumSteps,"
-          "computation time,total time, data "
-          "initailization time, data download time"
+          "computation time,total time, data initailization time, data "
+          "download time"
        << std::endl;
 }
 
 void DataLogger::logData() {
   // write time header
   const char *filename = "docs/data/wos_log.csv";
-  float exactSolution = 0.29468541312605526226;
+  float exactSolution = (p.x0.dimension == 2) ? 0.29468541312605526226 : 0.0;
   float relError = calcRelativeError(simulationResult, exactSolution);
 
   std::ofstream file(filename, std::ofstream::out | std::ofstream::app);
@@ -47,7 +45,7 @@ void DataLogger::logData() {
 
   file << p.x0.dimension << "," << gpu.numThreads << "," << p.totalPaths << ","
        << simulationResult << "," << relError << "," << exactSolution << ","
-       << p.eps << "," << avgPath << "," << avgNumSteps << ","
+       << p.eps << "," << getPath() << "," << getNumSteps() << ","
        << timers.computationTimer.get() << "," << timers.totalTimer.get() << ","
        << timers.memorySetupTimer.get() << ","
        << timers.memoryDownloadTimer.get() << std::endl;

@@ -20,14 +20,13 @@ int main(int argc, char *argv[]) {
   Parameters p = Parameters::parseParams(argc, argv);
   GPUConfig gpu = GPUConfig::createConfig(p);
   DataLogger dl(timers, p, gpu);
-  if (p.verbose){
-  printTitle();
-  printInfo("initializing");
-  printConfig(p, gpu);
-}
+  if (p.verbose) {
+    printTitle();
+    printInfo("initializing");
+    printConfig(p, gpu);
+  }
 
   // instantiate timers
-
   timers.totalTimer.start();
 
   // Calling WoS kernel
@@ -40,11 +39,11 @@ int main(int argc, char *argv[]) {
     dl.logData();
   }
 
-  if(p.verbose){
-  testResults(gpu_result, p);
-  printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
-              timers.totalTimer.get(), timers.memoryDownloadTimer.get());
-            }
+  if (p.verbose) {
+    testResults(gpu_result, p);
+    printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
+                timers.totalTimer.get(), timers.memoryDownloadTimer.get());
+  }
   printf("result: %f\n", gpu_result);
   return (0);
 }
