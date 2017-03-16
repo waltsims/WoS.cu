@@ -8,7 +8,8 @@
 class DataLogger {
 public:
   DataLogger(Timers &timers, const Parameters p, const GPUConfig gpu)
-      : timers(timers), p(p), gpu(gpu) {}
+      : timers(timers), p(p), gpu(gpu), simulationResult(0.0f), avgPath(0.0f),
+        avgNumSteps(0.0f) {}
   void setAvgPathSet(float avgPath) { avgPath = avgPath; }
   void setAvgNumSteps(float avgNumSteps) { avgNumSteps = avgNumSteps; }
   void setResult(float result) { result = result; }

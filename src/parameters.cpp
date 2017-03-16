@@ -14,6 +14,7 @@ static void show_usage(char *argv[]) {
       << "Usage: " << argv[0] << " <option(s)> SOURCES"
       << "Options:\n"
       << "\t-h,\t--help\t\t\t\tShow this help message\n"
+      << "\t-v,\t--verbose\t\t\t\tShow me everything\n"
       << "\t-p,\t--path\t\t\t\tFlag to calculate average path length\n"
       << "\t-l,\t--log\t\t\t\tFlag to calculate average path length\n"
       << "\t-x0,\t--x0Value\t\t\tdefine consant value for x0\n"
@@ -33,6 +34,7 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
   float x0Value = 0.0;
   bool logging = false;
   bool avgPath = false;
+  bool verbose = false;
 
   unsigned long int totalPaths = 65535;
 
@@ -41,6 +43,9 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
     try {
       if ((arg == "-h") || (arg == "--help")) {
         throw(std::invalid_argument("please try again"));
+      } else if ((arg == "-v") || (arg == "--verbose")) {
+        verbose = true;
+        count++;
       } else if ((arg == "-x0") || (arg == "--x0Value")) {
         if (i + 1 < argc) {
           i++;
@@ -98,5 +103,5 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
   float eps = 1 / sqrt(totalPaths);
   printf("Running Simulation with %d arguments\n", count);
   return Parameters(totalPaths, eps, simulation, x0Dimension, x0Value, logging,
-                    avgPath);
+                    avgPath, verbose);
 }

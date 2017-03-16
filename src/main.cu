@@ -14,15 +14,17 @@
 void printConfig(Parameters p, GPUConfig gpu);
 
 int main(int argc, char *argv[]) {
-  printTitle();
-  printInfo("initializing");
 
   // initialize parameters object
   Timers timers;
   Parameters p = Parameters::parseParams(argc, argv);
   GPUConfig gpu = GPUConfig::createConfig(p);
   DataLogger dl(timers, p, gpu);
-  printConfig(p, gpu);
+  if (p.verbose) {
+    printTitle();
+    printInfo("initializing");
+    printConfig(p, gpu);
+  }
 
   // instantiate timers
 
@@ -38,9 +40,11 @@ int main(int argc, char *argv[]) {
     dl.logData();
   }
 
-  testResults(gpu_result, p);
-  printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
-              timers.totalTimer.get(), timers.memoryDownloadTimer.get());
+  if (p.verbose) {
+    testResults(gpu_result, p);
+    printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
+                timers.totalTimer.get(), timers.memoryDownloadTimer.get());
+  }
 
   return (0);
 }

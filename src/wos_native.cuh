@@ -3,8 +3,8 @@
 #include <numeric>
 #include <vector>
 
-#include "gpu_config.h"
 #include "cpu_reduce.h"
+#include "gpu_config.h"
 #include "parameters.h"
 
 #define MAX_THREADS 1024

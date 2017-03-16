@@ -1,8 +1,8 @@
+#include "data_logger.h"
 #include "helper_cuda.h"
 #include "host/wos_host.h"
 #include "wos_native.cuh"
 #include "wos_thrust.cuh"
-#include "data_logger.h"
 
 #include <limits>
 #include <math_functions.h>
