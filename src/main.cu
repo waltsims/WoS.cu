@@ -20,11 +20,11 @@ int main(int argc, char *argv[]) {
   Parameters p = Parameters::parseParams(argc, argv);
   GPUConfig gpu = GPUConfig::createConfig(p);
   DataLogger dl(timers, p, gpu);
-  if (p.verbose) {
-    printTitle();
-    printInfo("initializing");
-    printConfig(p, gpu);
-  }
+  if (p.verbose){
+  printTitle();
+  printInfo("initializing");
+  printConfig(p, gpu);
+}
 
   // instantiate timers
 
@@ -40,12 +40,12 @@ int main(int argc, char *argv[]) {
     dl.logData();
   }
 
-  if (p.verbose) {
-    testResults(gpu_result, p);
-    printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
-                timers.totalTimer.get(), timers.memoryDownloadTimer.get());
-  }
-
+  if(p.verbose){
+  testResults(gpu_result, p);
+  printTiming(timers.memorySetupTimer.get(), timers.computationTimer.get(),
+              timers.totalTimer.get(), timers.memoryDownloadTimer.get());
+            }
+  printf("result: %f\n", gpu_result);
   return (0);
 }
 
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 void printConfig(Parameters p, GPUConfig gpu) {
   printf(
       "CONFIGURATION:\n\tX0:\t\t\t%f\n\tWoS dimension:\t\t%zu\n\tWoS "
-      "totalPaths:\t\t%ld\n\tnumber of GPUs:\t\t%d\n\tnumber of blocks:\t%d\n"
+      "totalPaths:\t\t%lld\n\tnumber of GPUs:\t\t%d\n\tnumber of blocks:\t%d\n"
       "\tIterations per blocks:\t%d\n\tremainder per "
       "blocks:\t%d\n\tnumThreads:\t\t%d\n\teps:\t\t\t%f\n\tlogging:\t\t%"
       "s\n\tPath integration:\t%s\n",

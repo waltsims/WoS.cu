@@ -101,7 +101,9 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
     }
   }
   float eps = 1 / sqrt(totalPaths);
-  printf("Running Simulation with %d arguments\n", count);
+  if (verbose) {
+    printf("Running Simulation with %d arguments\n", count);
+  }
   return Parameters(totalPaths, eps, simulation, x0Dimension, x0Value, logging,
                     avgPath, verbose);
 }

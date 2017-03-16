@@ -73,7 +73,7 @@ __global__ void WoS(float *d_x0, float *d_global, float *d_avgPath,
     float distance;
     unsigned int stepCount;
 
-    if (avgPath) {
+    if (tid == 0 && avgPath) {
       distance = 0.0;
       stepCount = 0;
     }
@@ -398,7 +398,9 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
 
   timers.memorySetupTimer.start();
 
-  printInfo("initializing d_paths");
+  if (p.verbose) {
+    printInfo("initializing d_paths");
+  }
 
   for (int i = 0; i < gpu.nGPU; i++) {
     checkCudaErrors(cudaSetDevice(i));
@@ -427,9 +429,13 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
 
   timers.memorySetupTimer.end();
   timers.computationTimer.start();
-  printInfo("setting up problem");
+  if (p.verbose) {
+    printInfo("setting up problem");
+  }
 
-  printInfo("running simulation");
+  if (p.verbose) {
+    printInfo("running simulation");
+  }
   for (int i = 0; i < gpu.nGPU; i++) {
     checkCudaErrors(cudaSetDevice(i));
 
@@ -454,7 +460,9 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
 
   // We don't need d_x0 anymore, only to reduce solution data
 
-  printInfo("downloading path data");
+  if (p.verbose) {
+    printInfo("downloading path data");
+  }
   timers.memoryDownloadTimer.start();
   float *h_paths = (float *)malloc(sizeof(float) * gpu.nGPU * gpu.numberBlocks);
   float *h_avgPaths;
@@ -465,7 +473,6 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
 
   for (int i = 0; i < gpu.nGPU; i++) {
     cudaFree(multiGPU[i].d_x0);
-    printf("dounload %d\n", i);
     checkCudaErrors(cudaSetDevice(i));
     // Download paths data
     checkCudaErrors(
@@ -488,18 +495,19 @@ float wosNative(Timers &timers, Parameters &p, GPUConfig gpu, DataLogger dl) {
   cudaDeviceSynchronize();
   timers.memoryDownloadTimer.end();
 
-  printInfo("reduce data on CPU");
+  if (p.verbose) {
+    printInfo("reduce data on CPU");
+  }
+
   float gpu_result =
       reduceCPU(h_paths, gpu.nGPU * gpu.numberBlocks) / p.totalPaths;
   if (p.avgPath) {
     float avgPathDistance =
         reduceCPU(h_avgPaths, gpu.nGPU * gpu.numberBlocks) / p.totalPaths;
-    printf("avgerage path length is: %8f\n", avgPathDistance);
     dl.setAvgPathSet(avgPathDistance);
     float avgStepCount =
         (float)std::accumulate(h_stepCount.begin(), h_stepCount.end(), 0.0) /
         p.totalPaths;
-    printf("avgerage number of steps per path: %8f\n", avgStepCount);
     dl.setAvgNumSteps(avgStepCount);
   }
   free(h_paths);
