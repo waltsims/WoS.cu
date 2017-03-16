@@ -25,7 +25,8 @@ float DataLogger::calcRelativeError(float result, float exactSolution) {
 
 void DataLogger::outputHeader(std::ofstream &file) {
   file << "number of dimensions, number of Threads, number of "
-          "paths, result, relative errror, exacltSolution, eps,"
+          "paths, result, relative errror, exacltSolution, eps,avgPath,"
+          " avgNumSteps,"
           "computation time,total time, data "
           "initailization time, data download time"
        << std::endl;
@@ -46,8 +47,9 @@ void DataLogger::logData() {
 
   file << p.x0.dimension << "," << gpu.numThreads << "," << p.totalPaths << ","
        << simulationResult << "," << relError << "," << exactSolution << ","
-       << p.eps << "," << timers.computationTimer.get() << ","
-       << timers.totalTimer.get() << "," << timers.memorySetupTimer.get() << ","
+       << p.eps << "," << avgPath << "," << avgNumSteps << ","
+       << timers.computationTimer.get() << "," << timers.totalTimer.get() << ","
+       << timers.memorySetupTimer.get() << ","
        << timers.memoryDownloadTimer.get() << std::endl;
   file.close();
 }
