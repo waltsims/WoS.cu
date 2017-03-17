@@ -22,11 +22,8 @@ float DataLogger::calcRelativeError(float result, float exactSolution) {
 }
 
 void DataLogger::outputHeader(std::ofstream &file) {
-  file << "number of dimensions, number of Threads, number of "
-          "paths, result, relative errror, exacltSolution, eps,avgPath,"
-          " avgNumSteps,"
-          "computation time,total time, data initailization time, data "
-          "download time"
+  file << "nDimensions,nThreads,nPaths,result,relErrror,exacltSolution,eps,"
+          "avgPath,avgNumSteps,compTime,initTime,finishTime,totalTime"
        << std::endl;
 }
 
@@ -38,7 +35,9 @@ void DataLogger::logData() {
 
   std::ofstream file(filename, std::ofstream::out | std::ofstream::app);
 
-  std::cout << "writing log to: " << filename << std::endl;
+  if (p.verbose) {
+    std::cout << "writing log to: " << filename << std::endl;
+  }
   if (fsize(filename) == 0) {
     outputHeader(file);
   }
@@ -46,8 +45,8 @@ void DataLogger::logData() {
   file << p.x0.dimension << "," << gpu.numThreads << "," << p.totalPaths << ","
        << simulationResult << "," << relError << "," << exactSolution << ","
        << p.eps << "," << getPath() << "," << getNumSteps() << ","
-       << timers.computationTimer.get() << "," << timers.totalTimer.get() << ","
-       << timers.memorySetupTimer.get() << ","
-       << timers.memoryDownloadTimer.get() << std::endl;
+       << timers.computationTimer.get() << "," << timers.memorySetupTimer.get()
+       << "," << timers.memoryDownloadTimer.get() << ","
+       << timers.totalTimer.get() << std::endl;
   file.close();
 }
