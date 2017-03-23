@@ -139,7 +139,7 @@ u(a) = \int_{S}u(a + r\zeta)d\sigma(\zeta) = \int_{0}^{2\pi} 10*\sin(4*\phi)d\ph
 \end{equation}
 which is the solution of $u$ at the center of the 2D unit circle,
 namely a =(0,0). As one can deduce from this example, in a ball, this solution is
-radius invariant.  This property is one of the main key stones of \Gls{RWoS}.
+radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \label{radiusInvariance}
 %TODO: discuss the rotational independence as can be seen by the independence of
 % the solution from r==> wichtig für step size beliebigkeit.
   \subsubsection{The Maximum Principle}\label{sssec:maximum}
@@ -226,13 +226,14 @@ Or per Bauer consist of a ''stochastic process which produces a random variable
 These methods became popular in nuclear research in the 1940's when practical
 experiments were limited and analytical solutions were not unknown.  Monte Carlo
 Methods were found to be useful when analyzing the time independent Schrödinger
-Equation\cite{Metropolis}. Muller defined
-Monte Carlo Methods in 1956 as: \begin{quote}[a method which for] an unknown solution to a given physical
+Equation\cite{Metropolis}. Muller defined Monte Carlo Methods in 1956 as:
+\begin{quote}[a method which for] an unknown solution to a given physical
 problems being estimated by a method which essentially depends on statistical sampling technique.
 This approach requires the utilization of random variables of an appropriate
-stochastic process such that samples of the process yield valid statistical results\cite{Muller}.\end{quote}
-This approach is the basis of The Random Walks on Spheres, when solving harmonic \Glspl{PDE} as described in the
-following passages.
+stochastic process such that samples of the process yield valid statistical
+results\cite{Muller}.\end{quote}
+This approach is the basis of The Random Walks on Spheres, when solving harmonic
+\Glspl{PDE} as described in the following passages.
 %TODO pi example?
 \subsection{Random Directions and Uniform Distributions on Spheres}
 Given the great importance of random directions for \Gls{RWoS}, a brief excursion
@@ -274,6 +275,30 @@ harmonic \glspl{PDE}.
 In the following discussion, in order to clearly state intentions, a standard
 vernacular has been created as depicted in the image below.
 
+\begin{figure}
+\includegraphics[width=15.0cm]{styles/WoS} \label{diagram}
+  \caption{2D depiction of \Gls{RWoS}}
+\end{figure}
+
+\begin{description}
+\item[Origin Point] The origin point describes the discrete point in the domain
+$\Omega$ for which a discrete solution to the PDE is to be found. In \ref{diagram}
+and in the following passages, this point is also referred to as $x0$.
+\item[Radius] The largest distance from the current point, to the domain boundary
+$\partial\Omega$ (depicted above in as lavender circles).
+\item[Step] An transition from the current point $x_{i,j}$ to $x_{i,j+1}$ where
+$i$ is the path number and $j$ the step number of the current path.  The step has
+a length of the radius $r$ and is taken in the uniformly random direction $d$.
+\item[Path] The collection of steps from the origin point to the boundary (depicted in green).
+\item[Epsilon Boundary] Depicted above as a dotted baby blue line, the epsilon boundary
+is the allowable deviation from the boundary $\partial\Omega$ a point can display
+and still terminate the algorithm (see \ref{sssec:algorithm}).
+\item[Projection] One in the epsilon boundary, a projection of the final point $P$
+to the boundary $\partial\Omega$ is performed, thus creating $P/'$.
+\item[Evaluation Point] describes $P/'$ where the boundary function is evaluated.
+The expected value of all evaluation points is the solution at the origin point.
+\end{description}
+
 \subsection{The Algorithm}\label{sssec:algorithm} %TODO: one or we?
 Now that some of the building blocks have been covered, the individual steps of
 the algorithm can be discussed.  The goal of the algorithm is to approximate
@@ -282,8 +307,12 @@ values.  To traverse the domain  to the boundary, we implement Brownian-Like mot
 In order to reduce the number of random Brownian steps needed to reach the boundary,
 one exploits radius independence of $r$ as described in \ref{eq:radinvar}.  Starting
 from our origin, we find the largest sphere that can fit into $\Omega$ %reference drawing
-and select the radius of this sphere as our step size $r$.  We then choose a random direction $d$
-that is uniform on the sphere. %reference excursion
+and select the radius of this sphere as our step size $r$. As mentioned in \ref{radiusInvariance},
+the \ref{sssec:meanvalue} is independent of the radius.  This property is exploited
+in order to take the greatest step possible, with the goal of faster convergence
+towards the epsilon boundary layer $\partial \Omega$, and therefore reduce the
+total running time of the application.  We then choose a random direction $d$
+that is uniform on the sphere (for more see \ref{uniformPoints}).
 After we step a distance $r$ in direction $d$ and arrive at $x_{1}$, we repeat the the afore mentioned process.
 This process is repeated until $x_{m}$ reaches the boundary $\partial \Omega$.
 It has been shown that the probability of this occurring has been shown to be 0\cite{kakutani1944}. %analogy to overlap of tangentail line on circle.
@@ -294,8 +323,6 @@ This algorithm is used to sample $N$ boundary evaluations, the expected value of
 reflects an increasingly more accurate approximation of the solution $u(x_{0})$
 for ever an ever greater number of trails $N$\cite{Bornemann,DeLaurentis}.  Below, the algorithms has been
 described in pseudo-code.
-
-
  \begin{algorithm}[H]{$N, eps, x0$, $\Omega$}
   \caption{Walking On Spheres}
  \label{alg:wos}
@@ -318,13 +345,53 @@ described in pseudo-code.
 \end{algorithmic}
 \end{algorithm}
 
+\subsection{Error Analysis}
+The algorithmic complexity of the \Gls{RWoS} algorithm is of course an area of interest
+when trying to improve performance. Clearly, the larger the number of paths $N$ one
+analyzes, the more precise the value estimation; ergo the sampling error (standard deviation)
+is $\mathcal{O}(N^{\frac{1}{2}})$. Furthermore, the estimation error grows proportional to
+the boundary layer $\epsilon$.
+This error term is due to the projection error at the boundary, and the lost
+pseudo Brownian Motion that one ''skips'' via the projection; ergo $\mathcal{O}(\epsilon)$.
+In total the error amounts to $$Error = \mathcal{O}(N^{-\frac{1}{2}}) + \mathcal{O}(\epsilon)$$\cite{Bornemann}\label{errorComplexity}.
+
+\subsection{Epsilon Selection}
+\begin{theorem}
+The expected number of steps to reach the $\epsilon$-neighborhood of $\partial\Omega$
+is $$\mathcal{O}(\log{}\epsilon).$$\cite{Bornemann,DeLaurentis}\label{epsilonComplexity}
+\end{theorem}
+
+Although \ref{epsilonComplexity} will be considered as given for this work, \cite{DeLaurentis}
+dives deeper into the statistical proof behind this conclusion.  Practically, the
+ left path in figure \ref{diagram} demonstrates the logarithmic convergence a path
+ can, and following \ref{epsilonComplexity} oftentimes does display.
+
+ Given \ref{errorComplexity}, assuming $N^{-\frac{1}{2}} > \epsilon$ the error term
+ is dictated by the number of iterations.  Conversely, the number of steps per path,
+ and therefore running time of \Gls{RWoS} is governed by the selection of $\epsilon$.
+ This means, for an $\epsilon < N^{-\frac{1}{2}}$ the increased computational complexity
+ per path dictated by $\epsilon$ is not worth while, and the total error is limited
+ by the number of path iterations.  In order to obtain the greatest accuracy in
+ the least running time, one aptly defines $\epsilon$ as $$\epsilon = N^{-\frac{1}{2}}$$\label{epsilonDefinition}
+ thereby tying both the error and computational complexity to the number of path
+  iterations $N$\cite{Bornemann}.
+
+\subsection{Algorithmic Complexity}
+In light of \ref{epsilonComplexity}, the overall complexity of \Gls{RWoS} can be
+defined as $$\mathcal{O}(N \log{}\epsilon)$$ whereby, in our case \ref{epsilonDefinition}
+ leads to $$\mathcal{O}(N \log{N^{-\frac{1}{2}}}) = \mathcal{O}(N \log{N}).$$
+
+ This leads to a theoretical dimensionless scalability\cite{Bornemann}.  The practical factuality
+ of this claim will be examined later in this work.
+
+\subsection{Parallel Implementation}
+
 The intrinsic parallelism in this algorithm is plain to see, namely, one can easily
-exploit the independence of each individual path by exciting all paths in parallel.
+exploit the independence of each individual path by executing all paths in parallel($\mathcal{O}(N \log{}N)$).
 This can be realizing by unrolling the for loop in algorithm~\ref{alg:wos}, line~\ref{lst:line:for}.
 The resulting values $E$ can also be reduced in parallel (algorithm~\ref{alg:wos}, line~\ref{lst:line:reduce}).  Furthermore, for every path step,
 the radius and direction are independent (algorithm~\ref{alg:wos}, line~\ref{lst:line:direction} \&~\ref{lst:line:radius}),
  and can therefore be computed in parallel. \cite{Muller,DeLaurentis,Bornemann}
-
 \section{The Basics of Parallel Computing}
 In recent years, the convergence towards the physical limits of Moors law has lead to a
 trend towards Parallel Computing\cite{Kumar}\cite{Markov}.  By most accounts, the

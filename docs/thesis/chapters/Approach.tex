@@ -1,5 +1,18 @@
 \chapter{Approach}
 \label{chapter:approach}
+
+\section{Experiment Hardware}
+For the numerical experiments conducted during this research, two hardware configurations
+are used.  First, a dual GPU configuration consisting of two NVIDIA GTX 560Ti GPU's is
+employed to test multi-device capabilities. Also, seeing as these devices
+could only run \Gls{CUDA} code complied for compute architecture 2.1, code
+backwards compatibility was also tested with this set up.
+The second compute configuration consists of an NVIDIA TITAN X GPU, which allowed
+the testing of the compute architecture 6.1.
+\par
+Both \Gls{GPU} configurations were run used with the same Fujitsu D3067-A1 mother board,
+with 16GB or RAM and an Intel Xeon CPU, model E31235 running at 3.20GHz.
+
 \section{Parallelization}
 In order to successfully map a mathematical problem to specific hardware, one must
 consider the three main bottle necks of parallel computing, namely,
@@ -12,16 +25,8 @@ elaborated.
 Commonly, one wishes to store heavily used data in shared memory in oder to
 take advantage of the increased data access speeds and inter-block data sharing
 capabilities.  For this reason, the \textit{direction}, \textit{radius}, and \textit{position}
-vectors were all stored allocated in shared memory, contributing a shared memory usage of%TODO power of 2
-$3N$.  For each dimensional vector entry, one thread was assigned, subsequently
-also leading to a \textit{blocksize} of $N$.  The practice of one tread per vector
-entry is a common pattern in many \Gls{GPGPU} as is the pattern of storing data in shared
-memory and using one thread per data entry enables efficient data communication
-between threads and accelerated data reads from shared memory. In order to allocate,
-and initialize and manage multiple variables in shared memory, a pointer structure and helper functions
-were used.  This structure was initialized locally per thread and pointed to an
-external allocation of shared memory $buff[ ]$.
-
+vectors were all stored allocated in shared memory, contributing a shared memory usage of
+$3N$.
 \begin{lstlisting}[caption="src/wos\_native.cuh",label=BlockVariablePointers]
 
   struct BlockVariablePointers {
@@ -47,6 +52,15 @@ external allocation of shared memory $buff[ ]$.
   }
 \end{lstlisting}
 
+For each dimensional vector entry, one thread was assigned, subsequently
+also leading to a \textit{blocksize} of $N$.  The practice of one tread per vector
+entry is a common pattern in many \Gls{GPGPU} as is the pattern of storing data in shared
+memory and using one thread per data entry enables efficient data communication
+between threads and accelerated data reads from shared memory. In order to allocate,
+and initialize and manage multiple variables in shared memory, a pointer structure and helper functions
+were used.  This structure was initialized locally per thread and pointed to an
+external allocation of shared memory $buff[ ]$.
+
 Each of the steps of \Gls{RWoS} was implemented thread-wise.  A thread-wise implementation
 explicitly defines a each step as a kernel for individual vector entries.  Each of these operations
 can be executed in parallel by its respective thread.  Where communication is necessary,
@@ -54,10 +68,83 @@ shared memory access and a function call $\_\_syncthreads()$ in order to avoid \
 
 \subsection{Block-level Parallelism}
 Due to the lack of communication necessary between independent paths and their
-their subsequent boundary evaluations, the mapping to \Gls{CUDA} Blocks lends itself
+their subsequent boundary evaluations, the mapping to \Gls{CUDA} blocks lends itself
 to the  application.  For the evaluation of $P$ \Gls{RWoS} paths, $P$ CUDA blocks
-of dimension $N$ are allocated.  Each Path evaluation is saved in the $s\_result$
+of dimension $N$ are allocated.  Each local Path evaluation result is saved in the $s\_result$
 variable in the shared memory structure \ref{BlockVariablePointers}.
+\par
+In mapping every path to a specific block, one limits oneself to the bounds of the
+CUDA hardware.  Currently, the greatest number of blocks available for execution
+of one kernel limited to the value $MAX\_BLOCKS = 65535$.  In oder to reach a greater
+iteration count, a strategy was devised to split a number of total paths greater
+than $MAX\_BLOCKS$ on to a smaller number of \Gls{CUDA} resources.  This strategy,
+although primitive, was found through testing to yield the greatest performance,
+compared to all other tested strategies. One can assume, this is due to greater
+explicit dependency independence that the a block exhibits.  All other alternatives,
+involved a greater number of "sequential" path evaluations per block, and therefore
+a greater overall running time.   Meanwhile, by maximizing the number of blocks,
+one creates greater parallelism in the program that can be exploited on a \Gls{GPGPU}.
+An excerpt of the implementation can be found below.
+
+\begin{lstlisting}[caption="src/gpu\_config.cpp Appendix \ref{appendix}",label=block-parallelism-strategy]
+  ...
+  // uppdate paths per block
+  if (gpuPaths <= MAX_BLOCKS) {
+    numberBlocks = gpuPaths;
+    blockIterations = 1;
+    blockRemainder = numberBlocks;
+  } else {
+    numberBlocks = MAX_BLOCKS;
+    blockIterations = ceil((gpuPaths / (float)MAX_BLOCKS));
+    blockRemainder = gpuPaths % MAX_BLOCKS;
+  }
+...
+\end{lstlisting}
+
+\subsection{Device-level Parallelism}
+In order to decrease running time, it is advantageous to map the problem at hand
+to multiple devices.  In the course of this work, this was realized through a
+simple stream based distribution to two devices connected by a common PCIe bus.
+The strategy for device level parallelism was precedes the block-level parallelism
+strategy, and merely divides the total number of paths desired, by the number of
+available devices.
+\begin{lstlisting}[caption="src/gpu\_config.cpp Appendix \ref{appendix}",label=device-parallelism-strategy1]
+  //...
+// nGPU
+checkCudaErrors(cudaGetDeviceCount(&nGPU));
+gpuPaths = p.totalPaths / nGPU;
+  //...
+\end{lstlisting}
+
+\begin{lstlisting}[caption="src/wos\_native.cuh Appendix \ref{appendix}",label=device-parallelism-strategy2]
+  for (int i = 0; i < gpu.nGPU; i++) {
+    checkCudaErrors(cudaSetDevice(i));
+    checkCudaErrors(cudaStreamCreate(&multiGPU[i].stream));
+    //...
+    }
+  //...
+  for (int i = 0; i < gpu.nGPU; i++) {
+    checkCudaErrors(cudaSetDevice(i));
+
+    dim3 dimBlock(gpu.numThreads, 1, 1);
+    dim3 dimGrid(gpu.numberBlocks, 1, 1);
+
+    cudaError err;
+
+    WoS<<<dimGrid, dimBlock, gpu.size_SharedMemory, multiGPU[i].stream>>>(
+        multiGPU[i].d_x0, multiGPU[i].d_paths, multiGPU[i].d_avgPath,
+        multiGPU[i].d_stepCount, p.eps, p.x0.dimension, p.avgPath,
+        gpu.blockIterations, gpu.blockRemainder, i + 1);
+    err = cudaGetLastError();
+    if (cudaSuccess != err) {
+      printf("Wos Kernel returned an error on device %d:\n %s\n", i,
+             cudaGetErrorString(err));
+    }
+  }
+  //...
+\end{lstlisting}
+
+
 
 \subsection{Reduction}
 Data reduction describes the act of consolidating a large amount of values to
@@ -99,6 +186,103 @@ leads to execution overhead and a subsequent loss in performance
   evaluation, for example concerning block and thread dimensional conditional statements.
   This pattern further increases code performance on \Glspl{GPU}
 \end{description}
+
+  \begin{lstlisting}[caption="src/wos\_native.cuh",label=sumReduce]
+    //...
+    __device__ void warpSumReduce(float *sdata, int tid) {
+      // each thread puts its local sum value into warp variable
+      float mySum = sdata[tid];
+      unsigned int blockSize = blockDim.x;
+
+      // do reduction in shared mem
+
+      if ((blockSize == 1024) && (tid < 512)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 512];
+      }
+
+      __syncthreads();
+
+      if ((blockSize >= 512) && (tid < 256)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 256];
+      }
+
+      __syncthreads();
+
+      if ((blockSize >= 256) && (tid < 128)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 128];
+      }
+
+      __syncthreads();
+
+      if ((blockSize >= 128) && (tid < 64)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 64];
+      }
+
+      __syncthreads();
+
+    #if (__CUDA_ARCH__ >= 300)
+      if (tid < 32) {
+        // Fetch final intermediate sum from 2nd warp
+        if (blockSize >= 64)
+          mySum += sdata[tid + 32];
+        // Reduce final warp using shuffle
+        for (int offset = warpSize / 2; offset > 0; offset /= 2) {
+          mySum += __shfl_down(mySum, offset);
+        }
+      }
+    #else
+      // fully unroll reduction within a single warp
+      if ((blockSize >= 64) && (tid < 32)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 32];
+      }
+
+      __syncthreads();
+
+      if ((blockSize >= 32) && (tid < 16)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 16];
+      }
+
+      __syncthreads();
+
+      if ((blockSize >= 16) && (tid < 8)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 8];
+      }
+
+      __syncthreads();
+
+      if ((blockSize >= 8) && (tid < 4)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 4];
+      }
+
+      __syncthreads();
+
+      if ((blockSize >= 4) && (tid < 2)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 2];
+      }
+
+      __syncthreads();
+
+      if ((blockSize >= 2) && (tid < 1)) {
+        sdata[tid] = mySum = mySum + sdata[tid + 1];
+      }
+
+      __syncthreads();
+    #endif
+
+      if (tid == 0)
+        sdata[0] = mySum;
+
+      __syncthreads();
+    }
+    //...
+\end{lstlisting}
+Briefly, the $\_\_\_shfl\_down(...)$ command should be examined. Before, compute capability
+3.0 (Kepler), reductions between warps of the same thread had to be completed in
+shared memory.  This meant that data transfers between warp registers and shared
+memory had to be completed for every reduction step.  Since Kepler, warps have gained
+the capability to directly access values stored in neighboring warps registers,
+thereby increasing effective bandwidth, freeing shared memory and eliminating the
+necessity for warp synchronization. This action was cleverly named shuffle \cite{shuffle}.
 \subsubsection{Local Reduction}
 Based on \cite{harris}, optimized reduction kernels were introduced for efficient
 shared memory minimum and summation reductions needed for \Gls{RWoS}\ref{appendix}.
@@ -131,13 +315,6 @@ Kahan's summation algorithm was employed.
     return sum;
   }
 \end{lstlisting}
-\section{Path iterations}
-In mapping every path to a specific block, one limits oneself to the bounds of the
-CUDA hardware.  Currently, the greatest number of blocks available for execution
-of one kernel limited to the value $MAX\_BLOCKS = 65535$.  In oder to reach a greater
-iteration count, a strategy was devised to split a number of total paths greater
-than $MAX\_BLOCKS$ on to a smaller number of \Gls{CUDA} resources.
-
 
 \section{Random Number Generation}
 In order to generate pseudo random numbers for the random directions necessary
@@ -176,7 +353,7 @@ to guarantee the randomness caries over when using a multi-GPU hardware configur
 the GPU-ID (starting from 1) is multiplied with the the thread index seed in order
 to ensure seed independence throughout the simulation.
 
-\subsection{Excursion: uniform random directions on a Sphere}
+\subsection{Excursion: uniform random directions on a Sphere}\label{uniformPoints}
 
 In the process of understanding how the generation of uniform distributions on
 spherical surfaces can be created, the following 2 dimensional practical exemplary
@@ -199,3 +376,8 @@ of the tails of the distributions in the 1D plane, leading to a low probability
 in the corners of the square domain.  When the point cloud  is subsequently projected
 onto the sphere, it lacks the peaks in the  spherical distribution and displays an
 overall uniform nature as can be seen in the relatively constant levels  histogram below.
+
+
+%The connection between normal distributions and spheres is not merely
+
+%http://math.stackexchange.com/questions/28558/what-do-pi-and-e-stand-for-in-the-normal-distribution-formula
