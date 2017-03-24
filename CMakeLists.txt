@@ -11,11 +11,6 @@ if(DEBUG)
 	add_definitions(-DDEBUG)
 endif()
 
-if(OUT)
-	message( "OUT flag being set")
-	add_definitions(-DOUT)
-endif()
-
 # Specify the binary name and the source files to build
 include_directories(inc)
 add_subdirectory(src)
