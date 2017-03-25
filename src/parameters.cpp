@@ -36,7 +36,7 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
   bool avgPath = false;
   bool verbose = false;
 
-  unsigned long int totalPaths = 65535;
+  unsigned long long int totalPaths = 65535;
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -71,7 +71,7 @@ Parameters Parameters::parseParams(int argc, char *argv[]) {
         if (i + 1 < argc) {
           i++;
           count++;
-          totalPaths = atoi(argv[i]);
+          totalPaths = atoll(argv[i]);
         } else {
           throw(std::runtime_error(
               "--itterations option requires one argument."));
