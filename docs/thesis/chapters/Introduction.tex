@@ -1,12 +1,43 @@
 
 \chapter{Introduction}
 \label{chapter:Introduction}
-%everyone says the the alogrithms can be implimented in a highly parallel manner,
-% Delaurentis and Sabelfeld etc. especially for higher dimensions
 
-% random walk on spheres can conquer high gradients where finite differences would normally fail.
 
-%cite other practical work Dlaurentis and Romero
+Harmonic \Gls{PDE} exhibit many interesting properties, that
+have long the been the subject of research.  Many of theses properties are well
+understood \cite{Axler1992,Sheldon}.  Although there are methods to solve such
+\Glspl{PDE} on a grid \cite{Bornemann}, discrete Monte Carlo Solvers, have been shown
+to be more efficient \cite{Bornemann, DeLaurentis, kakutani1944}, when only a
+singular value in the domain is of interest, or in higher dimensions. They can also
+be more reliable when severe gradients are present,
+when finite-differences normally would fail \cite{DeLaurentis}. One example of such a case are
+ turbulent fluid simulations, where the boundary behavior of a turbulent
+fluid is still being researched.  These Monte Carlo Methods, which solve problems
+through random inputs into a system, and the evaluation of the subsequent result,
+have long been a mathematical oddity, and field of great interest, but have yet
+to overtake more conventional solvers such as the finite differences and multi-grid method
+methods.
+\par
+A major benefit of Monte Carlo methods, is their propensity for parallelism.  Often,
+the the execution of individual random inputs into a system  and their subsequent evaluation
+are independent
+, and can therefore be executed in parallel.
+
+The current trend towards parallel computing has brought with it many new and exciting
+technologies.  Along with multi-core processors, \Glspl{GPU} have moved on from
+their humble beginings as graphical co-processors.  Thanks to their execution
+stragetie and computationa architechture, \Glspl{GPU} are being used by many for
+high dimensional parrallel tasks. Since so have already
+claimed that \Gls{RWoS} can and should be implemented in a highly parallel manner,
+( \cite{DeLaurentis,Sabelfeld}, etc.), especially in high dimensions,  It is the goal
+ of this work to follow through on these claims.  Given the
+current trend toward parallel computing, this work strives to implement
+\Gls{RWoS}, a Monte-Carlo Solver for harmonic \Glspl{PDE} on one of the most modern
+parallel architectures, and trends in parallel computing, the \Gls{GPU}.
+\par
+
+%what this work will strive to do and what will be shown.
+
 
 %practical analogy of how head dispersion from a point in a material or nuclear
 %fusion also take a random path from a point and defuse randomly.

@@ -561,17 +561,17 @@ These are standard terminologies in GPU programing. GPUs are comprised of four m
 Each GPC contains a cluster of SM's.  The number of SM's per cluster varies by
 model of GPU. SM's are comprised of a collection of CUDA-cores.  Some examples
  can be found in table bellow.
-\begin{center}
-\begin{tabu} to 0.8\textwidth { | X[l] | X[c] | X[c] | X[c]| X[c]| X[c]| X[r] | }
+\begin{center}\label{hardwareTable}
+\begin{tabu} to 0.9\textwidth { | X[l] | X[c] | X[c] | X[c]| X[c]| X[c]| X[r] | }
 
  \hline
  Model & GPU Architecture & Frequency & Single-Precision Performance & CUDA-Cores & CUDA-Cores per SM & GPU Memory \\
  \hline
- Tesla P100 & NVIDIA Pascal & &9.3 TeraFLOPS & 3584 & 64 & 16GB at 732.0 GB/s\\
+ Tesla P100 & NVIDIA Pascal & &9.3 TFLOPS & 3584 & 64 & 16GB at 732.0 GB/s\\
  \hline
- GTX Titan X & NVIDIA Pascal & & 11 TeraFLOPS & 3584 & 64 & 12GB at 336.5 GB/s\\
+ GTX Titan X & NVIDIA Pascal & & 11 TFLOPS & 3584 & 64 & 12GB at 336.5 GB/s\\
  \hline
- GTX 560 Ti & NVIDIA Fermi & &12634 GigaFLOPS & 384 & 32  & 1GB at 128.27 GB/s\\
+ GTX 560 Ti & NVIDIA Fermi & &12634 GFLOPS & 384 & 32  & 1GB at 128.27 GB/s\\
 \hline
 \end{tabu}
 \end{center}

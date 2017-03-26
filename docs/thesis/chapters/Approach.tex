@@ -1,6 +1,12 @@
 \chapter{Approach}
 \label{chapter:approach}
 
+In the following passage, the hardware and software construction used
+in this work will be discussed.  Specifically, details of the parallelization and
+reduction strategies, will be elaborated.  The full source code can be found in
+appendix \ref{appendix}, but excerpts will be inserted into the following passages
+where suitable.
+
 \section{Experiment Hardware}
 For the numerical experiments conducted during this research, two hardware configurations
 are used.  First, a dual GPU configuration consisting of two NVIDIA GTX 560Ti GPU's is
@@ -77,7 +83,10 @@ In mapping every path to a specific block, one limits oneself to the bounds of t
 CUDA hardware.  Currently, the greatest number of blocks available for execution
 of one kernel limited to the value $MAX\_BLOCKS = 65535$.  In oder to reach a greater
 iteration count, a strategy was devised to split a number of total paths greater
-than $MAX\_BLOCKS$ on to a smaller number of \Gls{CUDA} resources.  This strategy,
+than $MAX\_BLOCKS$ linearly on to a smaller number of \Gls{CUDA} resources.  In short,
+for every path evaluation $P$ greater than $65535$, each block will conduct $floor(P/65535)$
+path iterations. The remaining path iterations, $R = P \% 65535$ will be conducted
+ by the first $R$ blocks of the grid.  This strategy,
 although primitive, was found through testing to yield the greatest performance,
 compared to all other tested strategies. One can assume, this is due to greater
 explicit dependency independence that the a block exhibits.  All other alternatives,
@@ -101,7 +110,7 @@ An excerpt of the implementation can be found below.
 ...
 \end{lstlisting}
 
-\subsection{Device-level Parallelism}
+\subsection{Device-level Parallelism} \label{devicePar}
 In order to decrease running time, it is advantageous to map the problem at hand
 to multiple devices.  In the course of this work, this was realized through a
 simple stream based distribution to two devices connected by a common PCIe bus.
@@ -283,7 +292,7 @@ memory had to be completed for every reduction step.  Since Kepler, warps have g
 the capability to directly access values stored in neighboring warps registers,
 thereby increasing effective bandwidth, freeing shared memory and eliminating the
 necessity for warp synchronization. This action was cleverly named shuffle \cite{shuffle}.
-\subsubsection{Local Reduction}
+\subsubsection{Local Reduction}\label{localRed}
 Based on \cite{harris}, optimized reduction kernels were introduced for efficient
 shared memory minimum and summation reductions needed for \Gls{RWoS}\ref{appendix}.
 In order to successfully use these optimized reduction techniques, the memory allocations
@@ -376,6 +385,14 @@ of the tails of the distributions in the 1D plane, leading to a low probability
 in the corners of the square domain.  When the point cloud  is subsequently projected
 onto the sphere, it lacks the peaks in the  spherical distribution and displays an
 overall uniform nature as can be seen in the relatively constant levels  histogram below.
+\begin{figure}
+\begin{center}
+\includegraphics[width=10.0cm]{styles/distributions} \label{plot:distributions}
+  \caption{}
+  \includegraphics[width=10.0cm]{styles/histograms} \label{plot:historam}
+    \caption{}
+\end{center}
+\end{figure}
 
 
 %The connection between normal distributions and spheres is not merely
