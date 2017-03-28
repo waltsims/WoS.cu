@@ -16,19 +16,18 @@ backwards compatibility was also tested with this set up.
 The second compute configuration consists of an NVIDIA TITAN X GPU, which allowed
 the testing of the compute architecture 6.1.
 \par
-Both \Gls{GPU} configurations were run used with the same Fujitsu D3067-A1 mother board,
+Both \Gls{GPU} configurations were run with the same Fujitsu D3067-A1 mother board,
 with 16GB or RAM and an Intel Xeon CPU, model E31235 running at 3.20GHz.
 
 \section{Parallelization}
 In order to successfully map a mathematical problem to specific hardware, one must
 consider the three main bottle necks of parallel computing, namely,
 memory allocation and access strategies, execution order and data communication.
-The complete implementation, can be found and referenced in appendix \ref{appendix}.
 In the following passages, some of the intricacies of the implementation will be
 elaborated.
 
 \subsection{Thread-level Parallelism}\label{tlp}
-Commonly, one wishes to store heavily used data in shared memory in oder to
+Commonly, one wishes to store heavily used data in shared memory in order to
 take advantage of the increased data access speeds and inter-block data sharing
 capabilities.  For this reason, the \textit{direction}, \textit{radius}, and \textit{position}
 vectors were all stored allocated in shared memory, contributing a shared memory usage of
@@ -59,13 +58,13 @@ $3N$.
 \end{lstlisting}
 
 For each dimensional vector entry, one thread was assigned, subsequently
-also leading to a \textit{blocksize} of $N$.  The practice of one tread per vector
-entry is a common pattern in many \Gls{GPGPU} as is the pattern of storing data in shared
+also leading to a \textit{blocksize} of $N$.  The practice of one thread per vector
+entry is a common pattern in many \gls{GPGPU} as is the pattern of storing data in shared
 memory and using one thread per data entry enables efficient data communication
 between threads and accelerated data reads from shared memory. In order to allocate,
-and initialize and manage multiple variables in shared memory, a pointer structure and helper functions
+ initialize and manage multiple variables in shared memory, a pointer structure and helper functions
 were used.  This structure was initialized locally per thread and pointed to an
-external allocation of shared memory $buff[ ]$.
+external allocation of shared memory \textit{buff[ ]}.
 
 Each of the steps of \Gls{RWoS} was implemented thread-wise.  A thread-wise implementation
 explicitly defines a each step as a kernel for individual vector entries.  Each of these operations
@@ -82,8 +81,8 @@ variable in the shared memory structure \ref{BlockVariablePointers}.
 In mapping every path to a specific block, one limits oneself to the bounds of the
 CUDA hardware.  Currently, the greatest number of blocks available for execution
 of one kernel limited to the value $MAX\_BLOCKS = 65535$.  In oder to reach a greater
-iteration count, a strategy was devised to split a number of total paths greater
-than $MAX\_BLOCKS$ linearly on to a smaller number of \Gls{CUDA} resources.  In short,
+path iteration count, a strategy was devised to split a number of total paths greater
+than $MAX\_BLOCKS$ linearly on to a smaller number of \Gls{CUDA} block resources.  In short,
 for every path evaluation $P$ greater than $65535$, each block will conduct $floor(P/65535)$
 path iterations. The remaining path iterations, $R = P \% 65535$ will be conducted
  by the first $R$ blocks of the grid.  This strategy,
@@ -164,7 +163,7 @@ but are not limited to maximum value, minimum value, product and bitwise reduce 
 sum-reduce describes the addition of all data values in a set and returning a single value.
 In sequential execution, a reduce operation will, for $N$ input values, have a nominal
 running time of $0(N)$ and is most commonly realized by means of a loop over that
-input data.  In parallel computing, these operations are performed in parallel by dividing the,
+input data.  In parallel computing, these operations are performed concurrently, by dividing the
 workload among the $w$ worker cores and performing serial reduction of the subsets,
 while finally reducing the intermediate results.  This naive approach leads to an
 optimal \gls{speed-up} of $w$.  Due to the lack of a global synchronization mechanism
@@ -172,12 +171,12 @@ on \Glspl{GPU}, this naive reduction parallelization approach is not possible,
 and other methods have been developed.  Mark Harris, dives deep into the benefits
 and pitfalls of parallel reduction on \Glspl{GPU} and has derived optimized
 recursive approaches, as documented in \cite{harris}.  Some key points from his work are
-the avoidance of:
+:
 \begin{description}
   \item [Avoidance of branch divergence]
 since each warp executes one common instruction at a time, when branch divergence,
 (i.e. if/else evaluation) occurs for individual elements, the warp-wise execution pattern
-is broken, and additional warps must be executed for diverging threads. This \Gls{GPU} anti-pattern
+is broken, and additional warp's must be executed for diverging threads. This \Gls{GPU} anti-pattern
 leads to execution overhead and a subsequent loss in performance
   \item [Bank conflict free addressing strategies]
   in order to achieve the improved performance and concurrent read and write capabilities
@@ -190,7 +189,7 @@ leads to execution overhead and a subsequent loss in performance
   access pattern is recommended.
   \item [Loop unrolling] by explicitly defining looped operations, the loop overhead
   can be reduced to a minimum, therefore allowing for greater performance during execution.
-  \item [compile time evaluation]  In order to reduce the number of conditional
+  \item [Compile time evaluation]  In order to reduce the number of conditional
   evaluated at runtime, the C++ feature of templating can allow compile-time statement
   evaluation, for example concerning block and thread dimensional conditional statements.
   This pattern further increases code performance on \Glspl{GPU}
@@ -294,7 +293,7 @@ thereby increasing effective bandwidth, freeing shared memory and eliminating th
 necessity for warp synchronization. This action was cleverly named shuffle \cite{shuffle}.
 \subsubsection{Local Reduction}\label{localRed}
 Based on \cite{harris}, optimized reduction kernels were introduced for efficient
-shared memory minimum and summation reductions needed for \Gls{RWoS}\ref{appendix}.
+shared memory minimum and summation reductions needed for \Gls{RWoS} (see appendix \ref{appendix}).
 In order to successfully use these optimized reduction techniques, the memory allocations
 discussed in \ref{tlp} were step-wise over allocated, meaning it was ensured that
 the total size of allocated shared memory could store a power of 2 number of elements,
@@ -331,7 +330,7 @@ for \Gls{RWoS}, the \Gls{CUDA} library \Gls{CURAND} was utilized.
 \subsection{CURAND}
 The \Gls{CURAND} library provides an API necessary for generating high quality
 pseudo random numbers.  The default pseudo random number generator XORWOW was
-was used during this work\cite{xorwow}.  The CURAND implementation of XORWOW provides
+was used during this work \cite{xorwow}.  The CURAND implementation of XORWOW provides
 a seed dependent, reproducible series of random numbers, that has
 a period greater than $2^{190}$. By modulating the seed, the user is guaranteed a
 different starting state and subsequent different series of pseudo-random numbers.
@@ -340,7 +339,7 @@ the generation of pseudo random numbers during the execution of \Gls{RWoS} and
 therefore greatly reduce the amount of data transfer to the device, and therefore
 the overall running time of the program.  Furthermore, the pseudo-random normal
 distribution functionality of \Gls{CURAND} was used to generate normal distributions
-in an $N$-dimensional euclidean space, which subsequently created a uniform spherical
+in an $N$-dimensional euclidean space, which subsequently was transformed into a uniform spherical
 distribution.
 %\subsection{Pseudo-Random and Quasi-Random}
 \subsubsection{Seed Independence}
@@ -365,19 +364,19 @@ to ensure seed independence throughout the simulation.
 \subsection{Excursion: uniform random directions on a Sphere}\label{uniformPoints}
 
 In the process of understanding how the generation of uniform distributions on
-spherical surfaces can be created, the following 2 dimensional practical exemplary
+spherical surfaces can be created, the following exemplary two dimensional practical
 experiments were performed.
 
-In order to attain a distribution on a sphere, the process followed in this work,
+In order to attain a distribution on a sphere, the process followed herein,
 consisted of creating an $N$-dimensional normal distribution in euclidian space and
-sampling from the afore mentioned distribution.  The $N$-dimensional sample vector
-is subsequently normalized onto the $N$-dimensional unit sphere.  Below, the process
-exemplarily visualized for a 2D example.  Furthermore, the 2D case of a uniform
-euclidian distribution being normalized is also exemplified, in order to intuitively
+sampling from the afore-mentioned distribution.  The $N$-dimensional sample vector
+is subsequently normalized onto the $N$-dimensional unit sphere.
+The 2D case of a uniform
+euclidian distribution being normalized is exemplified below, in order to intuitively
 show the distributional discrepancies and obvious ill suited nature for the problem
 at hand.  The two point clouds below are 2D normal and uniform distributions
 respectively.  The peaks on the uniform distribution histogram stem from the corners
-of the distribution in a 2 dimensional euclidian distribution.  When projected onto
+of the distribution in a two dimensional euclidian distribution.  When projected onto
 the sphere, the accumulation of points in the corner of the euclidian domain create
 ''hot spots'' in the spherical distribution.  The two dimensional normal
 distribution point cloud on the other hand, mitigates this problem due to the summation
