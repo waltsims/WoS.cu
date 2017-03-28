@@ -1,0 +1,39 @@
+\chapter{Outlook and Conclusion}
+\label{chapter:outlook_and_conclusion}
+\section{Possible Future Work}
+Within the timeframe of this thesis, some topics could not be handled.  Still,
+they will be briefly suggested as the starting point for future work.
+\subsection{Data Input and Usability}
+Currently, the \gls{poc} implimention only has the ability to evaluate an indivudual discrete point
+on the diagonal of an $N$ dimensional cube.  This limitation was introduced in order
+to lighten the data entry interface
+\subsection{CUDA in Julia}
+the programming language Julia is developing into a strong candidate for the go
+to high-level numerical programming language.  Parallel to the completion of this
+thesis, a high level CUDA interface, \href{https://github.com/JuliaGPU/CUDAnative.jl}
+{CUDANative.jl}, has been developed by Tim Besard for Julia. In order to further increase the
+usability of the \Gls{RWoS} implementation, and to test the practicality of  CUDANative.jl,
+a version of \Gls{RWoS} should be written in Julia.  This would not only allow
+for higher level improvement of \Gls{RWoS}, but also help blaze a path for
+GPU programming in the Julia programing ecosystem.
+
+\subsection{Pipelining Strategy for High-Dimensional/High-Sampling Simulations}
+Though the problem or \Gls{RWoS} is computationally bound, one further enhancement
+to the current implementation would be a CUDA stream based pipelining approach,
+to allow the transfer of intermediate results from the device to the host,
+thereby overlapping data transfers with host and device computational.  This increased
+parallelism would also better enable the evaluation of a larger number of discrete
+ points in the domain $\Omega$.  While the first points evaluation results are being
+ computed on the host, the device can continue working on the next point in a queue.
+ By breaking up the sequential order of operation, a greater number of evaluations
+ would be possible in less time, thereby greatly increasing the functionality and
+ usability of the program.
+\subsection{Distributed Memory Parallelization}
+%limitations of shared memory
+%MPI
+%how it could be done
+%why it would help
+
+\subsection{Load Balancing for Heterogenous Computational resources}
+\subsection{larger step size via weighted evaluations}
+\section{Conclusion}

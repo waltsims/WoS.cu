@@ -110,7 +110,7 @@ The following example (see figure \ref{fig:swingPlot}\ref{fig:swingSolve}) is me
 the mean value property of harmonic \Glspl{PDE} and will accompany the discussion
 of the properties of harmonic functions.
 
-\begin{figure}[h]
+\begin{figure}[ht]
   \centering
   \begin{minipage}[b]{0.4\textwidth}
   \includegraphics[width=5cm]{styles/sinBoundarysovle.png}
@@ -461,7 +461,7 @@ The order in which the kernel functions are applied to the data, is determined b
 \gls{dd}, which dictate the order and timing of kernel execution. Conventional
 sequential computing can be described by a streaming process known as \gls{sisd}.
 The stream processing paradigm on which GPU programming is based is known as \gls{simt}
- \cite{advancedTopics}.  The idea behind the \gls{simt} paradigm is to over load
+ \cite{advancedtopics}.  The idea behind the \gls{simt} paradigm is to over load
  $p$ processors with $t \gg p$ tasks by assigning every processor a \gls{simd} lane
  that executes in lock step.  In adopting this computational paradigm, one can mask
  the computational latency of an individual thread, by switching contexts while
