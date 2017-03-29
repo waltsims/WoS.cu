@@ -3,8 +3,8 @@ include("wos.jl")
 
 using DataArrays, DataFrames
 
-dimensions =[2, 3, 4, 5, 6, 7,8, 9, 10, 11, 16, 32, 64]#, 128, 256, 257, 532, 1024] 
-iterations =[10, 10^2, 10^3, 10^4, 10^5] #,10^6, 10^7, 10^8, 10^9, 10^10] 
+dimensions =[2, 4, 8, 16, 32, 64, 128]#, 256, 532, 1024] 
+iterations =[10, 10^2, 10^3, 10^4, 10^5, 10^6]#, 10^7, 10^8, 10^9, 10^10] 
 results = zeros(length(iterations) * length(dimensions),4)
 
 run = 1
