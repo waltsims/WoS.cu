@@ -48,5 +48,8 @@ wos
 *.aux
 *.log
 *.pdf
+*.glg
+*.gls
+*.xdy
 
 *.nvvp
