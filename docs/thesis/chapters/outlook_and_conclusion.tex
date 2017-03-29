@@ -4,15 +4,17 @@
 Within the timeframe of this thesis, some topics could not be handled.  Still,
 they will be briefly suggested as the starting point for future work.
 \subsection{Data Input and Usability}
-Currently, the \gls{poc} implimention only has the ability to evaluate an indivudual discrete point
+Currently, the \gls{poc} implementation only has the ability to evaluate an individual discrete point
 on the diagonal of an $N$ dimensional cube.  This limitation was introduced in order
-to lighten the data entry interface
+to lighten the data entry interface, and enable a concentration on the computational
+efficiency rather than the usability and \gls{ui}.  A csv, or tsv parser would be a first step in
+improving this aspect of the implementation.
 \subsection{CUDA in Julia}
 the programming language Julia is developing into a strong candidate for the go
 to high-level numerical programming language.  Parallel to the completion of this
 thesis, a high level CUDA interface, \href{https://github.com/JuliaGPU/CUDAnative.jl}
 {CUDANative.jl}, has been developed by Tim Besard for Julia. In order to further increase the
-usability of the \Gls{RWoS} implementation, and to test the practicality of  CUDANative.jl,
+usability of the \Gls{RWoS} implementation, and to test the practicality of CUDANative.jl,
 a version of \Gls{RWoS} should be written in Julia.  This would not only allow
 for higher level improvement of \Gls{RWoS}, but also help blaze a path for
 GPU programming in the Julia programing ecosystem.
@@ -29,11 +31,36 @@ parallelism would also better enable the evaluation of a larger number of discre
  would be possible in less time, thereby greatly increasing the functionality and
  usability of the program.
 \subsection{Distributed Memory Parallelization}
-%limitations of shared memory
-%MPI
-%how it could be done
-%why it would help
+
+In order to scale this problem to a multi-node system, thereby achieving higher
+parallelism on more resources, a distributed memory solution could be implemented.
+\Gls{mpi} could be used to disperse the computational load to more nodes, while each
+node would be responsible to a subset of paths.  The path allocation could be realized
+similarly to multi-\gls{GPU} method, where to total number is divided by the number of nodes,
+and each subgroup of paths is calculated by one node, regardless of the number of
+\gls{GPU} resources the node has.  Mulit-GPU nodes would divide the path subgroup again
+for individual \glspl{GPU}.
 
 \subsection{Load Balancing for Heterogenous Computational resources}
-\subsection{larger step size via weighted evaluations}
+Once heterogeneous systems are realized, load balancing will begin to be of interest.
+When compute resources have varying compute capabilities, equal size chunks will
+be executed with deviating completion time.  This means, the ''fast'' resources
+will finish first and have to wait for ''slow'' resources.  In order to avoid this
+and attain optimal speed up, work should be divided in chunks inversely proportional
+to performance.  In order to attain performance figures at run time, a small test
+batch can be distributed to all resources and evaluation time of the test batch will
+serves as a performance measure for resource allocation of the critical solver.
+
+\subsection{Faster Path Convergence via Weighted Evaluations}
+One last optimization, is mathematical in nature.  Building on the ideas of
+equation \ref{eq:weighted_average_integral}, by off-setting the center point of a current
+step in a spherical radius, one could increase the radius size to fit to domain in a
+more optimal manner.  In this case, optimal means increasing the number of intersections
+of the radius with the domain boundary$\partial \Omega$, thereby increasing the likelihood of boundary
+interception and hopefully, adding a better constant to the already impressive convergence
+rate of $\mathcal{O}(\log(\epsilon))$.  This approach would mean that paths would need
+to be saved during ''stepping time'' and the weights for
+each steps per path would have to be calculated after the path intercepts the $\epsilon$
+boundary via \ref{eq:poissonkernel}.  This idea merely represents a hypothesis
+based on intuition and still needs to be proven effective both practically and theoretically.
 \section{Conclusion}

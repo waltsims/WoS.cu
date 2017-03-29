@@ -361,38 +361,7 @@ to guarantee the randomness caries over when using a multi-GPU hardware configur
 the GPU-ID (starting from 1) is multiplied with the the thread index seed in order
 to ensure seed independence throughout the simulation.
 
-\subsection{Excursion: uniform random directions on a Sphere}\label{uniformPoints}
 
-In the process of understanding how the generation of uniform distributions on
-spherical surfaces can be created, the following exemplary two dimensional practical
-experiments were performed.
-
-In order to attain a distribution on a sphere, the process followed herein,
-consisted of creating an $N$-dimensional normal distribution in euclidian space and
-sampling from the afore-mentioned distribution.  The $N$-dimensional sample vector
-is subsequently normalized onto the $N$-dimensional unit sphere.
-The 2D case of a uniform
-euclidian distribution being normalized is exemplified below, in order to intuitively
-show the distributional discrepancies and obvious ill suited nature for the problem
-at hand.  The two point clouds below are 2D normal and uniform distributions
-respectively.  The peaks on the uniform distribution histogram stem from the corners
-of the distribution in a two dimensional euclidian distribution.  When projected onto
-the sphere, the accumulation of points in the corner of the euclidian domain create
-''hot spots'' in the spherical distribution.  The two dimensional normal
-distribution point cloud on the other hand, mitigates this problem due to the summation
-of the tails of the distributions in the 1D plane, leading to a low probability
-in the corners of the square domain.  When the point cloud  is subsequently projected
-onto the sphere, it lacks the peaks in the  spherical distribution and displays an
-overall uniform nature as can be seen in the relatively constant levels  histogram below.
-
-\begin{figure}[ht]
-\begin{center}
-\includegraphics[width=15.0cm]{styles/distributions} \label{plot:distributions}
-  \caption{}
-  \includegraphics[width=15.0cm]{styles/histograms} \label{plot:historam}
-    \caption{}
-\end{center}
-\end{figure}
 
 
 %The connection between normal distributions and spheres is not merely

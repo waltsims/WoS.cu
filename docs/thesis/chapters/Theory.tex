@@ -10,26 +10,18 @@
 
 \section{Problem Setting}
 %Boundary Value Problems
-In the scope of this work, we will be solving
- linear elliptic PDEs, i.e. elliptic \glspl{BVP}.
-\begin{definition}[linear elliptic partial differential equation]
-$$Lu = \sum_{i=1}^{n}\sum_{j=1}^{n} %TODO: check u or x
-\frac{\partial^{2}u}{\partial u_{i}u_{j}}=\sigma(x)$$
-\cite{Gilbarg2015}
-\end{definition}
-%well posedness
-%definition of linear-ness
-\begin{remark}
-  if $x \rightarrow Lu$ is linear, then
-  $\begin{cases}
-      \text{either $L$ is continuous everywhere} \\
-      \text{otherwise, $L$ is discontinuous everywhere}
-    \end{cases}$ \cite{Bornemann}
-\end{remark}
-  Specifically, the classic example of \ref{eq:poisson} will be of great interest.
-  \begin{equation}
-  \tag{Poisson's Equation} \bigtriangleup u = \sigma(x), \label{eq:poisson}
-  \end{equation}
+In the scope of this work, we will be solving the $n$ dimensional elliptic Dirichlet boundary
+value problem of the
+\ref{eq:poisson} defined as:
+  \begin{equation}\tag{Poisson's Equation}
+  \begin{split}
+\forall \text{ domains } \Omega \subset
+  \mathbb{R}^{n}, n \in \mathbb{N} \\ \text{ with }u\colon \Omega \rightarrow \mathbb{R}^{1}\\
+  \bigtriangleup u = \sigma(x),
+  \label{eq:poisson}
+  \\ u\rvert_{\partial \Omega} = f
+\end{split}
+\end{equation}
 A special case of the \ref{eq:poisson}, is the homogeneous case, where $\sigma(x) = 0$, called
 \ref{eq:laplace}
   \begin{equation}
@@ -37,29 +29,30 @@ A special case of the \ref{eq:poisson}, is the homogeneous case, where $\sigma(x
     \bigtriangleup u = 0
     \label{eq:laplace}
   \end{equation}
-The goal is to efficiently numerically solve the given elliptic \Glspl{PDE}
-on N-Dimensional cubic spaces giving a Dirchlet
-Boundary Condition, i.e. find a function or set of functions that fulfills the set of given constraints.
 A Dirichlet Boundary Condition defined as:
 \begin{definition}[Dirichlet Boundary Condition]
 given a \Gls{PDE}
 defined on a domain $\Omega$, constrained via the definition values on the
  boundary of the domain $\partial \Omega$, e.g $f(x), \forall  x \in \partial \Omega$
 \end{definition}
-Due to the numerical nature of this task, the solution cannot be described symbolically,
-but rather must be described discretely by its function values within $\Omega$.
+The goal is to efficiently numerically solve the given elliptic \Glspl{PDE}
+on n-Dimensional cubic spaces, $[-1,1]^{n}$ giving a Dirchlet
+Boundary Condition, i.e. find a function or set of functions that fulfills the set of given constraints.
+Due to the numerical nature of this task, the solution cannot typically be described symbolically.
+Often u is discretized by its function values within $\Omega$.
 Also of great importance is the possibility to transform a Poisson Equation into
 a Laplace Equation, assuming a suitable transformation can be found.   Many elliptic \glspl{PDE} can be transformed into harmonic \glspl{PDE},
 they properties of which thereby increase the applicability of this solving algorithm\cite{Bornemann}.
+\newpage
 \begin{example}[Transformation Poisson's Equation to Laplace Equation]
-  Given the specific case of Poisson's equation, where the source term $\sigma(x)=-1$:
+  Given the specific case of Poisson's equation with the source term $\sigma(x)$:
   \begin{multicols}{2}
     \begin{equation}
-      -\bigtriangleup u = 1\text{, with }\Omega [-1,1]^{d}, d \in \mathbb{N}.
+      -\bigtriangleup u = 1\text{, with }\Omega = [-1,1]^{n}, n \in \mathbb{N}.
     \end{equation}
-      $$u\big\rvert_{\partial \Omega} = 0 $$
+      $$u\big\rvert_{\partial \Omega} = \sigma $$
     \begin{equation}
-      \Bigg\downarrow \textit{transform}
+      \Bigg\updownarrow \textit{transform}
     \end{equation}
     \begin{equation}
       -\bigtriangleup v = 0
@@ -99,37 +92,28 @@ Harmonic functions are defined by Axler as:
   \subsubsection{Mean Value Property}\label{sssec:meanvalue}
   %just describe it don't prove it... don't reinvent the wheel
   For a harmonic $u$ on the closed ball $\bar{B}(a,r)$, centered at $a$ with a radius of $r$,
-  it can be proven that $u(a)$ equals the average over $\partial \bar{B}(a,r)$\cite{Axler1992,Bornemann}.
+  it can be proven that $u(a)$ equals the average over $S = \partial \bar{B}(a,r)$\cite{Axler1992,Bornemann}.
 \begin{equation}
   \tag{Mean Value Property}
   u(a) = \int_{S} u(a + r\zeta)d\sigma(\zeta)
   \label{eq:mean}
 \end{equation}
 
-The following example (see figure \ref{fig:swingPlot}\ref{fig:swingSolve}) is meant to illustrate
+The following example (see figure \ref{fig:swingPlot}) is meant to illustrate
 the mean value property of harmonic \Glspl{PDE} and will accompany the discussion
 of the properties of harmonic functions.
 
 \begin{figure}[ht]
   \centering
-  \begin{minipage}[b]{0.4\textwidth}
-  \includegraphics[width=5cm]{styles/sinBoundarysovle.png}
-  \caption{$u_{sol}(x)$}%{Plot of harmonic function}
-  \label{fig:swingSolve}
-\end{minipage}
-  \begin{minipage}[b]{0.4\textwidth}
   \includegraphics[width=5cm]{styles/swing_function_plot.png}
   \caption{$u(x)$}%{Numerically solved solution}
   \label{fig:swingPlot}
-  \end{minipage}
 \end{figure}
 
-On the left, the numerically solved solution of harmonic \GLS{PDE} given the boundary
-function $u(\phi)=10*\sin(4*\phi)$.  On the right, the solution function $u(r,\phi)=r^{4}*\sin(4*\phi)$
-can be seen. Both plots are defined on the 2D unit circle $\Omega$.  Both approaches
-came to the same result, but for the problem on the left, a known harmonic boundary
-condition was defined, and then a solution was solved for numerically.  On the right,
-the solution from the left, was analytically found by applying the Laplace operator
+ The solution of harmonic \GLS{PDE} given the boundary
+function $u(\phi)=10*\sin(4*\phi)$. The solution function $u(r,\phi)=r^{4}*\sin(4*\phi)$
+can be seen. The plot is defined on the 2D unit circle $\Omega$.  A known harmonic boundary
+condition was defined, and then a solution was solved for analytically by applying the Laplace operator
 in polar coordinates to the generalized harmonic function $r^{\alpha}*\sin(4\phi)$,
 and solving for $\alpha$.
 
@@ -152,7 +136,7 @@ radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \l
   \end{quote}
 
   This property of harmonic functions can be nicely visualized in the solution given
-  in figures \ref{fig:swingPlot} and \ref{fig:swingSolve}. Were on to select any circular
+  in figure \ref{fig:swingPlot}. Were on to select any circular
   sub-domain $\omega \subset \Omega$ of the unit circle, one would notice that the maximum value is always
   on the boundary  $\partial \omega$.  Should one claim that the maximum  value be within $\omega$
   the function $u$ would have to be "flat" and therefore constant to fulfill \ref{sssec:meanvalue}.
@@ -162,10 +146,14 @@ radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \l
   Building on the mean value properties of harmonic functions, one can show that if $u$ is harmonic and,
   $\bar{B}$, then
 
-   $$u(0) = \int_{S}u(\zeta)d\sigma(\zeta),$$
+   \begin{equation}
+     u(0) = \int_{S}u(\zeta)d\sigma(\zeta),
+     \label{eq:centerval}
+    \end{equation}
   then for any $x \in B\text{, }u(x)$ can be expressed as a weighted average of
   $u$ over $S$. Furthermore, there exists a function $P(x,\zeta)$ such that
-  $$u(x)=\int_{S}P(x,\zeta)u(\zeta)d\sigma(\zeta).$$  The function can be shown
+  \begin{equation}u(x)=\int_{S}P(x,\zeta)u(\zeta)d\sigma(\zeta).\label{eq:weighted_average_integral} \end{equation}
+     The function can be shown
   using the symmetry properties of harmonic function on a sphere to be defined as
   \begin{equation}
     \tag{Poisson Kernel for the Ball}
@@ -174,7 +162,23 @@ radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \l
     \cite{Axler1992}
   \end{equation}
   in an $n \in \mathbb{N}$ dimensional space.
-
+\begin{figure}[!htb]
+\minipage{0.32\textwidth}
+  \includegraphics[width=\linewidth]{styles/CircCenter}
+  \caption{equation \ref{eq:centerval}}\label{fig:circcenter}
+\endminipage\hfill
+\minipage{0.32\textwidth}
+  \vspace{1.7mm}
+  \includegraphics[width=\linewidth]{styles/GeneralOffset}
+  \label{fig:generaloffset}
+  \caption{equation \ref{eq:weighted_average_integral}}
+\endminipage\hfill
+\minipage{0.32\textwidth}%
+  \vspace{4.5mm}
+  \includegraphics[width=\linewidth]{styles/CircOffset}
+  \caption{\ref{eq:poissonkernel}}\label{fig:circoffset}
+\endminipage
+\end{figure}
   \subsubsection{Dirichlet Problem for the Ball}
   Building on the weighted mean value principle and the maximum principle for harmonic functions
   , one can hypothesize that given a function $f$ on $S$, that a harmonic function $u$
@@ -190,35 +194,30 @@ $\partial B(a,r)$, therefore solving the Dirichlet problem on $\bar{B}(a,r)$\cit
 
 \section{Algorithmic Solution}
 It has been shown that harmonic functions exhibit many unique traits and properties
-that allow one to make deductions about their solutions.  The analytical search for solutions to
+that allow one to make deductions about them as solutions of \glspl{PDE} solutions.  The analytical search for solutions to
 the Dirichlet Problem for the Ball is possible, but one would benefit greatly
 from a solving method that avoids analytical evaluation and is easily applicable on more
 general boundary geometries.  To resolve this, one can exploit the properties
 of harmonic functions discussed above.  One solver that does just that is \Gls{RWoS}.
 \par
- \Glspl{RWoS} is a highly parallel solver for harmonic \Glspl{PDE}, %discribe how eliptic pds can be transformed.
-and enjoys greater efficiency and practicality than more common solvers e.g.
-finite differences or multi-grid when sparse solutions regions are of
-interest in higher dimensions \cite{DeLaurentis}\cite{Bornemann}\cite{Yang}.  The Random Walks on Spheres Algorithm
-gained its name, due to the combination of Brownian Motion-like random walk, and the innate mathematical connection between
-harmonic functions and spheres\cite{Axler1992}.Brownian Motion discribes a numerical model
-of the random motions of particles.  This motion is used in order to iteratively traverse a series %Markov Chain
-of spheres in a domain $\Omega$ on which a harmonic PDE is defined in order to % dictated by Brownian Motion ...
-solve the given harmonic PDE\cite{DeLaurentis}.
-Brownian Motion
-%(see \ref{sssec:brownian})
-was first
-proposed for this application by Shizuo Kakutani in 1944\cite{kakutani},
-where it was shown to be an effective tool
-in solving harmonic functions in the two dimensional \Gls{gp}.  This methodology has since been
-shown to be applicable to N-Dimensional harmonic PDE's \cite{DeLaurentis}.  During the 1960's
-and 70's it was applied to calculate hotspots in nuclear reactors\cite{Bornemann}.
-% Though the applications are great, and the individual steps are simple, it is important to
-%  gain a basic and intuitive the intricacies of the Random Walking on Spheres Algorithms.
-% The following passages will practically explore the theory and history behind this method,
-% while also touching on the mathematical foundations on which the algorithm is based.
+The approach of \gls{RWoS} builds on the idea of \ref{eq:weighted_average_integral},
+which states that for a given harmonic \gls{PDE} with solution $u$, the mean value
+property can be complimented with a weight function $P(x,\zeta)$.  A special case
+for this property is the \ref{eq:poissonkernel}.    In order to
+use this property for the creation of an algorithmic solver, one stipulates
+that there exists a weight function $P$ that solves the \ref{eq:poisson} for a general susbet of connected domains
+in which a given $$\Omega.$$ We then go on to define $P$ as
+\begin{equation}
+  u(x_{0})= \int_{\partial \Omega} \underbrace{P(x_{0},\zeta)}_\text{unknown} \underbrace{u(\zeta)}_\text{known} d\zeta \approx \frac{1}{N} \sum_{i=1}^{N} u(\zeta_{i}), \xi_{i} \in \partial \Omega.
+\end{equation}
 
-\subsection{Monte Carlo Methods}\label{sssec:montecarlo}
+This approximation stipulates that through random sampling of the boundary, with
+a defined function $\xi$, one can approximate the weighting function $p$ and therefore
+find a solution.  The method of random sampling in order to converge to a desired solution
+is referred to as a Monte Carlo method.
+\par
+
+\subsection{Monte Carlo Methods}\label{ssec:montecarlo}
 Monte Carlo methods describe statistical algorithms that are based on the sampling a
 large number of random system states and classifying the resulting set \cite{Metropolis}.
 According to Bauer, these consist of a ''stochastic process which produces a random variable
@@ -234,43 +233,28 @@ stochastic process such that samples of the process yield valid statistical
 results\cite{Muller}.\end{quote}
 This strategy is the basis of The Random Walks on Spheres, when solving harmonic
 \Glspl{PDE} as described in the following passages.
-%TODO pi example?
-\subsection{Random Directions and Uniform Distributions on Spheres}
-Given the importance of random directions for \Gls{RWoS}, a brief excursion
-into how one can numerically create a uniform distribution on a sphere can prove
-to be helpful and insightful.
-%proof using definitions of sin and cosine similar to the inverse of Tschebychev points
-\cite{Yang,Muller1959,marsaglia1972}
-
-
-% \subsection{Markov Chains}\label{sssec:markov}
-% A Markov Chain is a term used to describe a series of independent events or ''states'',
-% who's transition probabilities, i.e. the probability of switching from one state to the
-% next, is in independent of past states.  Mathematically this process is described by Howard as:
-% \begin{definition}
-%   for the set $S$ defined as the finite set of $N$ states, where $s_{i}=\{s_{1},s_{2}\ldots,s_{N}\}\in S$, for simple
-%   Markov Processes, the probability of transitioning from state $s_{i}$ to the following state
-%   $s_{j}$ is defined by the the probability $p_{ij}$ where $\sum_{j=1}^{N} p_{ij}=1$ and $0 \leq p_{ij} \leq 1$.
-%  \cite{howard}\cite{diaconis}.\end{definition}
-% In the first pages of his book, Howard graphically depicts this process as,
-% \begin{quote}
-% ''a frog in a lily pond.  As time goes by the frog jumps from one lily pad to another
-% according to his whim of the moment.  The state of the system is the number of the
-% pad currently occupied by the frog; the state of the transitions is the course of his leap''
-% \cite{howard}\end{quote}
-% When the space $S$ is considered to be continuous time, one can speak of a Wiener Process.
-%
-% %TODO: convergence as in \cite{diaconis}
-% \cite{Grindstead}
-% \cite{howard}
-%
-% \subsection{Brownian Motion}\label{sssec:brownian}
-
-\section{The Random Walks On Spheres Algorithm}
-\Gls{RWoS} is a numerical Monte Carlo Method which employs Brownian Motion
-like random walks to stochastically and discretely solve
-harmonic \glspl{PDE}.
-\par
+\subsection{Random Walks on Spheres}\label{ssec:RWoS}
+ \Glspl{RWoS} is a highly parallel solver for harmonic \Glspl{PDE},
+and enjoys greater efficiency and practicality than more common solvers e.g.
+finite differences or multi-grid when sparse solutions regions are of
+interest in higher dimensions \cite{DeLaurentis}\cite{Bornemann}\cite{Yang}.
+The Random Walks on Spheres Algorithm
+gained its name, due to the combination of Brownian Motion-like random walk,
+and the innate mathematical connection between
+harmonic functions and spheres\cite{Axler1992}.
+Brownian Motion describes a numerical model
+of the random motions of particles.  This motion is used in order to iteratively
+traverse a series %Markov Chain
+of spheres in a domain $\Omega$ on which a harmonic PDE is defined in order to % dictated by Brownian Motion ...
+solve the given harmonic PDE\cite{DeLaurentis}.
+Brownian Motion
+%(see \ref{sssec:brownian})
+was first
+proposed for this application by Shizuo Kakutani in 1944\cite{kakutani},
+where it was shown to be an effective tool
+in solving harmonic functions in the two dimensional \Gls{gp}.  This methodology has since been
+shown to be applicable to n-Dimensional harmonic PDE's \cite{DeLaurentis}.  During the 1960's
+and 70's it was applied to calculate hotspots in nuclear reactors\cite{Bornemann}.
 
 In the following discussion, in order to clearly state intentions, a standard
 vernacular has been set as depicted in the image below.
@@ -284,7 +268,7 @@ vernacular has been set as depicted in the image below.
 \item[Origin Point] The origin point describes the discrete point in the domain
 $\Omega$ for which a discrete solution to the PDE is to be found. In \ref{diagram}
 and in the following passages, this point is also referred to as $x_{0}$.
-\item[Radius] The largest distance from the current point, to the domain boundary
+\item[Radius] The largest distance $r$ from the current point, to the domain boundary
 $\partial\Omega$ (depicted above in as lavender circles).
 \item[Step] An transition from the current point $x_{i,j}$ to $x_{i,j+1}$ where
 $i$ is the path number and $j$ the step number of the current path.  The step has
@@ -310,12 +294,12 @@ technique, hopes to reach a known boundary value.   This traversal of
  the domain to the boundary can be seen as  Brownian-Like motion.
 In order to reduce the number of random Brownian steps needed to reach the boundary,
 one exploits radius independence of $r$ as described in \ref{eq:radinvar} and takes
-the greatest possible step within the domain $\Omega$.  The random step direction $d$
+the greatest possible $r$ within the domain $\Omega$.  Then a random step direction $d$
 is defined by spherical uniform random distribution (for more see \ref{uniformPoints}).
 Should one attempt to reach the boundary by this method alone, the probability of the
 process terminating is zero \cite{kakutani1944, DeLaurentis, Bornemann}.  Therefore, shoots for an
 $\epsilon$ boundary of $\partial \Omega$ in order to ensure convergence. This approximation also
-servers to reduce the running time of the algorithm(see \ref{epsilonComplexity}). Once in the $\epsilon$
+serves to reduce the running time of the algorithm(see \ref{epsilonComplexity}). Once in the $\epsilon$
 boundary, one projects the current point $P$ onto $\partial \Omega$ ($P'$).  Finally,
 $P'$ is evaluated on $\partial \Omega$, concluding the current path, and the process
 is repeated.
@@ -348,18 +332,29 @@ described in pseudo-code.
 \subsection{Error Analysis}\label{errorAnal}
 The algorithmic complexity of the \Gls{RWoS} algorithm is of course an area of interest
 when trying to improve performance. Clearly, the larger the number of paths $N$ one
-analyzes, the more precise the value estimation; ergo the sampling error (standard deviation)
+analyzes, the more precise the value estimation.The sampling error (standard deviation)
+conforms to the Monte Carlo typical convergence rate and
 is $\mathcal{O}(N^{\frac{1}{2}})$. Furthermore, the estimation error grows proportional to
 the boundary layer $\epsilon$.
 This error term is due to the projection error at the boundary, and the lost
 pseudo Brownian Motion that one ''skips'' via the projection, or  $\mathcal{O}(\epsilon)$.
-In total the error amounts to $$Error = \mathcal{O}(N^{-\frac{1}{2}}) + \mathcal{O}(\epsilon)$$\cite{Bornemann}\label{errorComplexity}.
+In total the error amounts to $$Error = \underbrace{ \mathcal{O}(N^{-\frac{1}{2}})}_\text{sampling error} + \underbrace{\mathcal{O}(\epsilon)}_\text{epsilon projection error}$$\cite{Bornemann}\label{errorComplexity}.
 
-\subsection{Epsilon Selection}
+\subsection{Algorithmic Complexity}
+
 \begin{theorem}
 The expected number of steps to reach the $\epsilon$-neighborhood of $\partial\Omega$
 is $$\mathcal{O}(\log{}\epsilon).$$\cite{Bornemann,DeLaurentis}\label{epsilonComplexity}
 \end{theorem}
+
+In light of \ref{epsilonComplexity}, the overall complexity of \Gls{RWoS} can be
+defined as $$\mathcal{O}(N \log{}\epsilon)$$ whereby, in our case \ref{epsilonDefinition}
+ leads to $$\mathcal{O}(N \log{N^{-\frac{1}{2}}}) = \mathcal{O}(N \log{N}).$$
+
+ This leads to a theoretical dimensionless scalability\cite{Bornemann}.  The practical factuality
+ of this claim will be examined later in this work.
+
+\subsection{Epsilon Selection}
 
 Although \ref{epsilonComplexity} will be considered as given for this work, \cite{DeLaurentis}
 dives deeper into the statistical proof behind this conclusion.  Practically, the
@@ -370,25 +365,91 @@ dives deeper into the statistical proof behind this conclusion.  Practically, th
  Given \ref{errorComplexity}, assuming $N^{-\frac{1}{2}} > \epsilon$ the error term
  is dictated by the sampling size or number of path iterations.  Conversely, the number of steps per path,
  and therefore running time of \Gls{RWoS} is governed by the selection of $\epsilon$.
- This means, for an $\epsilon < N^{-\frac{1}{2}}$ the increased omputational complexity
+ This means, for an $\epsilon < N^{-\frac{1}{2}}$ the increased computational complexity
  per path dictated by $\epsilon$ is outweighed by the sampling error, and the total error is limited
  by the number of path iterations.  In order to obtain the greatest accuracy in
  the least running time, one aptly defines $\epsilon$ as $$\epsilon = N^{-\frac{1}{2}}$$\label{epsilonDefinition}
  thereby tying both the error and computational complexity to the number of path
   iterations $N$\cite{Bornemann}.
+% Though the applications are great, and the individual steps are simple, it is important to
+%  gain a basic and intuitive the intricacies of the Random Walking on Spheres Algorithms.
+% The following passages will practically explore the theory and history behind this method,
+% while also touching on the mathematical foundations on which the algorithm is based.
+%TODO pi example?
+\subsection{Excursion: uniform random directions on a Sphere}\label{uniformPoints}
+Given the importance of random directions for \Gls{RWoS}, a brief excursion
+into how one can numerically create a uniform distribution on a sphere can prove
+to be helpful and insightful.
 
-\subsection{Algorithmic Complexity}
-In light of \ref{epsilonComplexity}, the overall complexity of \Gls{RWoS} can be
-defined as $$\mathcal{O}(N \log{}\epsilon)$$ whereby, in our case \ref{epsilonDefinition}
- leads to $$\mathcal{O}(N \log{N^{-\frac{1}{2}}}) = \mathcal{O}(N \log{N}).$$
+In the process of understanding how the generation of uniform distributions on
+spherical surfaces can be created, the following exemplary two dimensional practical
+experiments were performed.
 
- This leads to a theoretical dimensionless scalability\cite{Bornemann}.  The practical factuality
- of this claim will be examined later in this work.
+In order to attain a distribution on a sphere, the process followed herein,
+consisted of creating an $n$-dimensional normal distribution in euclidian space and
+sampling from the afore-mentioned distribution.  The $n$-dimensional sample vector
+is subsequently normalized onto the $n$-dimensional unit sphere.
+The 2D case of a uniform
+euclidian distribution being normalized is exemplified below, in order to intuitively
+show the distributional discrepancies and obvious ill suited nature for the problem
+at hand.  The two point clouds below are 2D normal and uniform distributions
+respectively.  The peaks on the uniform distribution histogram stem from the corners
+of the distribution in a two dimensional euclidian distribution.  When projected onto
+the sphere, the accumulation of points in the corner of the euclidian domain create
+''hot spots'' in the spherical distribution.  The two dimensional normal
+distribution point cloud on the other hand, mitigates this problem due to the summation
+of the tails of the distributions in the 1D plane, leading to a low probability
+in the corners of the square domain.  When the point cloud  is subsequently projected
+onto the sphere, it lacks the peaks in the  spherical distribution and displays an
+overall uniform nature as can be seen in the relatively constant levels  histogram below.
 
-\subsection{Parallel Implementation}
+\begin{figure}[htb!]
+\begin{center}
+\includegraphics[width=13.5cm]{styles/distributions} \label{plot:distributions}
+  \caption{}
+  \includegraphics[width=15.0cm]{styles/histograms} \label{plot:historam}
+    \caption{}
+\end{center}
+\end{figure}
+%proof using definitions of sin and cosine similar to the inverse of Tschebychev points
+\cite{Yang,Muller1959,marsaglia1972}
+
+
+% \subsection{Markov Chains}\label{sssec:markov}
+% A Markov Chain is a term used to describe a series of independent events or ''states'',
+% who's transition probabilities, i.e. the probability of switching from one state to the
+% next, is in independent of past states.  Mathematically this process is described by Howard as:
+% \begin{definition}
+%   for the set $S$ defined as the finite set of $N$ states, where $s_{i}=\{s_{1},s_{2}\ldots,s_{N}\}\in S$, for simple
+%   Markov Processes, the probability of transitioning from state $s_{i}$ to the following state
+%   $s_{j}$ is defined by the the probability $p_{ij}$ where $\sum_{j=1}^{N} p_{ij}=1$ and $0 \leq p_{ij} \leq 1$.
+%  \cite{howard}\cite{diaconis}.\end{definition}
+% In the first pages of his book, Howard graphically depicts this process as,
+% \begin{quote}
+% ''a frog in a lily pond.  As time goes by the frog jumps from one lily pad to another
+% according to his whim of the moment.  The state of the system is the number of the
+% pad currently occupied by the frog; the state of the transitions is the course of his leap''
+% \cite{howard}\end{quote}
+% When the space $S$ is considered to be continuous time, one can speak of a Wiener Process.
+%
+% %TODO: convergence as in \cite{diaconis}
+% \cite{Grindstead}
+% \cite{howard}
+%
+% \subsection{Brownian Motion}\label{sssec:brownian}
+
+% \section{The Random Walks On Spheres Algorithm}
+% \Gls{RWoS} is a numerical Monte Carlo Method which employs Brownian Motion
+% like random walks to stochastically and discretely solve
+% harmonic \glspl{PDE}.
+% \par
+
+
+
+\subsection{Parallelism}
 
 The intrinsic parallelism in this algorithm is plain to see, namely, one can easily
-exploit the independence of each individual path by executing all paths in parallel($\mathcal{O}(N \log{}N)$).
+exploit the independence of each individual path by executing all paths in parallel($\mathcal{O}(frac{N}{w} \log{}N)$ where $w$ is the number of ''worker'' computational units).
 This can be realizing by unrolling the for loop in algorithm~\ref{alg:wos}, line~\ref{lst:line:for}.
 The resulting values $E$ can also be reduced in parallel (algorithm~\ref{alg:wos}, line~\ref{lst:line:reduce}).  Furthermore, for every path step,
 the radius and direction are independent (algorithm~\ref{alg:wos}, line~\ref{lst:line:direction} \&~\ref{lst:line:radius}),
@@ -413,7 +474,7 @@ by Gene Amdahl in 1967\cite{Wilt}:
 %
 \begin{equation}
   \tag{Amdahl's Law}
-  speed-up = S_{latency}(s)= \frac{1}{(r_{s} + \frac{r_{p}}{N})} = \frac{N}{N(1-r_{p})-r_{p}}
+  \text{speedup} = S_{latency}(s)= \frac{1}{(r_{s} + \frac{r_{p}}{N})} = \frac{N}{N(1-r_{p})-r_{p}}
   \label{egn:Amdahl}
 \end{equation}
 %
@@ -442,7 +503,7 @@ One further method of quantifying parallelism, is Gustafson's Law\cite{Gustafson
 %
 \begin{equation}
   \tag{Gustofson's Law}
-  speed-up = S_{latency}(s) = r_{s} + (1 - r_{p})N
+  \text{speedup} = S_{latency}(s) = r_{s} + (1 - r_{p})N
 \end{equation}
 %
 This view of parallelism maintains that `` in practice, the problem
@@ -568,7 +629,7 @@ These are standard terminologies in GPU programing. GPUs are comprised of four m
 Each GPC contains a cluster of SM's.  The number of SM's per cluster varies by
 model of GPU. SM's are comprised of a collection of CUDA-cores.  Some examples
  can be found in table bellow.
-\begin{figure}
+\begin{figure}[htb!]
 \caption{"collection of NVIDIA \Glspl{GPU} technical specifications"}
 \begin{center}\label{hardwareTable}
 \begin{tabu} to 0.9\textwidth { | X[l] | X[c] | X[c] | X[c]| X[c]| X[c]| X[r] | }
@@ -784,7 +845,9 @@ There are four main types of CUDA memories.
   in a CUDA program. Should a program run out of registers for thread local variables,
   local memory is  used to store overflow variables. This variable overflow is often
   linked to detrimental performance losses and should be avoided.\cite{Wilt}
-  \item [cache]
+  \item [Cache] Similarly to CPU's Cache is also realized on GPU \glspl{SM} in order
+  to reduce transfer latency.  \glspl{GPU} however employ a different caching strategy,
+  due to the \gls{simt} computational approach.
   \item [registers] Memory units on \Gls{SM} used to store thread local variables,
                     and variables for current computation.
 \end{description}
