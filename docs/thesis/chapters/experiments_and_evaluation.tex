@@ -70,11 +70,10 @@ parameter, this value, along with other data of interest will be saved to a loca
 logarithmically over the number number of dimensions.  This is consistent with \cite{Bornemann, DeLaurentis}.
 \begin{figure}
 \begin{center}
-\includegraphics[width=10.0cm]{styles/pathsPerDim} \label{plot:pathsPerDim}
+\includegraphics[width=10.0cm]{styles/paths_per_dim} \label{plot:pathsPerDim}
   \caption{Average number of steps per path sampled over a number of dimension}
 \end{center}
 \end{figure}
-The linear regression of the above plot has a function of $$f(dimension)= 4.8108001661116715 + 0.2953577483675905*dimension.$$
 Due to the dependency of epsilon on the number of boundary samples, the number of steps
 increases with the number of samples.  The rise in computational complexity is what
 makes a more precise solution possible.
@@ -82,12 +81,16 @@ makes a more precise solution possible.
 A further point of interest is whether the number of steps per path remains smaller
 than the period of the random number generator, namely $2^{190}$ or $~1.5 * 10^{57}$.
 Each thread has its own seed, therefore the number of random numbers generated per
-thread is of interest.  This number is equal to
-$$maxRand = total Paths \ 65535 * f(dimension)$$ and is constrained by
-$$ maxRand \overset{!}{<} 2^{190}$$
-%TODO: table for f dimension.
+thread is of interest. In light of Figure \ref{plot:pathsPerDim}, one can state,
+that there is an boundary $s_{max}$ to the number of steps per path. It is important to
+ensure that
+\begin{equation}
+  s_{max} \cdot N \overset{!}{<} 2^{190}
+  \Rightarrow s_{max} \overset{!}{<} \frac{2^{190}}{N}
+\end{equation}
 
-%TODO: use largest possible value and find maximum
+In all the cases plotted above, there is still is a great amount of overhead
+to the maximum step value.  
 
 \section{Accuracy and Error}
 In order to test the convergence and accuracy of this \Gls{RWoS} on \Glspl{GPU} implementation,

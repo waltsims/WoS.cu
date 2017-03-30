@@ -8,8 +8,8 @@ have long been the subject of research.    Many of theses properties are well
 understood \cite{Axler1992,Sheldon}.  Although there are methods to solve such
 \Glspl{PDE} on a grid \cite{Bornemann}, discrete Monte Carlo Solvers have been shown
 to be more efficient when only a
-singular value in the domain is of interest, or in higher dimensions
-\cite{Bornemann, DeLaurentis, kakutani1944}.  They can also
+singular value in the domain is of interest, as well as in higher dimensions
+\cite{Bornemann, DeLaurentis, kakutani1944}.  Monte Carlo Solvers can also
 be more reliable when severe gradients are present,
 where finite-differences normally would fail \cite{DeLaurentis}. One example of such a case is
  turbulent fluid simulations, where the boundary behavior of a turbulent
@@ -19,8 +19,8 @@ are considered by some a mathematical oddity, and have yet
 to overtake more other more conventional solvers such as the finite differences and multi-grid method
 methods.  The specific method we will be looking at in this paper is \Gls{RWoS}.
 \par
-A major benefit of Monte Carlo methods, is their propensity for parallelism.  Often,
-the the execution of individual random inputs into a system  and their subsequent evaluation
+A major benefit of Monte Carlo methods is their propensity for parallelism.  Often,
+the execution of individual random inputs into a system  and their subsequent evaluation
 are independent, and can therefore be executed in parallel.  Through the exploitation of this
 intrinsic parallelism Monte Carlo Methods might very well enjoy higher standings
 in computational mathematics in the near future.
@@ -32,7 +32,7 @@ high dimensional parallel tasks. Since so many have already
 claimed that \Gls{RWoS} can and should be implemented in a highly parallel manner,
 ( \cite{DeLaurentis,Sabelfeld}, etc.), especially in high dimensions,  it is the goal
  of this paper to follow through on these claims.  Given the
-current trend toward parallel computing, this work strives to implement
+current trend toward parallel computing, this paper strives to implement
 \Gls{RWoS}, a Monte-Carlo Solver for harmonic \Glspl{PDE} on one of the most modern
 parallel architectures, and trends in parallel computing, the \Gls{GPU}.
 \par

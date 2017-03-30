@@ -100,14 +100,14 @@ shared memory access and a function call \incpp{__syncthreads()} in order to avo
 Due to the lack of communication necessary between independent paths and
 their subsequent boundary evaluations, the mapping to \Gls{CUDA} blocks lends itself
 to the  application.  For the evaluation of $P$ \Gls{RWoS} paths, $P$ CUDA blocks
-of dimension $N$ are allocated.  Each local path evaluation result is saved in the $s\_result$
+of dimension $N$ are allocated.  Each local path evaluation result is saved in the \incpp{s_result}
 variable in the shared memory structure (shown in Listing \ref{BlockVariablePointers}).
 \par
 In mapping every path to a specific block, one limits oneself to the bounds of the
 CUDA hardware.  Currently, the greatest number of blocks available for execution
 of one kernel is limited to the value \incpp{MAX_BLOCKS = 65535}.  In oder to reach a greater
 path count, a strategy was devised to split a number of total paths greater
-than $MAX\_BLOCKS$ linearly in to a smaller number of \Gls{CUDA} block resources.  In short,
+than \incpp{MAX_BLOCKS} linearly in to a smaller number of \Gls{CUDA} block resources.  In short,
 for every path evaluation $P$ greater than $65535$, each block will conduct $\lfloor P/65535 \rfloor$
 path iterations. The remaining path iterations, \incpp{R = mod(P,65535)} will be conducted
  by the first $R$ blocks of the grid.  This strategy,
@@ -123,7 +123,7 @@ An excerpt of the implementation can be found below.
 \label{block-parallelism-strategy}
 \begin{minted}{c++}
   ...
-  // uppdate paths per block
+  // update paths per block
   if (gpuPaths <= MAX_BLOCKS) {
     numberBlocks = gpuPaths;
     blockIterations = 1;
@@ -396,7 +396,7 @@ a thread independent seed was selected, seen below.
   curandState s;
   // seed for random number generation
   unsigned int seed = index * gpu;
-  curand\_init(seed, 0, 0, &s);
+  curand_init(seed, 0, 0, &s);
   \end{minted}
 By using the global thread index as a seed, one can strive to achieve independent
 sequences of pseudo-random numbers in every direction, for every path.  In order,
