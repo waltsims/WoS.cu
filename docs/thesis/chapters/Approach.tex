@@ -8,7 +8,7 @@ appendix \ref{appendix}, but excerpts will be inserted into the following passag
 where suitable.
 \par
 
-The mathematical use-case implemented for this proof of concept is the special case of \ref{eq:poisson}.
+The mathematical use-case implemented for this proof of concept is the special case of \eqref{eq:poisson}.
 \begin{equation}
   \begin{aligned}
   -\bigtriangleup u(x) &= 1,\quad x \in \Omega = (-1,1)^n, \quad n \in \mathbb{N}\\
@@ -16,31 +16,31 @@ The mathematical use-case implemented for this proof of concept is the special c
 \end{aligned}
 \end{equation}
 
-We find the suitable boundary function $g$ to transform \ref{eq:poisson} into \ref{eq:laplace}
+We find the suitable boundary function $g$ to transform \eqref{eq:poisson} into \eqref{eq:laplace}
 with a boundary value of
  \begin{equation}
    \begin{aligned}
      -\bigtriangleup u(x) = 0&, \quad x \in \Omega = (-1,1)^n, \quad n \in \mathbb{N}\\
-   g = \frac{x'x}{2n}&, \quad x \in \partial \Omega
+   g = \frac{x'x}{2n}&, \quad x \in \partial \Omega.
    \label{eq:poc}
  \end{aligned}
    \end{equation}
-The goal is to efficiently numerically solve \ref{eq:poc} point-wise in $\Omega$.
+The goal is to efficiently numerically solve \eqref{eq:poc} point-wise in $\Omega$.
 
 \section{Experiment Hardware}
 For the numerical experiments conducted during this research, two hardware configurations
-are used.  First, a dual GPU configuration consisting of two NVIDIA GTX 560Ti GPU's is
+were used.  First, a dual GPU configuration consisting of two NVIDIA GTX 560Ti GPU's was
 employed to test multi-device capabilities. Also, seeing as these devices
-could only run \Gls{CUDA} code complied for compute architecture 2.1, code
+could only run \Gls{CUDA} code compiled for compute architecture 2.1, code
 backwards compatibility was also tested with this set up.
-The second compute configuration consists of an NVIDIA TITAN X GPU, which allowed
+The second compute configuration consisted of an NVIDIA TITAN X GPU, which allowed
 the testing of the compute architecture 6.1.
 \par
 Both \Gls{GPU} configurations were run with the same Fujitsu D3067-A1 mother board,
 with 16GB or RAM and an Intel Xeon CPU, model E31235 running at 3.20GHz.
 
 \section{Parallelization}
-In order to successfully map a mathematical problem to specific hardware, one must
+In order to successfully map a mathematical problem to hardware, one must
 consider the three main bottle necks of parallel computing, namely,
 memory allocation and access strategies, execution order and data communication.
 In the following passages, some of the intricacies of the implementation will be
@@ -50,20 +50,23 @@ elaborated.
 Commonly, one wishes to store heavily used data in shared memory in order to
 take advantage of the increased data access speeds and inter-block data sharing
 capabilities.  For this reason, the \textit{direction}, \textit{radius}, and \textit{position}
-vectors were all stored allocated in shared memory, contributing a shared memory usage of
+vectors were all stored in shared memory, contributing a shared memory usage of
 $3N$.
-\begin{lstlisting}[caption="src/wos\_native.cuh",label=BlockVariablePointers]
-
+\begin{listing}
+% \begin{code}
+ %\captionof{listing}{wos_native.cuh}
+ \label{BlockVariablePointers}
+\begin{minted}{c++}
   struct BlockVariablePointers {
     float *s_radius, *s_direction, *s_cache, *s_x, *s_result;
   };
   __device__ void calcSubPointers(BlockVariablePointers *bvp, size_t len,
                                   float *buff) {
     bvp->s_radius = buff;
-    bvp->s_direction = len + buff;
-    bvp->s_cache = 2 * len + buff;
-    bvp->s_x = 3 * len + buff;
-    bvp->s_result = 4 * len + buff;
+    bvp->s_direction = buff + len;
+    bvp->s_cache = buff + 2 * len;
+    bvp->s_x = buff + 3 * len;
+    bvp->s_result = buff + 4 * len;
   }
   __device__ void smemInit(BlockVariablePointers bvp, float *d_x0, int tid) {
     // initialize shared memory
@@ -75,7 +78,9 @@ $3N$.
     if (threadIdx.x == 0)
       bvp.s_result[0] = 0.0;
   }
-\end{lstlisting}
+\end{minted}
+% \end{code}
+\end{listing}
 
 For each dimensional vector entry, one thread was assigned, subsequently
 also leading to a \textit{blocksize} of $N$.  The practice of one thread per vector
@@ -84,27 +89,27 @@ memory and using one thread per data entry enables efficient data communication
 between threads and accelerated data reads from shared memory. In order to allocate,
  initialize and manage multiple variables in shared memory, a pointer structure and helper functions
 were used.  This structure was initialized locally per thread and pointed to an
-external allocation of shared memory \textit{buff[ ]}.
+external allocation of shared memory \incpp{buff[]}.
 
 Each of the steps of \Gls{RWoS} was implemented thread-wise.  A thread-wise implementation
 explicitly defines a each step as a kernel for individual vector entries.  Each of these operations
 can be executed in parallel by its respective thread.  Where communication is necessary,
-shared memory access and a function call $\_\_syncthreads()$ in order to avoid \Gls{rc}.
+shared memory access and a function call \incpp{__syncthreads()} in order to avoid \Gls{rc}.
 
 \subsection{Block-level Parallelism}
-Due to the lack of communication necessary between independent paths and their
+Due to the lack of communication necessary between independent paths and
 their subsequent boundary evaluations, the mapping to \Gls{CUDA} blocks lends itself
 to the  application.  For the evaluation of $P$ \Gls{RWoS} paths, $P$ CUDA blocks
-of dimension $N$ are allocated.  Each local Path evaluation result is saved in the $s\_result$
-variable in the shared memory structure \ref{BlockVariablePointers}.
+of dimension $N$ are allocated.  Each local path evaluation result is saved in the $s\_result$
+variable in the shared memory structure (shown in Listing \ref{BlockVariablePointers}).
 \par
 In mapping every path to a specific block, one limits oneself to the bounds of the
 CUDA hardware.  Currently, the greatest number of blocks available for execution
-of one kernel limited to the value $MAX\_BLOCKS = 65535$.  In oder to reach a greater
-path iteration count, a strategy was devised to split a number of total paths greater
-than $MAX\_BLOCKS$ linearly on to a smaller number of \Gls{CUDA} block resources.  In short,
-for every path evaluation $P$ greater than $65535$, each block will conduct $floor(P/65535)$
-path iterations. The remaining path iterations, $R = P \% 65535$ will be conducted
+of one kernel is limited to the value \incpp{MAX_BLOCKS = 65535}.  In oder to reach a greater
+path count, a strategy was devised to split a number of total paths greater
+than $MAX\_BLOCKS$ linearly in to a smaller number of \Gls{CUDA} block resources.  In short,
+for every path evaluation $P$ greater than $65535$, each block will conduct $\lfloor P/65535 \rfloor$
+path iterations. The remaining path iterations, \incpp{R = mod(P,65535)} will be conducted
  by the first $R$ blocks of the grid.  This strategy,
 although primitive, was found through testing to yield the greatest performance,
 compared to all other tested strategies. One can assume, this is due to greater
@@ -113,8 +118,10 @@ involved a greater number of "sequential" path evaluations per block, and theref
 a greater overall running time.   Meanwhile, by maximizing the number of blocks,
 one creates greater parallelism in the program that can be exploited on a \Gls{GPGPU}.
 An excerpt of the implementation can be found below.
-
-\begin{lstlisting}[caption="src/gpu\_config.cpp Appendix \ref{appendix}",label=block-parallelism-strategy]
+\begin{listing}
+%\captionof{listing}{src/gpu_config.cpp Appendix \ref{appendix}}
+\label{block-parallelism-strategy}
+\begin{minted}{c++}
   ...
   // uppdate paths per block
   if (gpuPaths <= MAX_BLOCKS) {
@@ -123,11 +130,12 @@ An excerpt of the implementation can be found below.
     blockRemainder = numberBlocks;
   } else {
     numberBlocks = MAX_BLOCKS;
-    blockIterations = ceil((gpuPaths / (float)MAX_BLOCKS));
+    blockIterations = floor((gpuPaths / (float)MAX_BLOCKS));
     blockRemainder = gpuPaths % MAX_BLOCKS;
   }
 ...
-\end{lstlisting}
+\end{minted}
+\end{listing}
 
 \subsection{Device-level Parallelism} \label{devicePar}
 In order to decrease running time, it is advantageous to map the problem at hand
@@ -136,15 +144,24 @@ simple stream based distribution to two devices connected by a common PCIe bus.
 The strategy for device level parallelism was precedes the block-level parallelism
 strategy, and merely divides the total number of paths desired, by the number of
 available devices.
-\begin{lstlisting}[caption="src/gpu\_config.cpp Appendix \ref{appendix}",label=device-parallelism-strategy1]
+\begin{listing}
+  % [caption="src/gpu\_config.cpp Appendix \ref{appendix}",
+
+  \label={device-parallelism-strategy1}
+
+\begin{minted}{c++}
   //...
 // nGPU
 checkCudaErrors(cudaGetDeviceCount(&nGPU));
 gpuPaths = p.totalPaths / nGPU;
   //...
-\end{lstlisting}
+\end{minted}
+\end{listing}
 
-\begin{lstlisting}[caption="src/wos\_native.cuh Appendix \ref{appendix}",label=device-parallelism-strategy2]
+\begin{listing}
+  %[caption="src/wos\_native.cuh Appendix \ref{appendix}",
+  \label={device-parallelism-strategy2}
+\begin{minted}{c++}
   for (int i = 0; i < gpu.nGPU; i++) {
     checkCudaErrors(cudaSetDevice(i));
     checkCudaErrors(cudaStreamCreate(&multiGPU[i].stream));
@@ -170,7 +187,8 @@ gpuPaths = p.totalPaths / nGPU;
     }
   }
   //...
-\end{lstlisting}
+\end{minted}
+\end{listing}
 
 
 
@@ -215,7 +233,10 @@ leads to execution overhead and a subsequent loss in performance
   This pattern further increases code performance on \Glspl{GPU}
 \end{description}
 
-  \begin{lstlisting}[caption="src/wos\_native.cuh",label=sumReduce]
+  \begin{listing}
+    % [caption="src/wos\_native.cuh",
+    \label={sumReduce}
+    \begin{minted}{c++}
     //...
     __device__ void warpSumReduce(float *sdata, int tid) {
       // each thread puts its local sum value into warp variable
@@ -303,8 +324,9 @@ leads to execution overhead and a subsequent loss in performance
       __syncthreads();
     }
     //...
-\end{lstlisting}
-Briefly, the $\_\_\_shfl\_down(...)$ command should be examined. Before, compute capability
+\end{minted}
+\end{listing}
+Briefly, the \incpp{__shfl_down(...)} command should be examined. Before, compute capability
 3.0 (Kepler), reductions between warps of the same thread had to be completed in
 shared memory.  This meant that data transfers between warp registers and shared
 memory had to be completed for every reduction step.  Since Kepler, warps have gained
@@ -313,9 +335,9 @@ thereby increasing effective bandwidth, freeing shared memory and eliminating th
 necessity for warp synchronization. This action was cleverly named shuffle \cite{shuffle}.
 \subsubsection{Local Reduction}\label{localRed}
 Based on \cite{harris}, optimized reduction kernels were introduced for efficient
-shared memory minimum and summation reductions needed for \Gls{RWoS} (see appendix \ref{appendix}).
+shared memory minimum and summation reductions needed for \Gls{RWoS} (see Appendix \ref{appendix}).
 In order to successfully use these optimized reduction techniques, the memory allocations
-discussed in \ref{tlp} were step-wise over allocated, meaning it was ensured that
+discussed in Section \ref{tlp} were step-wise over allocated, meaning it was ensured that
 the total size of allocated shared memory could store a power of 2 number of elements,
 regardless of the required dimension.  Unused elements were initialized with with
 values which would remain constant during the entire simulation (e.g. 0 and INFINITY).
@@ -324,12 +346,12 @@ thread divergence and despited the computational overhead, lead to performance g
 of $~50\%$ compared to initial naive reduction implementations.
 \subsubsection{Global Reduction}
 The global reduction of path evaluation results are realized through a serial
-a $cudaMemcpyAsync(...)$ to the host, and a serial host reduction.  This strategy
+a \incpp{cudaMemcpyAsync(...)} to the host, and a serial host reduction.  This strategy
 proved to provide greater performance than a restructuring of the CUDA thread/Block
 allocation and subsequent GPU reduction, due to the minimization of GPU configuration
 overhead.  In order to reduce the numerical error of floating point reduction,
 Kahan's summation algorithm was employed.
-\begin{lstlisting}
+\begin{minted}{c++}
   float reduceCPU(float *data, int size) {
     float sum = data[0];
     float c = 0.f; // numerical summation error variable
@@ -342,7 +364,7 @@ Kahan's summation algorithm was employed.
     }
     return sum;
   }
-\end{lstlisting}
+\end{minted}
 
 \section{Random Number Generation}
 In order to generate pseudo random numbers for the random directions necessary
@@ -359,13 +381,14 @@ the generation of pseudo random numbers during the execution of \Gls{RWoS} and
 therefore greatly reduce the amount of data transfer to the device, and therefore
 the overall running time of the program.  Furthermore, the pseudo-random normal
 distribution functionality of \Gls{CURAND} was used to generate normal distributions
-in an $N$-dimensional euclidean space, which subsequently was transformed into a uniform spherical
+in an $n$-dimensional euclidean space, which subsequently was transformed into a uniform spherical
 distribution.
 %\subsection{Pseudo-Random and Quasi-Random}
 \subsubsection{Seed Independence}
 In order to generate independent pseudo-random directions in every dimension,
 a thread independent seed was selected, seen below.
-\begin{lstlisting}[caption="Random Number Generation(source:src/wos\_native.cuh see: appendix \ref{appendix})",
+%\begin{lstlisting}[caption="Random Number Generation(source:src/wos\_native.cuh see: appendix \ref{appendix})",
+\begin{minted}{c++}
   label=Random Number Generation]
   int index = threadIdx.x + blockDim.x * blockIdx.x;
   int tid = threadIdx.x;
@@ -374,7 +397,7 @@ a thread independent seed was selected, seen below.
   // seed for random number generation
   unsigned int seed = index * gpu;
   curand\_init(seed, 0, 0, &s);
-\end{lstlisting}
+  \end{minted}
 By using the global thread index as a seed, one can strive to achieve independent
 sequences of pseudo-random numbers in every direction, for every path.  In order,
 to guarantee the randomness caries over when using a multi-GPU hardware configuration,

@@ -3,7 +3,7 @@ using PyPlot
 
 #variable initialisation
 d = 2;
-len = 5000;
+len = 500000;
 
 uniform = (rand(len,d) - 0.5) * 2;
 normal = randn(len, d);
@@ -31,7 +31,7 @@ normal = randn(100, d);
 
  #plot histogram comparisons
 fig = figure()
-suptitle("Visualization of Distributions of Circles")
+suptitle("Visualization of Distributions on Circles")
 fig[:add_subplot](221)
 plt[:scatter](normal[:,1],normal[:,2],alpha=0.4, color="blue")
 xlabel("x")

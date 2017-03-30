@@ -19,17 +19,17 @@ the Poisson's equation
   %\mathbb{R}^{n}, n \in \mathbb{N} \\ \text{ with }u\colon \Omega \rightarrow \mathbb{R}^{1}\\
   - \bigtriangleup u(x) &= \sigma(x),\quad x \in \Omega,
   \label{eq:poisson}
-  \\ u(x) &= f(x),  \quad x \in \partial \Omega, \quad (Dirichlet)
+  \\ u(x) &= f(x),\quad x \in \partial \Omega, \quad (Dirichlet)
 \end{aligned}
 \end{equation}
 where $\Omega \in \mathbb{R}^{n}$ is an open bounded set and $f$ is a function
 defined on the boundary $\partial \Omega$.
-A special case of the Poisson's equation \eqref{eq:poisson}, is the homogeneous case, where $\sigma(x) = 0$, called
-the Laplace's equation
+A special case of the Poisson's equation \eqref{eq:poisson}, is the homogeneous
+case, where $\sigma(x) = 0$, called the Laplace's equation
   \begin{equation}
     \begin{aligned}
-    \bigtriangleup u(x) &= 0, \quad x \in \Omega,
-  \\ u(x) &= f(x),  \quad x \in \partial \Omega\text{.}
+    \bigtriangleup u(x) &= 0,\quad x \in \Omega,
+  \\ u(x) &= f(x),\quad x \in \partial \Omega\text{.}
     \label{eq:laplace}
   \end{aligned}
   \end{equation}
@@ -241,7 +241,7 @@ explicitly calculated as in \eqref{eq:poissonkernel}. We then go on to define $P
 \end{equation}
 
 This approximation stipulates that through a random sampling $\xi$ of the boundary, with
-a defined distribution $\Xi \propto P$, one can approximate \eqref{weighted_average_integral} and therefore
+a defined distribution $\Xi \propto P$, one can approximate \eqref{eq:weighted_average_integral} and therefore
 find a solution at $u(x_{0})$.  The method of random sampling in order to converge to a desired solution
 is referred to as a Monte Carlo method.  How to sample from $\Xi$ will be described in the following passages.
 \par
@@ -280,7 +280,7 @@ solve the given harmonic PDE\cite{DeLaurentis}.
 Brownian Motion
 %(see \ref{sssec:brownian})
 was first
-proposed for this application by Shizuo Kakutani in 1944\cite{kakutani},
+proposed for this application by Shizuo Kakutani in 1944\cite{kakutani1944},
 where it was shown to be an effective tool
 in solving harmonic functions in the two dimensional \Gls{gp}. This methodology has since been
 shown to be applicable to n-dimensional harmonic PDE's \cite{DeLaurentis}.  During the 1960's
@@ -699,7 +699,6 @@ The CUDA parallel computing environment is a C++ language wrapper with built in
 \gls{directive pragmas} to interact with the NVIDIA hardware.  Although CUDA is modeled on the
 hardware it runs on, it is not wholly analogous with the hardware architecture,
 and higher level concepts have been added to aid in the usage of CUDA code.
-%TODO insert diagram of CUDA stack.
 \par
 The CUDA ecosystem stack is comprised of five layers accessible to the user.
 These layers are the CUDA application itself, CUDA Libraries, CURA Runtime otherwise
@@ -723,7 +722,7 @@ development be planned.
 Moving down the stack, CUDA runtime provides an interface to the user, which mirrors
 standard C functionality such as malloc and memcpy.  These functions differentiate
 themselves from host functions with the prefix \textit{``cuda''} or \textit{``cu''}
-e.g. cudaMalloc and cudaMemcpy.  Functions that are to be executed on the
+e.g. \incpp{cudaMalloc()} and \incpp{cudaMemcpy()}.  Functions that are to be executed on the
 device, are called kernels or kernel functions, which can be identified
  via their triple angle bracket syntax, ``$<<< >>>$''.
 Kernel parameters can be specified in these triple angle brackets.  These parameters
@@ -739,7 +738,7 @@ helpful when tuning a program and striving for higher execution performance.
 \subsubsection{CUDA Driver}
 
 The CUDA driver is the lowest level of integration between the host and the device
-and facilitates communication between the \Gls{GPU} and the rest of the computer via the bus. %TODO: define Bus.
+and facilitates communication between the \Gls{GPU} and the rest of the computer via the bus.
 
 
 \subsection{Compilation and Execution}
@@ -802,7 +801,7 @@ consider hardware contexts and software separately from one another, as to reduc
 of false assumptions.
 \par
 For ease of programming, the current thread or block ID can be retrieved using
- \textit{threadIdx.\{x,y,z\}} and \textit{BlockIdx.\{x,y,z\}}. As can be deduced via the nomenclature,
+ \incpp{threadIdx.{x,y,z}} and \incpp{BlockIdx.{x,y,z}}. As can be deduced via the nomenclature,
  these variables are multi-dimensional, a feature that can be advantageous in some
  applications such as computer vision, but is not a necessity in other applications
 where the problem does not map to a 2D or 3D euclidian space. Further variables,
@@ -826,10 +825,10 @@ CUDA kernels are executed on every data in an array in an \gls{simt} fashion.
 The angle brackets in front of the kernel call identify the function as a kernel,
 and allow syntax  identification during compilation of a program.  Depending on
 whether a device kernel is to be called from the host or internally from the device,
-kernels can be labeled with the pragma \textit{\_\_global\_\_} or \textit{\_\_device\_\_}  respectively.
-Kernels declared \textit{\_\_global\_\_} can be called from both the host and device, while \textit{\_\_device\_\_}
+kernels can be labeled with the pragma \incpp{__global__} or \incpp{__device__}  respectively.
+Kernels declared \incpp{__global__} can be called from both the host and device, while \incpp{__device__}
 kernels are only available from the device.
-The identifier \textit{\_\_host\_\_} allow for kernels to be called from and run on the host.
+The identifier \incpp{__host__} allow for kernels to be called from and run on the host.
 
 The parameters in the triple angle brackets are, from left to right, grid size or number of blocks,
 block size or number of threads, size of shared memory, and stream ID.  While grid and block size,
