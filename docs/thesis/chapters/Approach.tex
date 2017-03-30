@@ -6,6 +6,26 @@ in this work will be discussed.  Specifically, details of the parallelization an
 reduction strategies, will be elaborated.  The full source code can be found in
 appendix \ref{appendix}, but excerpts will be inserted into the following passages
 where suitable.
+\par
+
+The mathematical use-case implemented for this proof of concept is the special case of \ref{eq:poisson}.
+\begin{equation}
+  \begin{aligned}
+  -\bigtriangleup u(x) &= 1,\quad x \in \Omega = (-1,1)^n, \quad n \in \mathbb{N}\\
+  u(x) &= 0,\quad on \quad \partial \Omega
+\end{aligned}
+\end{equation}
+
+We find the suitable boundary function $g$ to transform \ref{eq:poisson} into \ref{eq:laplace}
+with a boundary value of
+ \begin{equation}
+   \begin{aligned}
+     -\bigtriangleup u(x) = 0&, \quad x \in \Omega = (-1,1)^n, \quad n \in \mathbb{N}\\
+   g = \frac{x'x}{2n}&, \quad x \in \partial \Omega
+   \label{eq:poc}
+ \end{aligned}
+   \end{equation}
+The goal is to efficiently numerically solve \ref{eq:poc} point-wise in $\Omega$.
 
 \section{Experiment Hardware}
 For the numerical experiments conducted during this research, two hardware configurations
@@ -154,7 +174,7 @@ gpuPaths = p.totalPaths / nGPU;
 
 
 
-\subsection{Reduction}
+\subsection{Reduction}\label{ssec:reduction}
 Data reduction describes the act of consolidating a large amount of values to
 a individual value or subset of values by means of a numerical or logical operations.
 Although summation is a common example, other reduce operations include,
@@ -303,7 +323,7 @@ This strategy allowed for coalesced warp-wise memory accesses, that minimized
 thread divergence and despited the computational overhead, lead to performance gains
 of $~50\%$ compared to initial naive reduction implementations.
 \subsubsection{Global Reduction}
-The global reduction of path evaluation results is realized through a serial
+The global reduction of path evaluation results are realized through a serial
 a $cudaMemcpyAsync(...)$ to the host, and a serial host reduction.  This strategy
 proved to provide greater performance than a restructuring of the CUDA thread/Block
 allocation and subsequent GPU reduction, due to the minimization of GPU configuration

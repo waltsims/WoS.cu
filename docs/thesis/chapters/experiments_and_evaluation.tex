@@ -50,7 +50,7 @@ and rounded to the nearest natural number for the sake of simplicity.  The two
 devices selected were GTX 560Ti. As mentioned in \ref{devicePar}, the code
 was run simultaneously on both devices via CUDA streams, and the results were reduced
 on the host, as before. To to space constrained on the motherboard, a PCIe-extender
-ribbon cable was used to conned the second device to the motherboard. Initial tests
+ribbon cable was used to connect the second device to the motherboard. Initial tests
 showed that for our test case (Dimension=512, Paths=65335) the running time dropped from
 30.7 seconds for a single device, to 17,9 seconds when running on two devices,
 resulting in a speed up of: $$ speedup = \frac{31.7 sec}{17.2 sec} = 1.84.$$ Unfortunately,
@@ -75,11 +75,15 @@ logarithmically over the number number of dimensions.  This is consistent with \
 \end{center}
 \end{figure}
 The linear regression of the above plot has a function of $$f(dimension)= 4.8108001661116715 + 0.2953577483675905*dimension.$$
+Due to the dependency of epsilon on the number of boundary samples, the number of steps
+increases with the number of samples.  The rise in computational complexity is what
+makes a more precise solution possible.
+\par
 A further point of interest is whether the number of steps per path remains smaller
 than the period of the random number generator, namely $2^{190}$ or $~1.5 * 10^{57}$.
 Each thread has its own seed, therefore the number of random numbers generated per
 thread is of interest.  This number is equal to
-$$maxRand = total Paths \% 65535 * f(dimension)$$ and is constrained by
+$$maxRand = total Paths \ 65535 * f(dimension)$$ and is constrained by
 $$ maxRand \overset{!}{<} 2^{190}$$
 %TODO: table for f dimension.
 
@@ -92,16 +96,39 @@ two dimensions \cite{Bornemann}.  The resulting value is  $$u(0,0) = 0.29468 541
 This value will be used as a known solution in order to check accuracy and convergence.
 The plot bellow shows the convergence of the two dimensional case.
 
+\begin{figure}
+\begin{center}
+\includegraphics[width=10.0cm]{styles/convergence} \label{plot:convergence}
+  \caption{convergence plot for two-dimensional case}
+\end{center}
+\end{figure}
+
+As one can see, the convergence is $\mathcal{O}(N^{-1/2})$ and machine precision is reached
+as expected.  The slight rise after convergence is as of now not fully understood and
+requires more testing.
+
 
 \section{Scaling Tests}
 As with many programs, it was of interest to investigate the scaling properties of
 of this \Gls{RWoS} program in respect to iterations and dimensions. From the theory,
 we expect to see a scaling behavior that $\mathcal{O}( N\log(N))$ in nature.
 %TODO: only power 2 dimensions
-The hyper linear increase in running time is most likely due to the transition from
-block based path iteration scaling to loop based iteration scaling once the maximum
-number of blocks has been reached.  Since the block loops are executed in serial,
-and dependencies limit the optimizations between loops.
+The hyper linear increase in running time can be attributed to the complete utilization
+of \gls{GPU} resources and thereby the achievement of
+complete \gls{SM} occupancy. In fulling all \glspl{SM} further warp execution
+is serialized And therefore the problem scales at a different linear rate.  Never the less
+we will see in the speedup test comparison that the promlem still scales better on \glspl{GPU}
+that on \glspl{CPU}, especially in higher dimensions.
+% time is most likely due to the transition from
+% block based path iteration scaling to loop based iteration scaling once the maximum
+% number of blocks has been reached.  Since the block loops are executed in serial,
+% and dependencies limit the optimizations between loops.
+\begin{figure}[hbt!]
+\begin{center}
+\includegraphics[width=10.0cm]{styles/scaling} \label{plot:scaling}
+  \caption{scaling tests over dimension and sample size}
+\end{center}
+\end{figure}
 \section{Speedup}
 One of the main goals of this project was to show the possibility of decreasing computation
 time of \Gls{RWoS} by running the algorithm on \Glspl{GPU}.  To show the resulting
@@ -122,4 +149,14 @@ The data below goes to show that the super linear speed up of high dimensional
 \Gls{RWoS} on \Glspl{GPU} confirms the presumption that high dimensional problems
 are well suited for \Glspl{GPU}.  Thanks to light context switches, large dimensional capabilities,
 and the optimized \Gls{GPU} memory architecture and approach, the \Gls{GPU} implementation
-of \Gls{RWoS} performs very well.
+of \Gls{RWoS} performs very well.  Only a limited number of \gls{CPU} runs could
+be executed due to the excessive execution time it required for high dimensional
+high path iterations runs. For smaller dimensional problems, speedup was less impressive.
+ This only furthers the original presumption the \glspl{GPU} outperform in higher dimensions.
+In these initial speedup tests, a peak speedup of 600 was achieved.
+\begin{figure}[hbt!]
+\begin{center}
+\includegraphics[width=10.0cm]{styles/speedup} \label{plot:speedup}
+  \caption{speedup comparison between \gls{CPU} and gls{GPU} \Gls{RWoS}}
+\end{center}
+\end{figure}

@@ -10,7 +10,7 @@ to lighten the data entry interface, and enable a concentration on the computati
 efficiency rather than the usability and \gls{ui}.  A csv, or tsv parser would be a first step in
 improving this aspect of the implementation.
 \subsection{CUDA in Julia}
-the programming language Julia is developing into a strong candidate for the go
+The programming language Julia is developing into a strong candidate for the go
 to high-level numerical programming language.  Parallel to the completion of this
 thesis, a high level CUDA interface, \href{https://github.com/JuliaGPU/CUDAnative.jl}
 {CUDANative.jl}, has been developed by Tim Besard for Julia. In order to further increase the
@@ -20,7 +20,7 @@ for higher level improvement of \Gls{RWoS}, but also help blaze a path for
 GPU programming in the Julia programing ecosystem.
 
 \subsection{Pipelining Strategy for High-Dimensional/High-Sampling Simulations}
-Though the problem or \Gls{RWoS} is computationally bound, one further enhancement
+Though the problem of \Gls{RWoS} is computationally bound, one further enhancement
 to the current implementation would be a CUDA stream based pipelining approach,
 to allow the transfer of intermediate results from the device to the host,
 thereby overlapping data transfers with host and device computational.  This increased
@@ -52,8 +52,8 @@ batch can be distributed to all resources and evaluation time of the test batch 
 serves as a performance measure for resource allocation of the critical solver.
 
 \subsection{Faster Path Convergence via Weighted Evaluations}
-One last optimization, is mathematical in nature.  Building on the ideas of
-equation \ref{eq:weighted_average_integral}, by off-setting the center point of a current
+One last optimization is mathematical in nature.  Building on the ideas of
+equation \eqref{eq:weighted_average_integral}, by off-setting the center point of a current
 step in a spherical radius, one could increase the radius size to fit to domain in a
 more optimal manner.  In this case, optimal means increasing the number of intersections
 of the radius with the domain boundary$\partial \Omega$, thereby increasing the likelihood of boundary
@@ -61,6 +61,14 @@ interception and hopefully, adding a better constant to the already impressive c
 rate of $\mathcal{O}(\log(\epsilon))$.  This approach would mean that paths would need
 to be saved during ''stepping time'' and the weights for
 each steps per path would have to be calculated after the path intercepts the $\epsilon$
-boundary via \ref{eq:poissonkernel}.  This idea merely represents a hypothesis
+boundary via \eqref{eq:poissonkernel}.  This idea merely represents a hypothesis
 based on intuition and still needs to be proven effective both practically and theoretically.
 \section{Conclusion}
+The goal of this work was to practically show that \gls{RWoS}
+is well suited for highly parallel, high-dimensional execution, as had been often previously
+stipulated.
+In order to show this, we used state of the art \gls{GPU} parallel computation technology
+and mapped the \gls{RWoS} to the physical hardware in order to achieve near optimal performance.
+In this process we achieved a maximum measured speedup of 600, with threads leading
+one to believe that greater performance gains are possible in higher dimensions,
+though these remain unmeasured.

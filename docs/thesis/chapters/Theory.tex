@@ -10,71 +10,102 @@
 
 \section{Problem Setting}
 %Boundary Value Problems
-In the scope of this work, we will be solving the $n$ dimensional elliptic Dirichlet boundary
-value problem of the
-\ref{eq:poisson} defined as:
-  \begin{equation}\tag{Poisson's Equation}
-  \begin{split}
-\forall \text{ domains } \Omega \subset
-  \mathbb{R}^{n}, n \in \mathbb{N} \\ \text{ with }u\colon \Omega \rightarrow \mathbb{R}^{1}\\
-  \bigtriangleup u = \sigma(x),
-  \label{eq:poisson}
-  \\ u\rvert_{\partial \Omega} = f
-\end{split}
-\end{equation}
-A special case of the \ref{eq:poisson}, is the homogeneous case, where $\sigma(x) = 0$, called
-\ref{eq:laplace}
+In the scope of this work, we consider the elliptic boundary value problem of
+the Poisson's equation
+\eqref{eq:poisson} defined as:
   \begin{equation}
-    \tag{Laplace's Equation}
-    \bigtriangleup u = 0
+    \begin{aligned}
+%\forall \text{ domains } \Omega \subset
+  %\mathbb{R}^{n}, n \in \mathbb{N} \\ \text{ with }u\colon \Omega \rightarrow \mathbb{R}^{1}\\
+  - \bigtriangleup u(x) &= \sigma(x),\quad x \in \Omega,
+  \label{eq:poisson}
+  \\ u(x) &= f(x),  \quad x \in \partial \Omega, \quad (Dirichlet)
+\end{aligned}
+\end{equation}
+where $\Omega \in \mathbb{R}^{n}$ is an open bounded set and $f$ is a function
+defined on the boundary $\partial \Omega$.
+A special case of the Poisson's equation \eqref{eq:poisson}, is the homogeneous case, where $\sigma(x) = 0$, called
+the Laplace's equation
+  \begin{equation}
+    \begin{aligned}
+    \bigtriangleup u(x) &= 0, \quad x \in \Omega,
+  \\ u(x) &= f(x),  \quad x \in \partial \Omega\text{.}
     \label{eq:laplace}
+  \end{aligned}
   \end{equation}
-A Dirichlet Boundary Condition defined as:
+A Dirichlet Boundary Condition is defined as:
 \begin{definition}[Dirichlet Boundary Condition]
-given a \Gls{PDE}
-defined on a domain $\Omega$, constrained via the definition values on the
+Given a \Gls{PDE}
+defined on a domain $\Omega$, constrained via the definition function values on the
  boundary of the domain $\partial \Omega$, e.g $f(x), \forall  x \in \partial \Omega$
 \end{definition}
-The goal is to efficiently numerically solve the given elliptic \Glspl{PDE}
-on n-Dimensional cubic spaces, $[-1,1]^{n}$ giving a Dirchlet
-Boundary Condition, i.e. find a function or set of functions that fulfills the set of given constraints.
+In this work we be will looking at an approach to numerically solve \eqref{eq:poisson}.
 Due to the numerical nature of this task, the solution cannot typically be described symbolically.
-Often u is discretized by its function values within $\Omega$.
-Also of great importance is the possibility to transform a Poisson Equation into
-a Laplace Equation, assuming a suitable transformation can be found.   Many elliptic \glspl{PDE} can be transformed into harmonic \glspl{PDE},
-they properties of which thereby increase the applicability of this solving algorithm\cite{Bornemann}.
+Often the solution $u$ is discretized by its function values within $\Omega$, and solved on a grid.
+We will be attempting a different approach, but first our goal is to find and exploit the relationship
+between \eqref{eq:poisson} and \eqref{eq:laplace} to facilitate a clever numerical solver.
+We will therefore examine the possibility to transform a Poisson's equation into
+a Laplace's equation, assuming a suitable transformation can be found, in order to
+utilize attractive properties thereof.
+
+   Many elliptic \glspl{PDE} can be transformed into harmonic \glspl{PDE},
+the properties of which thereby increase the applicability of \gls{RWoS} \cite{Bornemann}.
 \newpage
-\begin{example}[Transformation Poisson's Equation to Laplace Equation]
-  Given the specific case of Poisson's equation with the source term $\sigma(x)$:
-  \begin{multicols}{2}
-    \begin{equation}
-      -\bigtriangleup u = 1\text{, with }\Omega = [-1,1]^{n}, n \in \mathbb{N}.
-    \end{equation}
-      $$u\big\rvert_{\partial \Omega} = \sigma $$
-    \begin{equation}
-      \Bigg\updownarrow \textit{transform}
-    \end{equation}
-    \begin{equation}
-      -\bigtriangleup v = 0
-    \end{equation}
-    $$v\big\rvert_{\partial \Omega} = w$$
-    \break
-    \begin{equation}
-    u = v + g, \bigtriangleup v = 0
-    \end{equation}
-    \begin{equation}
-      \bigtriangleup g = \bigtriangleup u = -1
-    \end{equation}
-        $$0 = u\big\rvert_{\partial \Omega} = v\big\rvert_{\partial \Omega} + g\big\rvert_{\partial \Omega}$$\break\break
-  \end{multicols}
-\cite{Bornemann}
+\begin{example}[Transformation of Poisson's equation to Laplace's equation]
+Given $u:\Omega \rightarrow \mathbb{R}$ as the solution of
+\begin{equation}
+  \begin{aligned}
+  - \bigtriangleup u(x) &= \sigma(x), \quad x \in \Omega,
+  \\ u(x) &= f(x), \quad x \in \partial \Omega,
+\end{aligned}
+\end{equation}
+and $v:\Omega \rightarrow \mathbb{R}$ as the solution of
+\begin{equation}
+  \bigtriangleup v(x) = 0,\quad x\in\partial\Omega,
+\end{equation}
+a boundary function $g\in\partial\Omega$ is desired, such that
+\begin{equation}
+  g(x):=u(x)-v(x), \quad x \in \Omega.
+\end{equation}
+Therefore we search for a suitable boundary value function $g(x) - w(x), \quad x \in \partial \Omega$.
+\begin{equation}
+  \begin{aligned}
+- \bigtriangleup g(x) &= - \bigtriangleup (u-v)(x) \\
+&= - \bigtriangleup u(x) + \bigtriangleup v(x)
+\\&= \sigma(x) + 0 = \sigma(x)
+\end{aligned}
+\end{equation}
+
+This equality also applies on the on $\Omega$, which leads to
+\begin{equation}
+f(x) = u(x) = g(x) + v(x), \quad x \in \partial \Omega.
+\end{equation}
+We stipulate
+\begin{equation}
+\begin{aligned}
+  w(x) &= v(x), \quad x \in \partial \Omega\\
+  w(x) &= u(x) - g(x) , \quad x \in \partial \Omega,
+\end{aligned}
+\end{equation}
+which defines the transformation boundary condition, and enables the evalutation of
+\begin{equation}
+  \begin{aligned}
+  -\bigtriangleup v(x) &= 0, \quad x \in \Omega\\
+  v(x)&=w(x), \quad x \in \partial \Omega
+\end{aligned}
+\end{equation}
+
+The function $g(x)$  enables us to adjust the boundary value function $w(x)$
+so that $v(x)$ fulfills Laplace's equation
+\cite{Bornemann}.
+
+
 \end{example}
-An interesting subclass of linear elliptic \Glspl{PDE} is the class of harmonic \Glspl{PDE}, defined as:
+An subclass of linear elliptic \Glspl{PDE} is the class of harmonic \Glspl{PDE}, defined as:
 \begin{definition}[Harmonic PDEs]
   A \Gls{PDE} whose solution function or function set is harmonic.
 \end{definition}
-
-Due to the many interesting traits, harmonic functions will serve as the foundation of the
+Some special traits harmonic functions will serve as the foundation of the
  following work, and therefore an excursion into their properties and characteristics
 is appropriate.
 
@@ -83,7 +114,7 @@ is appropriate.
 Harmonic functions are defined by Axler as:
 \begin{definition}[Harmonic Function] given $\Omega$ defined as an open, non-empty subset of
   $\mathbb{R}^{n}$, with $n \in \mathbb{N}\setminus \{0,1\}$
-  a function $u$ is \textit{haromonic} given it is twice continuously differentiable
+  a function $u$ is \textit{harmonic} given it is twice continuously differentiable
   and fulfills $$ \bigtriangleup u \equiv 0$$
 \end{definition}
 
@@ -99,7 +130,7 @@ Harmonic functions are defined by Axler as:
   \label{eq:mean}
 \end{equation}
 
-The following example (see figure \ref{fig:swingPlot}) is meant to illustrate
+The following example (see Figure \ref{fig:swingPlot}) is meant to illustrate
 the mean value property of harmonic \Glspl{PDE} and will accompany the discussion
 of the properties of harmonic functions.
 
@@ -110,42 +141,38 @@ of the properties of harmonic functions.
   \label{fig:swingPlot}
 \end{figure}
 
- The solution of harmonic \GLS{PDE} given the boundary
-function $u(\phi)=10*\sin(4*\phi)$. The solution function $u(r,\phi)=r^{4}*\sin(4*\phi)$
-can be seen. The plot is defined on the 2D unit circle $\Omega$.  A known harmonic boundary
+ The solution of harmonic \glspl{PDE} given the boundary
+function $u(\phi)=10\cdot\sin(4\cdot\phi)$ is shown above. The solution function $u(r,\phi)=r^{4}\cdot\sin(4\cdot\phi)$
+can be seen on the 2D unit circle $\Omega$.  A known harmonic boundary
 condition was defined, and then a solution was solved for analytically by applying the Laplace operator
-in polar coordinates to the generalized harmonic function $r^{\alpha}*\sin(4\phi)$,
+in polar coordinates to the generalized harmonic function $r^{\alpha}\cdot\sin(4\phi)$,
 and solving for $\alpha$.
 
-Should one integrate over the boundary $\partial \Omega$, it follows that \begin{equation}
-u(a) = \int_{S}u(a + r\zeta)d\sigma(\zeta) = \int_{0}^{2\pi} 10*\sin(4*\phi)d\phi = 0,
+After integrating over the boundary $\partial \Omega$, it follows that \begin{equation}
+u(a) = \int_{S}u(a + r\zeta)d\sigma(\zeta) = \int_{0}^{2\pi} 10\cdot\sin(4\cdot\phi)d\phi = 0,
 \label{eq:radinvar}
 \end{equation}
 which is the solution of $u$ at the center of the 2D unit circle,
-namely a =(0,0). As one can deduce from this example, in a ball, this solution is
+namely a =(0,0). As one can deduce from \eqref{eq:radinvar}, for spherical problems, this solution is
 radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \label{radiusInvariance}
-%TODO: discuss the rotational independence as can be seen by the independence of
-% the solution from r==> wichtig für step size beliebigkeit.
   \subsubsection{The Maximum Principle}\label{sssec:maximum}
-  % how this follows from the mean value principle
   Following from \ref{sssec:meanvalue} one can make more generalized statements of
   the maximum values of harmonic functions.
-  \begin{quote}
-      Let $\Omega$ be connected, and let $u$ be harmonic and real valued on $\Omega$.
-      If $u$ has either a maximum or minimum in $\Omega$, then $u$ is constant.\cite{Axler1992}
-  \end{quote}
+  \begin{theorem}
+      Let $\Omega$ be connected, and let $u$ be harmonic and real valued function on $\Omega$.
+      If $u$ has either a maximum or minimum $\dot{\Omega}$, then $u$ is constant\cite{Sheldon}.
+  \end{theorem}
 
   This property of harmonic functions can be nicely visualized in the solution given
-  in figure \ref{fig:swingPlot}. Were on to select any circular
+  in figure \ref{fig:swingPlot}. Were one to select any circular
   sub-domain $\omega \subset \Omega$ of the unit circle, one would notice that the maximum value is always
   on the boundary  $\partial \omega$.  Should one claim that the maximum  value be within $\omega$
   the function $u$ would have to be "flat" and therefore constant to fulfill \ref{sssec:meanvalue}.
 
-  \subsubsection{Weighted Mean Value Principle}%Real name is the Poisson Kernel for the Ball
-  % weights can be compared to probability of hitting a certain boundary based on Brownian motion.
-  Building on the mean value properties of harmonic functions, one can show that if $u$ is harmonic and,
-  $\bar{B}$, then
-
+  \subsubsection{Weighted Mean Value Principle}
+  % weights can be compared to probability of hitting a certain boundary based on distribution
+  Building on the mean value properties of harmonic functions, one can show that if $u$ is harmonic a
+  closed ball $\bar{B}$, then
    \begin{equation}
      u(0) = \int_{S}u(\zeta)d\sigma(\zeta),
      \label{eq:centerval}
@@ -153,16 +180,15 @@ radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \l
   then for any $x \in B\text{, }u(x)$ can be expressed as a weighted average of
   $u$ over $S$. Furthermore, there exists a function $P(x,\zeta)$ such that
   \begin{equation}u(x)=\int_{S}P(x,\zeta)u(\zeta)d\sigma(\zeta).\label{eq:weighted_average_integral} \end{equation}
-     The function can be shown
-  using the symmetry properties of harmonic function on a sphere to be defined as
+     The function can be shown,
+  using the symmetry properties of harmonic functions on a sphere, to be defined as
   \begin{equation}
     \tag{Poisson Kernel for the Ball}
     P(x,\zeta) = \frac{1 - \abs{x}^{2}}{\abs{x- \zeta}^{n}}
     \label{eq:poissonkernel}
-    \cite{Axler1992}
   \end{equation}
-  in an $n \in \mathbb{N}$ dimensional space.
-\begin{figure}[!htb]
+  in an $n \in \mathbb{N}$ dimensional space \cite{Axler1992}.
+\begin{figure}[!htb]%TODO: subfigure
 \minipage{0.32\textwidth}
   \includegraphics[width=\linewidth]{styles/CircCenter}
   \caption{equation \ref{eq:centerval}}\label{fig:circcenter}
@@ -180,107 +206,113 @@ radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \l
 \endminipage
 \end{figure}
   \subsubsection{Dirichlet Problem for the Ball}
-  Building on the weighted mean value principle and the maximum principle for harmonic functions
-  , one can hypothesize that given a function $f$ on $S$, that a harmonic function $u$
+  Building on the weighted mean value principle and the maximum principle for harmonic functions,
+   one can hypothesize that given a function $f$ on $S$, that a harmonic function $u$
   exists of $B$ such that $u = f$ on $S$. Essentially saying, that given the \gls{BVP},
   on a sphere, that a harmonic function can be found as the solution.  Building on
-  \ref{eq:poissonkernel}, it can be shown that
+  \eqref{eq:poissonkernel}, it can be shown that
 \begin{theorem}
   for continuous $f$ on  $\partial B(a,r)$,
 there exists a unique continuous function on $u$ on $\bar{B}(a,r)$ with $u$ harmonic on
 $B(a,r)$ such that $ u = f $ on
 $\partial B(a,r)$, therefore solving the Dirichlet problem on $\bar{B}(a,r)$\cite{Axler1992}.
 \end{theorem}
-
 \section{Algorithmic Solution}
 It has been shown that harmonic functions exhibit many unique traits and properties
-that allow one to make deductions about them as solutions of \glspl{PDE} solutions.  The analytical search for solutions to
-the Dirichlet Problem for the Ball is possible, but one would benefit greatly
-from a solving method that avoids analytical evaluation and is easily applicable on more
+that allow one to constrain the solutions set of \eqref{eq:laplace}.  The analytical solution to
+the Dirichlet problem on a ball is possible, but one would benefit greatly
+from a solving method that avoids analytical evaluation and is easily applicable to more
 general boundary geometries.  To resolve this, one can exploit the properties
-of harmonic functions discussed above.  One solver that does just that is \Gls{RWoS}.
-\par
-The approach of \gls{RWoS} builds on the idea of \ref{eq:weighted_average_integral},
+of harmonic functions discussed above.  One solver that does that is \Gls{RWoS}.\\
+The approach of \gls{RWoS} builds on the idea of \eqref{eq:weighted_average_integral},
 which states that for a given harmonic \gls{PDE} with solution $u$, the mean value
 property can be complimented with a weight function $P(x,\zeta)$.  A special case
-for this property is the \ref{eq:poissonkernel}.    In order to
+for this property is the \eqref{eq:poissonkernel}.    In order to
 use this property for the creation of an algorithmic solver, one stipulates
-that there exists a weight function $P$ that solves the \ref{eq:poisson} for a general susbet of connected domains
-in which a given $$\Omega.$$ We then go on to define $P$ as
+that there exists a weight function $P$ that solves \eqref{eq:poisson} for a general subset of connected domains
+in a given $\Omega.$ What would be useful is to have $P$ be defined as a distribution
+on a general $\partial \Omega$.  This approach has the benefit that the weights P are
+implicitly defined in the distribution on $\partial \Omega$ and must not be
+explicitly calculated as in \eqref{eq:poissonkernel}. We then go on to define $P$ as
 \begin{equation}
-  u(x_{0})= \int_{\partial \Omega} \underbrace{P(x_{0},\zeta)}_\text{unknown} \underbrace{u(\zeta)}_\text{known} d\zeta \approx \frac{1}{N} \sum_{i=1}^{N} u(\zeta_{i}), \xi_{i} \in \partial \Omega.
+  u(x_{0})= \int_{\partial \Omega} \underbrace{P(x_{0},\zeta)}_\text{unknown}
+   \underbrace{u(\zeta)}_\text{known} d\zeta \approx \frac{1}{N} \sum_{i=1}^{N} u(\xi_{i}),
+   \quad \xi_{i} \sim \Xi.
 \end{equation}
 
-This approximation stipulates that through random sampling of the boundary, with
-a defined function $\xi$, one can approximate the weighting function $p$ and therefore
-find a solution.  The method of random sampling in order to converge to a desired solution
-is referred to as a Monte Carlo method.
+This approximation stipulates that through a random sampling $\xi$ of the boundary, with
+a defined distribution $\Xi \propto P$, one can approximate \eqref{weighted_average_integral} and therefore
+find a solution at $u(x_{0})$.  The method of random sampling in order to converge to a desired solution
+is referred to as a Monte Carlo method.  How to sample from $\Xi$ will be described in the following passages.
 \par
 
 \subsection{Monte Carlo Methods}\label{ssec:montecarlo}
-Monte Carlo methods describe statistical algorithms that are based on the sampling a
+Monte Carlo methods describe statistical algorithms that are based on sampling a
 large number of random system states and classifying the resulting set \cite{Metropolis}.
 According to Bauer, these consist of a ''stochastic process which produces a random variable
  whose expected value is the solution of a certain problem'' \cite{bauer}.
 These methods became popular in nuclear research in the 1940's when practical
 experiments were limited and analytical solutions were not unknown.  Monte Carlo
-Methods were found to be useful when analyzing the time independent Schrödinger
-Equation\cite{Metropolis}. Muller defined Monte Carlo Methods in 1956 as:
+methods were also found to be useful when analyzing the time independent Schr\"odinger
+equation\cite{Metropolis}. Muller defined Monte Carlo methods in 1956 as:
 \begin{quote}[a method which for] an unknown solution to a given physical
-problems being estimated by a method which essentially depends on statistical sampling technique.
+problem being estimated by a method which essentially depends on statistical sampling technique.
 This approach requires the utilization of random variables of an appropriate
 stochastic process such that samples of the process yield valid statistical
 results\cite{Muller}.\end{quote}
-This strategy is the basis of The Random Walks on Spheres, when solving harmonic
+This strategy is the basis of the \Gls{RWoS}, when solving harmonic
 \Glspl{PDE} as described in the following passages.
 \subsection{Random Walks on Spheres}\label{ssec:RWoS}
  \Glspl{RWoS} is a highly parallel solver for harmonic \Glspl{PDE},
-and enjoys greater efficiency and practicality than more common solvers e.g.
-finite differences or multi-grid when sparse solutions regions are of
-interest in higher dimensions \cite{DeLaurentis}\cite{Bornemann}\cite{Yang}.
+and enjoys greater efficiency and practicality than more common solvers, e.g.~
+finite differences or multi-grid, when sparse solution regions are of
+interest in higher dimensions \cite{DeLaurentis,Bornemann,Yang}.
 The Random Walks on Spheres Algorithm
-gained its name, due to the combination of Brownian Motion-like random walk,
+gained its name, due to the combination of Brownian Motion-like random walks,
 and the innate mathematical connection between
 harmonic functions and spheres\cite{Axler1992}.
-Brownian Motion describes a numerical model
-of the random motions of particles.  This motion is used in order to iteratively
+Brownian motion describes a numerical model
+of the random motions of particles.  A similar motion is used in order to iteratively
 traverse a series %Markov Chain
-of spheres in a domain $\Omega$ on which a harmonic PDE is defined in order to % dictated by Brownian Motion ...
+of spheres in a domain $\Omega$ on which a harmonic PDE is defined in order to
+randomly sample $\partial \Omega$ and thereby % dictated by Brownian Motion ...
 solve the given harmonic PDE\cite{DeLaurentis}.
 Brownian Motion
 %(see \ref{sssec:brownian})
 was first
 proposed for this application by Shizuo Kakutani in 1944\cite{kakutani},
 where it was shown to be an effective tool
-in solving harmonic functions in the two dimensional \Gls{gp}.  This methodology has since been
-shown to be applicable to n-Dimensional harmonic PDE's \cite{DeLaurentis}.  During the 1960's
+in solving harmonic functions in the two dimensional \Gls{gp}. This methodology has since been
+shown to be applicable to n-dimensional harmonic PDE's \cite{DeLaurentis}.  During the 1960's
 and 70's it was applied to calculate hotspots in nuclear reactors\cite{Bornemann}.
 
 In the following discussion, in order to clearly state intentions, a standard
 vernacular has been set as depicted in the image below.
 
 \begin{figure}
-\includegraphics[width=15.0cm]{styles/WoS} \label{diagram}
+  \label{diagram}
+\includegraphics[width=15.0cm]{styles/WoS}
   \caption{2D depiction of \Gls{RWoS}}
 \end{figure}
 
 \begin{description}
 \item[Origin Point] The origin point describes the discrete point in the domain
-$\Omega$ for which a discrete solution to the PDE is to be found. In \ref{diagram}
+$\Omega$ for which a solution to the PDE is to be found. In \ref{diagram}
 and in the following passages, this point is also referred to as $x_{0}$.
 \item[Radius] The largest distance $r$ from the current point, to the domain boundary
 $\partial\Omega$ (depicted above in as lavender circles).
-\item[Step] An transition from the current point $x_{i,j}$ to $x_{i,j+1}$ where
+\item[Step] A transition from the current point $x_{i,j}$ to $x_{i,j+1}$ where
 $i$ is the path number and $j$ the step number of the current path.  The step has
 a length of the radius $r$ and is taken in the uniformly random direction $d$.
 \item[Path] The collection of steps from the origin point to the boundary (depicted in green).
-\item[Epsilon Boundary] Depicted above as a dotted baby blue line, the epsilon boundary
+\item[Epsilon Boundary] Depicted above as a dotted light blue line, the epsilon boundary
 is the allowable deviation from the boundary $\partial\Omega$ a point can display
 and still terminate the algorithm (see \ref{sssec:algorithm}).
-\item[Projection] One in the epsilon boundary, a projection of the final point $P$
-to the boundary $\partial\Omega$ is performed, thus creating $P'$.
+\item[Projection] Once in the epsilon boundary, a projection of the final point $P$
+onto the boundary $\partial\Omega$ is performed, thus creating $P'$.
 \item[Evaluation Point] describes $P'$ where the boundary function is evaluated.
-The expected value of all evaluation points is the solution at the origin point.
+The average of the boundary function evaluated at the set of $N$ evaluation points
+approximates the solution at the origin point.
 \end{description}
 
 \subsection{The Algorithm}\label{sssec:algorithm} %TODO: one or we?
@@ -289,36 +321,40 @@ the algorithm can be discussed.  The goal of the algorithm is to approximate
 the solution $u(x_{0})$ at an interior point $x_{0}$ by randomly sampling boundary
 values.  This random sampling can be compared to a discrete random integration,
 on a sphere around the unknown point, in order to exploit the mean value property
-of harmonic functions \ref{sssec:meanvalue}.  Through a recursing execution of this sampeling
-technique, hopes to reach a known boundary value.   This traversal of
- the domain to the boundary can be seen as  Brownian-Like motion.
-In order to reduce the number of random Brownian steps needed to reach the boundary,
-one exploits radius independence of $r$ as described in \ref{eq:radinvar} and takes
+of harmonic functions \ref{sssec:meanvalue}.  Through a recursing execution of this sampling
+technique, hopes to reach a known boundary value.
+In order to reduce the number of random steps needed to reach the boundary,
+one exploits radius independence of $r$ as described in \eqref{eq:radinvar} and takes
 the greatest possible $r$ within the domain $\Omega$.  Then a random step direction $d$
 is defined by spherical uniform random distribution (for more see \ref{uniformPoints}).
-Should one attempt to reach the boundary by this method alone, the probability of the
-process terminating is zero \cite{kakutani1944, DeLaurentis, Bornemann}.  Therefore, shoots for an
-$\epsilon$ boundary of $\partial \Omega$ in order to ensure convergence. This approximation also
-serves to reduce the running time of the algorithm(see \ref{epsilonComplexity}). Once in the $\epsilon$
-boundary, one projects the current point $P$ onto $\partial \Omega$ ($P'$).  Finally,
+Should one attempt to reach the boundary by this method directly, the probability of the
+process terminating can be zero for a substantial subset of domains \cite{kakutani1944, DeLaurentis, Bornemann}.
+This is derived from the general case, in which the intersection of the sphere and
+the boundary has the probability measure zero. Therefore, one relaxes the
+termination condition observes an boundary layer of thickness $\epsilon$ abutting
+$\partial \Omega$ in order to ensure termination. This approximation also
+serves to reduce the running time of the algorithm (see \ref{epsilonComplexity}). Once in the $\epsilon$
+boundary, one projects the current point $P$ onto $\partial \Omega$ ($P'$).  Though this
+introduces an error into the approximation, this error can be ensured to be lower than
+the sampling error of the Monte Carlo method (see \ref{epsilonDefinition}).  Finally,
 $P'$ is evaluated on $\partial \Omega$, concluding the current path, and the process
 is repeated.
 This algorithm is used to sample $N$ boundary evaluations, the expected value of which,
 reflects an increasingly more accurate approximation of the solution $u(x_{0})$
-for ever an ever greater number of trails $N$ \ref{errorAnal} \cite{Bornemann,DeLaurentis}.  Below, the algorithms has been
-described in pseudo-code.
- \begin{algorithm}[H]{$N, eps, x0$, $\Omega$}
+for an ever greater number of trails $N$ \ref{errorAnal} \cite{Bornemann,DeLaurentis}.
+  Algorithm \ref{alg:wos} the algorithm presents these steps in pseudo-code.
+ \begin{algorithm}[H]{$N, \epsilon, x_{0}$, $\Omega$}
   \caption{Walking On Spheres}
  \label{alg:wos}
 \begin{algorithmic}[1]
-   \State $dim \gets length(x)$ \Comment{dimension determined by size of $x0$}
+   \State $sum \gets 0$
+  \For{$i\gets1..N$} \label{lst:line:for}
    \State $ r \gets INFINITY$
-  \For{$i\gets0,N$} \label{lst:line:for}
-   \State $x \leftarrow x0$
+   \State $x \leftarrow x_{0}$
    \While{$r>eps$}
       \State find largest sphere radius $r$ in $\Omega$ with center $x$ \label{lst:line:radius}
-      \State find uniform random direction $d$ on sphere \label{lst:line:direction}
-      \State $ x \gets x + r * d$ \Comment{update current location}
+      \State find uniform random direction $d$ on unit sphere \label{lst:line:direction}
+      \State $ x \gets x + r\cdot d$ \Comment{update current location}
  \EndWhile
  \State $\overline x \gets project(x)$ \Comment{Project to boundary }
  \State $E \gets f(\overline x)$ \Comment {evaluate boundary value }
@@ -330,21 +366,21 @@ described in pseudo-code.
 \end{algorithm}
 
 \subsection{Error Analysis}\label{errorAnal}
-The algorithmic complexity of the \Gls{RWoS} algorithm is of course an area of interest
+The algorithmic complexity of \Gls{RWoS} is, of course, an area of interest
 when trying to improve performance. Clearly, the larger the number of paths $N$ one
 analyzes, the more precise the value estimation.The sampling error (standard deviation)
 conforms to the Monte Carlo typical convergence rate and
-is $\mathcal{O}(N^{\frac{1}{2}})$. Furthermore, the estimation error grows proportional to
-the boundary layer $\epsilon$.
+is $\mathcal{O}(N^{-\frac{1}{2}})$. Furthermore, the estimation error grows proportional to
+the boundary layer thickness $\epsilon$.
 This error term is due to the projection error at the boundary, and the lost
 pseudo Brownian Motion that one ''skips'' via the projection, or  $\mathcal{O}(\epsilon)$.
-In total the error amounts to $$Error = \underbrace{ \mathcal{O}(N^{-\frac{1}{2}})}_\text{sampling error} + \underbrace{\mathcal{O}(\epsilon)}_\text{epsilon projection error}$$\cite{Bornemann}\label{errorComplexity}.
+In total the error amounts to $$Error = \underbrace{ \mathcal{O}(N^{-\frac{1}{2}})}_\text{sampling error} + \underbrace{\mathcal{O}(\epsilon)}_\text{projection error}$$\cite{Bornemann}\label{errorComplexity}.
 
 \subsection{Algorithmic Complexity}
 
 \begin{theorem}
 The expected number of steps to reach the $\epsilon$-neighborhood of $\partial\Omega$
-is $$\mathcal{O}(\log{}\epsilon).$$\cite{Bornemann,DeLaurentis}\label{epsilonComplexity}
+is $$\mathcal{O}(\log{}\abs{\epsilon}).$$\cite{Bornemann,DeLaurentis}\label{epsilonComplexity}
 \end{theorem}
 
 In light of \ref{epsilonComplexity}, the overall complexity of \Gls{RWoS} can be
@@ -352,67 +388,61 @@ defined as $$\mathcal{O}(N \log{}\epsilon)$$ whereby, in our case \ref{epsilonDe
  leads to $$\mathcal{O}(N \log{N^{-\frac{1}{2}}}) = \mathcal{O}(N \log{N}).$$
 
  This leads to a theoretical dimensionless scalability\cite{Bornemann}.  The practical factuality
- of this claim will be examined later in this work.
+ of this claim will be examined later in this work.  %TODO!!!!! and ref!!!
 
 \subsection{Epsilon Selection}
 
-Although \ref{epsilonComplexity} will be considered as given for this work, \cite{DeLaurentis}
-dives deeper into the statistical proof behind this conclusion.  Practically, the
- left path in figure \ref{diagram} demonstrates the logarithmic convergence a path
- can, and following \ref{epsilonComplexity} oftentimes does display, via the log
+Although Theorem \ref{epsilonComplexity} will be considered as given for this work,
+dives deeper into the statistical proof behind this conclusion \cite{DeLaurentis}.  Practically, the
+ left path in Figure \ref{diagram} demonstrates the logarithmic convergence a path
+ can, and, following \ref{epsilonComplexity} oftentimes does, display via the logarithmic
  nature of the shrinking step size.
 
- Given \ref{errorComplexity}, assuming $N^{-\frac{1}{2}} > \epsilon$ the error term
- is dictated by the sampling size or number of path iterations.  Conversely, the number of steps per path,
- and therefore running time of \Gls{RWoS} is governed by the selection of $\epsilon$.
- This means, for an $\epsilon < N^{-\frac{1}{2}}$ the increased computational complexity
- per path dictated by $\epsilon$ is outweighed by the sampling error, and the total error is limited
- by the number of path iterations.  In order to obtain the greatest accuracy in
- the least running time, one aptly defines $\epsilon$ as $$\epsilon = N^{-\frac{1}{2}}$$\label{epsilonDefinition}
- thereby tying both the error and computational complexity to the number of path
-  iterations $N$\cite{Bornemann}.
-% Though the applications are great, and the individual steps are simple, it is important to
-%  gain a basic and intuitive the intricacies of the Random Walking on Spheres Algorithms.
-% The following passages will practically explore the theory and history behind this method,
-% while also touching on the mathematical foundations on which the algorithm is based.
+ In light of the error analysis depicted in Section \ref{errorComplexity}, it can be observed that the total error is
+ determined equally by $\epsilon$ and $N^{-\frac{1}{2}}$. Assuming $ \epsilon \ll N^{-\frac{1}{2}} $ the error term
+ is dictated by the sampling size.  Even though the
+ smaller choice of $\epsilon$ cannot improve precision, performance is still hurt
+ due to the increase in steps per path. Conversely, a large $\epsilon$ would
+ restrict the precision to a set level regardless of the number of samples.
+ Considering this fact, $\epsilon$ is chosen to allow for
+ the greatest possible precision achievable by setting
+  $$\epsilon \approx N^{-\frac{1}{2}}$$\label{epsilonDefinition},
+ thereby proportionally tying both the error and computational complexity to the
+ number of paths $N$ \cite{Bornemann}.
 %TODO pi example?
-\subsection{Excursion: uniform random directions on a Sphere}\label{uniformPoints}
+\subsection{Excursion: Uniform Random Directions on a Sphere}\label{uniformPoints}
 Given the importance of random directions for \Gls{RWoS}, a brief excursion
 into how one can numerically create a uniform distribution on a sphere can prove
 to be helpful and insightful.
-
-In the process of understanding how the generation of uniform distributions on
-spherical surfaces can be created, the following exemplary two dimensional practical
-experiments were performed.
 
 In order to attain a distribution on a sphere, the process followed herein,
 consisted of creating an $n$-dimensional normal distribution in euclidian space and
 sampling from the afore-mentioned distribution.  The $n$-dimensional sample vector
 is subsequently normalized onto the $n$-dimensional unit sphere.
 The 2D case of a uniform
-euclidian distribution being normalized is exemplified below, in order to intuitively
+distribution on the unit square being normalized is exemplified below, in order to intuitively
 show the distributional discrepancies and obvious ill suited nature for the problem
-at hand.  The two point clouds below are 2D normal and uniform distributions
-respectively.  The peaks on the uniform distribution histogram stem from the corners
+at hand.  The two point clouds in Figure \ref{plot:distributions} are 2D normal and uniform distributions
+respectively.  The peaks on the uniform distribution histogram (Figure \ref{plot:histogram}) stem from the corners
 of the distribution in a two dimensional euclidian distribution.  When projected onto
 the sphere, the accumulation of points in the corner of the euclidian domain create
 ''hot spots'' in the spherical distribution.  The two dimensional normal
-distribution point cloud on the other hand, mitigates this problem due to the summation
+distribution point cloud (left) on the other hand, mitigates this problem due to the
 of the tails of the distributions in the 1D plane, leading to a low probability
 in the corners of the square domain.  When the point cloud  is subsequently projected
 onto the sphere, it lacks the peaks in the  spherical distribution and displays an
-overall uniform nature as can be seen in the relatively constant levels  histogram below.
+overall uniform nature as can be seen in the relatively constant levels  histogram below (Figure \ref{plot:histogram})
+\cite{Yang,Muller1959,marsaglia1972}.
 
 \begin{figure}[htb!]
 \begin{center}
-\includegraphics[width=13.5cm]{styles/distributions} \label{plot:distributions}
-  \caption{}
-  \includegraphics[width=15.0cm]{styles/histograms} \label{plot:historam}
-    \caption{}
+\includegraphics[width=13.5cm]{styles/distributions}
+  \caption{}\label{plot:distributions}
+  \includegraphics[width=15.0cm]{styles/histograms}
+    \caption{}\label{plot:histogram}
 \end{center}
 \end{figure}
 %proof using definitions of sin and cosine similar to the inverse of Tschebychev points
-\cite{Yang,Muller1959,marsaglia1972}
 
 
 % \subsection{Markov Chains}\label{sssec:markov}
@@ -448,28 +478,30 @@ overall uniform nature as can be seen in the relatively constant levels  histogr
 
 \subsection{Parallelism}
 
-The intrinsic parallelism in this algorithm is plain to see, namely, one can easily
-exploit the independence of each individual path by executing all paths in parallel($\mathcal{O}(frac{N}{w} \log{}N)$ where $w$ is the number of ''worker'' computational units).
-This can be realizing by unrolling the for loop in algorithm~\ref{alg:wos}, line~\ref{lst:line:for}.
-The resulting values $E$ can also be reduced in parallel (algorithm~\ref{alg:wos}, line~\ref{lst:line:reduce}).  Furthermore, for every path step,
+The intrinsic parallelism in this algorithm is plain to see, namely, one can
+exploit the independence of each individual path by executing all paths in parallel
+($\mathcal{O}(\frac{N}{w} \log{}N)$ where $w$ is the number of ''worker'' computational units).
+This can be realized by unrolling the for-loop in algorithm~\ref{alg:wos}, line~\ref{lst:line:for}.
+The resulting intermediate sums $E$ can also be reduced(see: Section \ref{ssec:reduction}) in parallel (algorithm~\ref{alg:wos},
+line~\ref{lst:line:reduce}).  Furthermore, for every path step,
 the radius and direction are independent (algorithm~\ref{alg:wos}, line~\ref{lst:line:direction} \&~\ref{lst:line:radius}),
  and can therefore be computed in parallel. \cite{Muller,DeLaurentis,Bornemann}
 \section{The Basics of Parallel Computing}
 In recent years, the convergence towards the physical limits of Moore's law has lead to a
-trend towards Parallel Computing\cite{Kumar}\cite{Markov}.  By most accounts, the
+trend towards parallel computing \cite{Kumar}\cite{Markov}.  By most accounts, the
 field of Parallel Computing conceived in the early 1958\cite{Gill}, but had previously
 been discussed (e.g. Metropolis \cite{Metropolis}). Since then, the field has
  bloomed into the state of the art for high-dimensional simulations and
  other highly parallel applications in
-High Performance Computing as hardware technology has caught up to the first
+high performance computing as hardware technology has caught up to the first
 theoretical speculation of half a century prior. \par
 
 Traditionally, the concept of Parallel Computing was simple: in order to
 reduce computation time, one should separate independent steps of a given algorithm
-and execute them concurrently upon unique processing units.  In doing so, for a given
+and execute them concurrently upon independent processing units.  In doing so, for a given
 problem, which traditionally would have taken time \textit{T}, in the optimal case,
 the calculation could be completed in \textit{T/N} time, where \textit{N} describes
-the number of unique processing units being utilized.  This observation was formalized
+the number of processing units being utilized.  This observation was formalized
 by Gene Amdahl in 1967\cite{Wilt}:
 %
 \begin{equation}
@@ -485,9 +517,9 @@ The variables \textit{$r_{s}$} and \textit{$ r_{p} $} represent the percentage o
    Amdahl's Law describes a computational problem of a fixed dimension,
 and the effects of more parallel computing resources on execution time.
 This strategy of optimization, in which the size of the problem is constant,
- is called Strong Scaling.
-In extreme cases unlimited resources, the greatest speed up of a given algorithm
- is limited by it's serial component.
+ is called strong scaling.
+In the extreme case of unlimited resources, the greatest speed up of a given algorithm
+ is limited by it's serial component as we see by taking the limit.
 %
 \begin{equation}
  \lim_{N\to\infty}  \frac{1}{(r_{s} + \frac{r_{p}}{N})} = \frac{1}{r_{s}} = \frac{1}{1-r_{p}}
@@ -497,7 +529,7 @@ This description of optimal \gls{speed-up} does not take into account issues of 
 distance of computing cores or the communication and facilitation overhead between
 cores that can occur in real applications, which can lead to lower parallel efficiency.
 Nevertheless, the model can serve as a benchmark when analyzing algorithmic
-parallelization and  the greatest attainable speed-up for a given problem.\par
+parallelization and the greatest attainable speed-up for a given problem.\par
 
 One further method of quantifying parallelism, is Gustafson's Law\cite{Gustafson}.
 %
@@ -515,19 +547,19 @@ is called weak scaling.
 Both of these laws assist in the quantification of parallel efficiency and
 expected gains.
 
-\subsection{Streaming Processing and Single Input Multiple Threads}
-Stream processing is a paradigm in parallel computing, which describes the act
-of kernel functions being applied to data in order to compute independent tasks.
+\subsection{Stream Processing and Single Input Multiple Threads}
+Stream processing is a paradigm in parallel computing which describes the act
+of functions being applied to data in order to compute independent tasks.
 The order in which the kernel functions are applied to the data, is determined by
 \gls{dd}, which dictate the order and timing of kernel execution. Conventional
-sequential computing can be described by a streaming process known as \gls{sisd}.
+sequential computing can be described by a stream process known as \gls{sisd}.
 The stream processing paradigm on which GPU programming is based is known as \gls{simt}
  \cite{advancedtopics}.  The idea behind the \gls{simt} paradigm is to over load
  $p$ processors with $t \gg p$ tasks by assigning every processor a \gls{simd} lane
  that executes in lock step.  In adopting this computational paradigm, one can mask
  the computational latency of an individual thread, by switching contexts while
  data dependencies for other tasks are being fetched and
- completing further computations on threads from a separate warp.  In this way,
+ completing further computations on threads from a separate collection of threads called a warp.  In this way,
  data fetching becomes easier to predict, based on the width of a lane, and more
  data can be processed per \gls{RAM} read.   This masking of latency therefore increases
  the overall throughput of the process \cite{advancedtopics}.
@@ -536,18 +568,18 @@ The stream processing paradigm on which GPU programming is based is known as \gl
 \subsection{GPU Hardware}
 When looking to implement efficient numerical code, it is important to understand
  the underlying hardware, in order to exploit architectural intricacies for performance gains.
- To this end, the following passages will be a deep dive into into the History of
+ To this end, the following passages will be a deep dive into into the history of
  computer architecture and subsequently the design of NVIDA \Glspl{GPU}.
 \par
 Modern computing architecture was first proposed by John Von Neumann in 1945 \cite{vonNeumann}.
 This architecture is composed of three separate sections: the \Gls{CPU}, memory, and \Gls{I/O}.
-Modern \Glspl{CPU} are comprised of an \Gls{ALU} comprised of electrical circuits
+Modern \Glspl{CPU} are comprised of \Glspl{ALU} which consist of electrical circuits
 performing basic mathematical operations, such as addition, subtraction, multiplication and division,
 registers, which store the data used for computation by the ALU and cache, which is a more modern development to improve data locality.
 \par
 By design, \Glspl{CPU} are constructed
 to handle general purpose computing workloads.
-An \Gls{ALU} computational
+An \Gls{ALU} completes computational
 tasks on an individual datum. By the nature of this
 generalized strategy, upcoming computation steps and which data are therefore required,
 is unknown to the \Gls{ALU}. If the ALU does not have the data necessary for a computation,
@@ -558,23 +590,23 @@ are orders of magnitude greater than the computation clock frequency of
 a CPU.  This is due to the relatively large physical separation between the CPU and memory,
  the communication overhead needed to fetch the data, and
 the nature of \Gls{DRAM}, which electrically refreshes data values at a designated rate.
-These problems together are referred to the Von Neumann Bottleneck\cite{Backus}.
+These problems together are referred to as the Von Neumann Bottleneck\cite{Backus}.
 It is important therefore, to develop algorithms and strategies that  predict which data will be required by upcoming operations.
 A main focus of modern CPU computation strategies is to always ensure that the data
 necessary for a computation is at hand, ready to be used, when requested by the \Gls{ALU}.
-The limited number or registers on the ALU meant another, more local storage mechanism
+The limited number of registers on the ALU meant another, more local storage mechanism
 was required.
 \par
 Cache is a bank of \Gls{SRAM}
 that is etched on the same silicon wafer as the CPU itself.  This physical locality,
 along with the higher read and write speeds compared to \Gls{DRAM}, lessen the transfer
 time of data to the registers, and therefore increase the effective ability of the
- \Gls{ALU} to complete computations. Current caching strategies, load data into
+ \Gls{ALU} to complete computations. Current caching strategies load data into
  the cache that is either saved near data that is required (data locality based strategy)
- or holds data in the cache that has been used recently (temporal data caching strategies).
- The goal of both strategies is goal load more data directly from cache, and reduce
- the number of reads and writes to \gls{RAM}.
-Due to the greater production cost of on-chip Cache, its size is limited, and
+ or holds data in the cache that has been used recently (temporal locality strategies).
+ The goal of both strategies is to load more data directly from cache, and reduce
+ the number of reads and writes from and to \gls{RAM}.
+Due to the greater production cost of on-chip cache, its size is limited, and
 much research has been dedicated to optimizing cache load strategies of modern CPUs.
 \par
 
@@ -584,9 +616,9 @@ for modern computations problems.  As the name suggests, \Glspl{GPU} were origin
 as dedicated computational units for 3D graphics\cite{Sanders}.  They are housed on the same
 communication bus as the \Gls{CPU} and memory, and assigned image computational work,
 to lessen the load of the \Gls{CPU}.
-The GPU specifically designed to handle workloads on large data sets (traditionally these
+The GPU is specifically designed to handle workloads on large data sets. Traditionally these
 data sets were individual color values for digital images, and the workload as
-the transformation of image data to modulate the output on a digital screen).
+the transformation of image data to modulate the output on a digital screen.
 This heritage defined the strategy modern GPUs take towards computation.
 The image data was was relatively high dimensional with intensity values for every pixel in the image.
 Each pixel was at least three dimensional (one dimension per color value of red, green and or blue) and
@@ -601,7 +633,6 @@ The dimensionality of the data being computed leads to \Glspl{GPU} having larger
 which allow for fewer context switches, and therefore greater \gls{ai}.  Overall
 Through put is valued more than single thread execution speed.  %lower thermal density?
 
-%TODO: expand
 \subsection{GPU Architecture}\label{ssec:gpu_architecture}
 The GPU hardware architecture and terminology of said architecture varies from
 vendor to vendor.  For the sake of uniformity, this document will adopt the
@@ -619,7 +650,7 @@ These are standard terminologies in GPU programing. GPUs are comprised of four m
   and computation.
   \item[DRAM Interface] a memory interface with a bandwidth of up to 100Gb/sec\cite{Wilt}.
   Some interfaces also support device side L2 caches usage.
-  \item[TCPs \& GPCs] \underline{T}exture \underline{P}rocessing \underline{C}luster
+  \item[TPCs \& GPCs] \underline{T}exture \underline{P}rocessing \underline{C}luster
   and \underline{G}raphics \underline{P}rocessing \underline{C}lusters are an assembly
   of \Glspl{SM} along with cache for computation.
   \item[\Glspl{SM}] a collection of \Glspl{ALU} or ''CUDA cores''
@@ -628,8 +659,8 @@ These are standard terminologies in GPU programing. GPUs are comprised of four m
 \subsubsection{Streaming Multiprocessors}
 Each GPC contains a cluster of SM's.  The number of SM's per cluster varies by
 model of GPU. SM's are comprised of a collection of CUDA-cores.  Some examples
- can be found in table bellow.
-\begin{figure}[htb!]
+ can be found in table below.
+\begin{table}[htb!]
 \caption{"collection of NVIDIA \Glspl{GPU} technical specifications"}
 \begin{center}\label{hardwareTable}
 \begin{tabu} to 0.9\textwidth { | X[l] | X[c] | X[c] | X[c]| X[c]| X[c]| X[r] | }
@@ -645,16 +676,16 @@ model of GPU. SM's are comprised of a collection of CUDA-cores.  Some examples
 \hline
 \end{tabu}
 \end{center}
+\end{table}
 
-\end{figure}
-Each SM is comprised of: \cite{Wilt}
+Each SM is comprised of
 \begin{itemize}
-  \item execution units for 32-bit integer, as well as single and double precision arithmetic.
-  \item Special function units for log/exp sin/cos and sqrt functions.
-  \item a warp scheduler to coordinate the dispatch of threads.
-  \item a constant cache to broadcast data to SM's.
-  \item shared memory accessible by all threads.
-  \item texture mapping hardware.
+  \item execution units for 32-bit integer, as well as single and double precision arithmetic,
+  \item special function units for log/exp sin/cos and sqrt functions,
+  \item a warp scheduler to coordinate the dispatch of threads,
+  \item a constant cache to broadcast data to SM's,
+  \item shared memory accessible by all threads,
+  \item and texture mapping hardware %\cite{Wilt}.
 \end{itemize}
 
 This basic overview of the architecture of the hardware is important to understand
@@ -667,7 +698,7 @@ how the the programming API maps to the available hardware.
 The CUDA parallel computing environment is a C++ language wrapper with built in
 \gls{directive pragmas} to interact with the NVIDIA hardware.  Although CUDA is modeled on the
 hardware it runs on, it is not wholly analogous with the hardware architecture,
-and higher level concepts have been added to aid in the implementation of CUDA code.
+and higher level concepts have been added to aid in the usage of CUDA code.
 %TODO insert diagram of CUDA stack.
 \par
 The CUDA ecosystem stack is comprised of five layers accessible to the user.
@@ -679,7 +710,7 @@ known as CUDART, and the CUDA Driver.
 
 The highest level of this stack is occupied
 by CUDA libraries. When looking to optimize code with CUDA, a
-first step should be the implementation of CUDA Libraries.  These highly optimized
+first step should be to take advantage of CUDA Libraries.  These highly optimized
 and user friendly libraries, such as CUBLAS and CUDA Thrust, allow the use of
 CUDA hardware, with minimal understanding of the underlying hardware or execution strategy.
 They can prove to be indispensable tools for beginner users or those looking to quickly and
@@ -689,13 +720,12 @@ of concept for a project, as well as a highly optimized base line, should furthe
 development be planned.
 \subsubsection{CUDA Runtime}
 
-Moving down the Stack, CUDA runtime provides an interface to the user, which mirrors
+Moving down the stack, CUDA runtime provides an interface to the user, which mirrors
 standard C functionality such as malloc and memcpy.  These functions differentiate
-themselves from host functions with the preface \textit{``cuda''} or \textit{``cu''}
-e.g. cudaMalloc and cudaMemcpy.  Functions that are to be excited on the
+themselves from host functions with the prefix \textit{``cuda''} or \textit{``cu''}
+e.g. cudaMalloc and cudaMemcpy.  Functions that are to be executed on the
 device, are called kernels or kernel functions, which can be identified
  via their triple angle bracket syntax, ``$<<< >>>$''.
-%TODO example of basic CUDA kernel
 Kernel parameters can be specified in these triple angle brackets.  These parameters
 include number of blocks per grid, threads per blocks, size of shared memory and
 stream, all topics which shall be discussed later in this document (\ref{btg}).
@@ -714,9 +744,8 @@ and facilitates communication between the \Gls{GPU} and the rest of the computer
 
 \subsection{Compilation and Execution}
 
-%TODO: Make diagram. CUDA book page 58
 
-CUDA programs are written in CUDA flavor C++.  The CUDA flavor of C++
+CUDA programs are written in CUDA flavor C++.  The CUDA flavored of C++
 can be compiled via a compiler driver tool called nvcc, which can compile, link and execute CUDA code.  This process occurs
  in three main steps.
  \begin{enumerate}
@@ -784,7 +813,6 @@ to this flexibly that are described in the CUDA documentation\cite{bestpractices
   Also, minor performance
 repercussions could be experienced, if the dimensionality of the framework is poorly
 chosen.
-%TODO: stream processing?
 %kernel syntax
 \subsubsection{Kernels}
 
@@ -844,7 +872,7 @@ There are four main types of CUDA memories.
   \item [Local memory] local memory contains the program stack for every thread
   in a CUDA program. Should a program run out of registers for thread local variables,
   local memory is  used to store overflow variables. This variable overflow is often
-  linked to detrimental performance losses and should be avoided.\cite{Wilt}
+  linked to detrimental performance losses and should be avoided \cite{Wilt}.
   \item [Cache] Similarly to CPU's Cache is also realized on GPU \glspl{SM} in order
   to reduce transfer latency.  \glspl{GPU} however employ a different caching strategy,
   due to the \gls{simt} computational approach.
