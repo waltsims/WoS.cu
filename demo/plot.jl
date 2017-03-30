@@ -47,3 +47,16 @@ ylabel("speedup")
 ax3[:legend](ncol=2, loc="upper left")
 show()
 
+paths = readtable("../docs/data/paths.csv")
+paths = paths[paths[:avgNumSteps] .> 0,:] 
+fig4, ax4 = subplots()
+for subdf in groupby(paths, :nDimensions)
+ax4[:loglog](subdf[:nPaths],subdf[:avgNumSteps],marker="x",linewidth=2, alpha=0.6,label=map(string,subdf[1,1])) 
+end 
+ax4[:legend](ncol=2,loc="upper left")
+
+ylabel("average number of steps")
+xlabel("number of paths")
+show()
+
+
