@@ -1,11 +1,11 @@
 \chapter{Experiments and Evaluations}
 \label{chapter:experiments_and_evaluations}
 For the following tests, the second computational configuration of one NVIDIA TITAN X GPU
-was used.  Only for the multiple device execution section was the first configuration implemented.
+was used.  Only for the multiple device execution section was the first configuration deployed.
 \section{Software Usage}
 Besides the NVIDIA CUDA ecosystem, peripheral tools are offered to allow developers
 to analyze program performance, and automatically recommend tips to increase performance.
-Two such programs are \textit{nvprof}, a profiling tool comparable to gprof, and
+Two such programs are \textit{nvprof}, a profiling tool comparable to \textit{gprof}, and
 \textit{nvvp}, a visual profiler for \Gls{CUDA} software. Both tools allow developers
 to discover hot spots in their programs, optimize occupancy, the amount of registers
 in use on an SM, and improve data transfer strategies.  For \Gls{RWoS}, occupancy
@@ -90,7 +90,7 @@ ensure that
 \end{equation}
 
 In all the cases plotted above, there is still is a great amount of overhead
-to the maximum step value.  
+to the maximum step value.
 
 \section{Accuracy and Error}
 In order to test the convergence and accuracy of this \Gls{RWoS} on \Glspl{GPU} implementation,
@@ -115,13 +115,15 @@ requires more testing.
 As with many programs, it was of interest to investigate the scaling properties of
 of this \Gls{RWoS} program in respect to iterations and dimensions. From the theory,
 we expect to see a scaling behavior that $\mathcal{O}( N\log(N))$ in nature.
-%TODO: only power 2 dimensions
 The hyper linear increase in running time can be attributed to the complete utilization
 of \gls{GPU} resources and thereby the achievement of
 complete \gls{SM} occupancy. In fulling all \glspl{SM} further warp execution
 is serialized And therefore the problem scales at a different linear rate.  Never the less
-we will see in the speedup test comparison that the promlem still scales better on \glspl{GPU}
-that on \glspl{CPU}, especially in higher dimensions.
+we will see in the speedup test comparison that the problem still scales better on \glspl{GPU}
+that on \glspl{CPU}, especially in higher dimensions.  We also see that though
+the problem should theoretically scale independently of $n$, practically, every
+added dimension requires computational resources, and therefore a linear scaling
+trend can be obseved.
 % time is most likely due to the transition from
 % block based path iteration scaling to loop based iteration scaling once the maximum
 % number of blocks has been reached.  Since the block loops are executed in serial,

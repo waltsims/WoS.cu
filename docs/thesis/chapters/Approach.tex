@@ -29,9 +29,9 @@ The goal is to efficiently numerically solve \eqref{eq:poc} point-wise in $\Omeg
 
 \section{Experiment Hardware}
 For the numerical experiments conducted during this research, two hardware configurations
-were used.  First, a dual GPU configuration consisting of two NVIDIA GTX 560Ti GPU's was
+were used.  First, a dual GPU configuration consisting of two NVIDIA GTX 560Ti GPUs were
 employed to test multi-device capabilities. Also, seeing as these devices
-could only run \Gls{CUDA} code compiled for compute architecture 2.1, code
+could only run \gls{CUDA} code compiled for compute architecture 2.1, code
 backwards compatibility was also tested with this set up.
 The second compute configuration consisted of an NVIDIA TITAN X GPU, which allowed
 the testing of the compute architecture 6.1.
@@ -233,9 +233,8 @@ leads to execution overhead and a subsequent loss in performance
   This pattern further increases code performance on \Glspl{GPU}
 \end{description}
 
-  \begin{listing}
+  % \begin{listing}
     % [caption="src/wos\_native.cuh",
-    \label={sumReduce}
     \begin{minted}{c++}
     //...
     __device__ void warpSumReduce(float *sdata, int tid) {
@@ -323,9 +322,9 @@ leads to execution overhead and a subsequent loss in performance
 
       __syncthreads();
     }
-    //...
 \end{minted}
-\end{listing}
+%     % \label={sumReduce}
+% \end{listing}
 Briefly, the \incpp{__shfl_down(...)} command should be examined. Before, compute capability
 3.0 (Kepler), reductions between warps of the same thread had to be completed in
 shared memory.  This meant that data transfers between warp registers and shared
@@ -345,8 +344,8 @@ This strategy allowed for coalesced warp-wise memory accesses, that minimized
 thread divergence and despited the computational overhead, lead to performance gains
 of $~50\%$ compared to initial naive reduction implementations.
 \subsubsection{Global Reduction}
-The global reduction of path evaluation results are realized through a serial
-a \incpp{cudaMemcpyAsync(...)} to the host, and a serial host reduction.  This strategy
+The global reduction of path evaluation results are realized through a serialized call to
+ \incpp{cudaMemcpyAsync(...)} from the host, and a serial host reduction.  This strategy
 proved to provide greater performance than a restructuring of the CUDA thread/Block
 allocation and subsequent GPU reduction, due to the minimization of GPU configuration
 overhead.  In order to reduce the numerical error of floating point reduction,
@@ -385,7 +384,7 @@ in an $n$-dimensional euclidean space, which subsequently was transformed into a
 distribution.
 %\subsection{Pseudo-Random and Quasi-Random}
 \subsubsection{Seed Independence}
-In order to generate independent pseudo-random directions in every dimension,
+To generate independent pseudo-random directions in every dimension,
 a thread independent seed was selected, seen below.
 %\begin{lstlisting}[caption="Random Number Generation(source:src/wos\_native.cuh see: appendix \ref{appendix})",
 \begin{minted}{c++}

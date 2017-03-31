@@ -33,12 +33,6 @@ case, where $\sigma(x) = 0$, called the Laplace's equation
     \label{eq:laplace}
   \end{aligned}
   \end{equation}
-A Dirichlet Boundary Condition is defined as:
-\begin{definition}[Dirichlet Boundary Condition]
-Given a \Gls{PDE}
-defined on a domain $\Omega$, constrained via the definition function values on the
- boundary of the domain $\partial \Omega$, e.g $f(x), \forall  x \in \partial \Omega$
-\end{definition}
 In this work we be will looking at an approach to numerically solve \eqref{eq:poisson}.
 Due to the numerical nature of this task, the solution cannot typically be described symbolically.
 Often the solution $u$ is discretized by its function values within $\Omega$, and solved on a grid.
@@ -46,7 +40,7 @@ We will be attempting a different approach, but first our goal is to find and ex
 between \eqref{eq:poisson} and \eqref{eq:laplace} to facilitate a clever numerical solver.
 We will therefore examine the possibility to transform a Poisson's equation into
 a Laplace's equation, assuming a suitable transformation can be found, in order to
-utilize attractive properties thereof.
+utilize attractive properties of the latter.
 
    Many elliptic \glspl{PDE} can be transformed into harmonic \glspl{PDE},
 the properties of which thereby increase the applicability of \gls{RWoS} \cite{Bornemann}.
@@ -63,11 +57,12 @@ and $v:\Omega \rightarrow \mathbb{R}$ as the solution of
 \begin{equation}
   \bigtriangleup v(x) = 0,\quad x\in\partial\Omega,
 \end{equation}
-a boundary function $g\in\partial\Omega$ is desired, such that
+a transformation function $g:\Omega \rightarrow \mathbb{R}$ is desired, such that
 \begin{equation}
   g(x):=u(x)-v(x), \quad x \in \Omega.
 \end{equation}
-Therefore we search for a suitable boundary value function $g(x) - w(x), \quad x \in \partial \Omega$.
+Therefore we search for a suitable boundary value function $v(x) = w(x), \quad x \in \partial \Omega$.
+We know that for $x \in \Omega$
 \begin{equation}
   \begin{aligned}
 - \bigtriangleup g(x) &= - \bigtriangleup (u-v)(x) \\
@@ -75,8 +70,7 @@ Therefore we search for a suitable boundary value function $g(x) - w(x), \quad x
 \\&= \sigma(x) + 0 = \sigma(x)
 \end{aligned}
 \end{equation}
-
-This equality also applies on the on $\Omega$, which leads to
+This equality also applies for the $x \in \partial \Omega$, which leads to
 \begin{equation}
 f(x) = u(x) = g(x) + v(x), \quad x \in \partial \Omega.
 \end{equation}
@@ -84,7 +78,8 @@ We stipulate
 \begin{equation}
 \begin{aligned}
   w(x) &= v(x), \quad x \in \partial \Omega\\
-  w(x) &= u(x) - g(x) , \quad x \in \partial \Omega,
+  w(x) &= u(x) - g(x) , \quad x \in \partial \Omega,\\
+  w(x) &= f(x) - g(x) , \quad x \in \partial \Omega,
 \end{aligned}
 \end{equation}
 which defines the transformation boundary condition, and enables the evalutation of
@@ -102,7 +97,7 @@ so that $v(x)$ fulfills Laplace's equation
 
 \end{example}
 An subclass of linear elliptic \Glspl{PDE} is the class of harmonic \Glspl{PDE}, defined as:
-\begin{definition}[Harmonic PDEs]
+\begin{definition}[Harmonic PDE]
   A \Gls{PDE} whose solution function or function set is harmonic.
 \end{definition}
 Some special traits harmonic functions will serve as the foundation of the
@@ -141,7 +136,7 @@ of the properties of harmonic functions.
   \label{fig:swingPlot}
 \end{figure}
 
- The solution of harmonic \glspl{PDE} given the boundary
+ The solution of a harmonic \gls{PDE} given the boundary
 function $u(\phi)=10\cdot\sin(4\cdot\phi)$ is shown above. The solution function $u(r,\phi)=r^{4}\cdot\sin(4\cdot\phi)$
 can be seen on the 2D unit circle $\Omega$.  A known harmonic boundary
 condition was defined, and then a solution was solved for analytically by applying the Laplace operator
@@ -164,21 +159,21 @@ radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \l
   \end{theorem}
 
   This property of harmonic functions can be nicely visualized in the solution given
-  in figure \ref{fig:swingPlot}. Were one to select any circular
+  in Figure \ref{fig:swingPlot}. Were one to select any circular
   sub-domain $\omega \subset \Omega$ of the unit circle, one would notice that the maximum value is always
   on the boundary  $\partial \omega$.  Should one claim that the maximum  value be within $\omega$
   the function $u$ would have to be "flat" and therefore constant to fulfill \ref{sssec:meanvalue}.
 
   \subsubsection{Weighted Mean Value Principle}
   % weights can be compared to probability of hitting a certain boundary based on distribution
-  Building on the mean value properties of harmonic functions, one can show that if $u$ is harmonic a
+  We know due to the mean value properties of harmonic functions, one can show that if $u$ is harmonic a
   closed ball $\bar{B}$, then
    \begin{equation}
-     u(0) = \int_{S}u(\zeta)d\sigma(\zeta),
+     u(0) = \int_{S}u(\zeta)d\sigma(\zeta).
      \label{eq:centerval}
     \end{equation}
-  then for any $x \in B\text{, }u(x)$ can be expressed as a weighted average of
-  $u$ over $S$. Furthermore, there exists a function $P(x,\zeta)$ such that
+  For any $x \in B\text{, }u(x)$ can furthermore be expressed as a weighted average of
+  $u$ over $S$. It can be shown that there exists a function $P(x,\zeta)$ such that
   \begin{equation}u(x)=\int_{S}P(x,\zeta)u(\zeta)d\sigma(\zeta).\label{eq:weighted_average_integral} \end{equation}
      The function can be shown,
   using the symmetry properties of harmonic functions on a sphere, to be defined as
@@ -187,30 +182,35 @@ radius invariant.  This property is one of the main key stones of \Gls{RWoS}. \l
     P(x,\zeta) = \frac{1 - \abs{x}^{2}}{\abs{x- \zeta}^{n}}
     \label{eq:poissonkernel}
   \end{equation}
-  in an $n \in \mathbb{N}$ dimensional space \cite{Axler1992}.
-\begin{figure}[!htb]%TODO: subfigure
-\minipage{0.32\textwidth}
-  \includegraphics[width=\linewidth]{styles/CircCenter}
-  \caption{equation \ref{eq:centerval}}\label{fig:circcenter}
-\endminipage\hfill
-\minipage{0.32\textwidth}
-  \vspace{1.7mm}
-  \includegraphics[width=\linewidth]{styles/GeneralOffset}
+  on a sphere in an $n \in \mathbb{N}$ dimensional space \cite{Axler1992}.
+\begin{figure}[!htb]
+  \centering
+  \begin{subfigure}[b]{0.3\textwidth}
+    \centering
+  \includegraphics[width=\textwidth]{styles/CircCenter}
+  \caption{Equation \ref{eq:centerval}}\label{fig:circcenter}
+\end{subfigure}
+\hfill
+  \begin{subfigure}[b]{0.3\textwidth}
+    \centering
+  \includegraphics[width=\textwidth]{styles/GeneralOffset}
   \label{fig:generaloffset}
-  \caption{equation \ref{eq:weighted_average_integral}}
-\endminipage\hfill
-\minipage{0.32\textwidth}%
-  \vspace{4.5mm}
-  \includegraphics[width=\linewidth]{styles/CircOffset}
+  \caption{Equation \ref{eq:weighted_average_integral}}
+\end{subfigure}
+\hfill
+  \begin{subfigure}[b]{0.3\textwidth}
+    \centering
+  \includegraphics[width=\textwidth]{styles/CircOffset}
   \caption{\ref{eq:poissonkernel}}\label{fig:circoffset}
-\endminipage
+\end{subfigure}
 \end{figure}
   \subsubsection{Dirichlet Problem for the Ball}
-  Building on the weighted mean value principle and the maximum principle for harmonic functions,
-   one can hypothesize that given a function $f$ on $S$, that a harmonic function $u$
-  exists of $B$ such that $u = f$ on $S$. Essentially saying, that given the \gls{BVP},
-  on a sphere, that a harmonic function can be found as the solution.  Building on
-  \eqref{eq:poissonkernel}, it can be shown that
+  Building on the weighted mean value principle \eqref{eq:weighted_average_integral}
+   and the maximum principle for harmonic functions,
+   one can hypothesize that given a function $f \in S$, there exists a harmonic function
+   $u \in B$ such that $u = f \in S$. Essentially saying, that given the \gls{BVP},
+  on a sphere, that a harmonic function can be found as the solution.
+   It can be shown that
 \begin{theorem}
   for continuous $f$ on  $\partial B(a,r)$,
 there exists a unique continuous function on $u$ on $\bar{B}(a,r)$ with $u$ harmonic on
@@ -218,12 +218,12 @@ $B(a,r)$ such that $ u = f $ on
 $\partial B(a,r)$, therefore solving the Dirichlet problem on $\bar{B}(a,r)$\cite{Axler1992}.
 \end{theorem}
 \section{Algorithmic Solution}
-It has been shown that harmonic functions exhibit many unique traits and properties
-that allow one to constrain the solutions set of \eqref{eq:laplace}.  The analytical solution to
-the Dirichlet problem on a ball is possible, but one would benefit greatly
+We have seen harmonic functions exhibit many unique traits and properties
+that allow one to constrain the solutions set of Laplace's equation \eqref{eq:laplace}.
+ The analytical solution to the Dirichlet problem on a ball is possible, but one would benefit greatly
 from a solving method that avoids analytical evaluation and is easily applicable to more
 general boundary geometries.  To resolve this, one can exploit the properties
-of harmonic functions discussed above.  One solver that does that is \Gls{RWoS}.\\
+of harmonic functions discussed above.  One solver that does this is \Gls{RWoS}.\\
 The approach of \gls{RWoS} builds on the idea of \eqref{eq:weighted_average_integral},
 which states that for a given harmonic \gls{PDE} with solution $u$, the mean value
 property can be complimented with a weight function $P(x,\zeta)$.  A special case
@@ -233,14 +233,14 @@ that there exists a weight function $P$ that solves \eqref{eq:poisson} for a gen
 in a given $\Omega.$ What would be useful is to have $P$ be defined as a distribution
 on a general $\partial \Omega$.  This approach has the benefit that the weights P are
 implicitly defined in the distribution on $\partial \Omega$ and must not be
-explicitly calculated as in \eqref{eq:poissonkernel}. We then go on to define $P$ as
+explicitly calculated as in \eqref{eq:poissonkernel}. We then go on to approximate $P$ as
 \begin{equation}
   u(x_{0})= \int_{\partial \Omega} \underbrace{P(x_{0},\zeta)}_\text{unknown}
    \underbrace{u(\zeta)}_\text{known} d\zeta \approx \frac{1}{N} \sum_{i=1}^{N} u(\xi_{i}),
    \quad \xi_{i} \sim \Xi.
 \end{equation}
 
-This approximation stipulates that through a random sampling $\xi$ of the boundary, with
+This approximation stipulates that through a random sampling $\xi_{i}$ of the boundary, with
 a defined distribution $\Xi \propto P$, one can approximate \eqref{eq:weighted_average_integral} and therefore
 find a solution at $u(x_{0})$.  The method of random sampling in order to converge to a desired solution
 is referred to as a Monte Carlo method.  How to sample from $\Xi$ will be described in the following passages.
@@ -254,12 +254,12 @@ According to Bauer, these consist of a ''stochastic process which produces a ran
 These methods became popular in nuclear research in the 1940's when practical
 experiments were limited and analytical solutions were not unknown.  Monte Carlo
 methods were also found to be useful when analyzing the time independent Schr\"odinger
-equation\cite{Metropolis}. Muller defined Monte Carlo methods in 1956 as:
-\begin{quote}[a method which for] an unknown solution to a given physical
-problem being estimated by a method which essentially depends on statistical sampling technique.
+equation \cite{Metropolis}. Muller defined Monte Carlo methods in 1956 as:
+\begin{quote}[a approach where] an unknown solution to a given physical
+problem [is] estimated by a method which essentially depends on statistical sampling technique.
 This approach requires the utilization of random variables of an appropriate
 stochastic process such that samples of the process yield valid statistical
-results\cite{Muller}.\end{quote}
+results \cite{Muller}.\end{quote}
 This strategy is the basis of the \Gls{RWoS}, when solving harmonic
 \Glspl{PDE} as described in the following passages.
 \subsection{Random Walks on Spheres}\label{ssec:RWoS}
@@ -270,34 +270,34 @@ interest in higher dimensions \cite{DeLaurentis,Bornemann,Yang}.
 The Random Walks on Spheres Algorithm
 gained its name, due to the combination of Brownian Motion-like random walks,
 and the innate mathematical connection between
-harmonic functions and spheres\cite{Axler1992}.
+harmonic functions and spheres \cite{Axler1992}.
 Brownian motion describes a numerical model
 of the random motions of particles.  A similar motion is used in order to iteratively
 traverse a series %Markov Chain
 of spheres in a domain $\Omega$ on which a harmonic PDE is defined in order to
 randomly sample $\partial \Omega$ and thereby % dictated by Brownian Motion ...
-solve the given harmonic PDE\cite{DeLaurentis}.
+solve the given harmonic PDE \cite{DeLaurentis}.
 Brownian Motion
 %(see \ref{sssec:brownian})
 was first
-proposed for this application by Shizuo Kakutani in 1944\cite{kakutani1944},
+proposed for this application by Shizuo Kakutani in 1944 \cite{kakutani1944},
 where it was shown to be an effective tool
 in solving harmonic functions in the two dimensional \Gls{gp}. This methodology has since been
-shown to be applicable to n-dimensional harmonic PDE's \cite{DeLaurentis}.  During the 1960's
-and 70's it was applied to calculate hotspots in nuclear reactors\cite{Bornemann}.
+shown to be applicable to n-dimensional harmonic \glspl{PDE} \cite{DeLaurentis}.  During the 1960's
+and 70's it was applied to calculate hotspots in nuclear reactors \cite{Bornemann}.
 
 In the following discussion, in order to clearly state intentions, a standard
 vernacular has been set as depicted in the image below.
 
 \begin{figure}
-  \label{diagram}
 \includegraphics[width=15.0cm]{styles/WoS}
   \caption{2D depiction of \Gls{RWoS}}
+  \label{fig:overview}
 \end{figure}
 
 \begin{description}
 \item[Origin Point] The origin point describes the discrete point in the domain
-$\Omega$ for which a solution to the PDE is to be found. In \ref{diagram}
+$\Omega$ for which a solution to the PDE is to be found. In Figure \ref{fig:overview}
 and in the following passages, this point is also referred to as $x_{0}$.
 \item[Radius] The largest distance $r$ from the current point, to the domain boundary
 $\partial\Omega$ (depicted above in as lavender circles).
@@ -321,12 +321,12 @@ the algorithm can be discussed.  The goal of the algorithm is to approximate
 the solution $u(x_{0})$ at an interior point $x_{0}$ by randomly sampling boundary
 values.  This random sampling can be compared to a discrete random integration,
 on a sphere around the unknown point, in order to exploit the mean value property
-of harmonic functions \ref{sssec:meanvalue}.  Through a recursing execution of this sampling
+of harmonic functions (Section \ref{sssec:meanvalue}).  Through a recursing execution of this sampling
 technique, hopes to reach a known boundary value.
 In order to reduce the number of random steps needed to reach the boundary,
 one exploits radius independence of $r$ as described in \eqref{eq:radinvar} and takes
-the greatest possible $r$ within the domain $\Omega$.  Then a random step direction $d$
-is defined by spherical uniform random distribution (for more see \ref{uniformPoints}).
+the greatest possible $r$ within the domain $\Omega$.  Then a random step  the direction $d$
+is defined by uniform random distribution on a normalized sphere (for more see \ref{uniformPoints}).
 Should one attempt to reach the boundary by this method directly, the probability of the
 process terminating can be zero for a substantial subset of domains \cite{kakutani1944, DeLaurentis, Bornemann}.
 This is derived from the general case, in which the intersection of the sphere and
@@ -351,7 +351,7 @@ for an ever greater number of trails $N$ \ref{errorAnal} \cite{Bornemann,DeLaure
   \For{$i\gets1..N$} \label{lst:line:for}
    \State $ r \gets INFINITY$
    \State $x \leftarrow x_{0}$
-   \While{$r>eps$}
+   \While{$r>\epsilon$}
       \State find largest sphere radius $r$ in $\Omega$ with center $x$ \label{lst:line:radius}
       \State find uniform random direction $d$ on unit sphere \label{lst:line:direction}
       \State $ x \gets x + r\cdot d$ \Comment{update current location}
@@ -368,45 +368,50 @@ for an ever greater number of trails $N$ \ref{errorAnal} \cite{Bornemann,DeLaure
 \subsection{Error Analysis}\label{errorAnal}
 The algorithmic complexity of \Gls{RWoS} is, of course, an area of interest
 when trying to improve performance. Clearly, the larger the number of paths $N$ one
-analyzes, the more precise the value estimation.The sampling error (standard deviation)
+analyzes, the more precise the value estimation. The sampling error (standard deviation)
 conforms to the Monte Carlo typical convergence rate and
-is $\mathcal{O}(N^{-\frac{1}{2}})$. Furthermore, the estimation error grows proportional to
+is $\mathcal{O}(N^{-\frac{1}{2}})$ \cite{Bornemann}. Furthermore, the estimation error grows proportional to
 the boundary layer thickness $\epsilon$.
 This error term is due to the projection error at the boundary, and the lost
 pseudo Brownian Motion that one ''skips'' via the projection, or  $\mathcal{O}(\epsilon)$.
-In total the error amounts to $$Error = \underbrace{ \mathcal{O}(N^{-\frac{1}{2}})}_\text{sampling error} + \underbrace{\mathcal{O}(\epsilon)}_\text{projection error}$$\cite{Bornemann}\label{errorComplexity}.
+In total the error amounts to the sum of the sampling error and the projection error \cite{Bornemann}.
+\begin{equation}
+  Error = \underbrace{ \mathcal{O}(N^{-\frac{1}{2}})}_\text{sampling error} + \underbrace{\mathcal{O}(\epsilon)}_\text{projection error}
+  \label{errorComplexity}
+\end{equation}
 
 \subsection{Algorithmic Complexity}
-
 \begin{theorem}
 The expected number of steps to reach the $\epsilon$-neighborhood of $\partial\Omega$
-is $$\mathcal{O}(\log{}\abs{\epsilon}).$$\cite{Bornemann,DeLaurentis}\label{epsilonComplexity}
+is \begin{equation}
+\mathcal{O}(\log{}\abs{\epsilon}).
+ \end{equation}
+ \label{epsilonComplexity}
 \end{theorem}
-
-In light of \ref{epsilonComplexity}, the overall complexity of \Gls{RWoS} can be
+In light of Theorem \ref{epsilonComplexity}, the overall complexity of \Gls{RWoS} can be
 defined as $$\mathcal{O}(N \log{}\epsilon)$$ whereby, in our case \ref{epsilonDefinition}
  leads to $$\mathcal{O}(N \log{N^{-\frac{1}{2}}}) = \mathcal{O}(N \log{N}).$$
 
- This leads to a theoretical dimensionless scalability\cite{Bornemann}.  The practical factuality
- of this claim will be examined later in this work.  %TODO!!!!! and ref!!!
+ This leads to a theoretical dimensionless scalability \cite{Bornemann}.  The practical factuality
+ of this claim will be examined later in this work.
 
 \subsection{Epsilon Selection}
 
 Although Theorem \ref{epsilonComplexity} will be considered as given for this work,
 dives deeper into the statistical proof behind this conclusion \cite{DeLaurentis}.  Practically, the
- left path in Figure \ref{diagram} demonstrates the logarithmic convergence a path
+ left path in Figure \ref{fig:overview} demonstrates the logarithmic convergence a path
  can, and, following \ref{epsilonComplexity} oftentimes does, display via the logarithmic
  nature of the shrinking step size.
 
  In light of the error analysis depicted in Section \ref{errorComplexity}, it can be observed that the total error is
- determined equally by $\epsilon$ and $N^{-\frac{1}{2}}$. Assuming $ \epsilon \ll N^{-\frac{1}{2}} $ the error term
+ determined equally by $\epsilon$ and $N^{-\frac{1}{2}}$. Assuming $ \epsilon \ll N^{-\frac{1}{2}} $ the error
  is dictated by the sampling size.  Even though the
  smaller choice of $\epsilon$ cannot improve precision, performance is still hurt
  due to the increase in steps per path. Conversely, a large $\epsilon$ would
  restrict the precision to a set level regardless of the number of samples.
  Considering this fact, $\epsilon$ is chosen to allow for
  the greatest possible precision achievable by setting
-  $$\epsilon \approx N^{-\frac{1}{2}}$$\label{epsilonDefinition},
+  $$\epsilon \approx N^{-\frac{1}{2}},$$\label{epsilonDefinition}
  thereby proportionally tying both the error and computational complexity to the
  number of paths $N$ \cite{Bornemann}.
 %TODO pi example?
@@ -482,14 +487,14 @@ The intrinsic parallelism in this algorithm is plain to see, namely, one can
 exploit the independence of each individual path by executing all paths in parallel
 ($\mathcal{O}(\frac{N}{w} \log{}N)$ where $w$ is the number of ''worker'' computational units).
 This can be realized by unrolling the for-loop in algorithm~\ref{alg:wos}, line~\ref{lst:line:for}.
-The resulting intermediate sums $E$ can also be reduced(see: Section \ref{ssec:reduction}) in parallel (algorithm~\ref{alg:wos},
+The resulting intermediate sums $E$ can also be reduced (see: Section \ref{ssec:reduction}) in parallel (algorithm~\ref{alg:wos},
 line~\ref{lst:line:reduce}).  Furthermore, for every path step,
 the radius and direction are independent (algorithm~\ref{alg:wos}, line~\ref{lst:line:direction} \&~\ref{lst:line:radius}),
  and can therefore be computed in parallel. \cite{Muller,DeLaurentis,Bornemann}
 \section{The Basics of Parallel Computing}
 In recent years, the convergence towards the physical limits of Moore's law has lead to a
-trend towards parallel computing \cite{Kumar}\cite{Markov}.  By most accounts, the
-field of Parallel Computing conceived in the early 1958\cite{Gill}, but had previously
+trend towards parallel computing \cite{Kumar,Markov}.  By most accounts, the
+field of Parallel Computing conceived in the early 1958 \cite{Gill}, but had previously
 been discussed (e.g. Metropolis \cite{Metropolis}). Since then, the field has
  bloomed into the state of the art for high-dimensional simulations and
  other highly parallel applications in
@@ -502,7 +507,7 @@ and execute them concurrently upon independent processing units.  In doing so, f
 problem, which traditionally would have taken time \textit{T}, in the optimal case,
 the calculation could be completed in \textit{T/N} time, where \textit{N} describes
 the number of processing units being utilized.  This observation was formalized
-by Gene Amdahl in 1967\cite{Wilt}:
+by Gene Amdahl in 1967:
 %
 \begin{equation}
   \tag{Amdahl's Law}
@@ -511,7 +516,7 @@ by Gene Amdahl in 1967\cite{Wilt}:
 \end{equation}
 %
 where \textit{\gls{speed-up}} embodies the factor of temporal acceleration a program
-exhibits when additional computational resources are dedicated to its execution.
+exhibits when additional computational resources are dedicated to its execution \cite{Wilt}.
 The variables \textit{$r_{s}$} and \textit{$ r_{p} $} represent the percentage of
  the algorithm that must be executed serially or in parallel, respectively.
    Amdahl's Law describes a computational problem of a fixed dimension,
@@ -538,9 +543,9 @@ One further method of quantifying parallelism, is Gustafson's Law\cite{Gustafson
   \text{speedup} = S_{latency}(s) = r_{s} + (1 - r_{p})N
 \end{equation}
 %
-This view of parallelism maintains that `` in practice, the problem
+This view of parallelism maintains that '' in practice, the problem
 size scales with the number of processes'', and therefore
-``assume[s] run time, not problem size, is constant''.
+''assume[s] run time, not problem size, is constant''.
 In other words, as the problem size grows, a proportional
 amount of resources should be devoted to keep the execution time constant.  This
 is called weak scaling.
@@ -550,58 +555,59 @@ expected gains.
 \subsection{Stream Processing and Single Input Multiple Threads}
 Stream processing is a paradigm in parallel computing which describes the act
 of functions being applied to data in order to compute independent tasks.
-The order in which the kernel functions are applied to the data, is determined by
-\gls{dd}, which dictate the order and timing of kernel execution. Conventional
+The order in which the functions are applied to the data, is determined by
+\gls{dd}, which dictate the order and timing of function execution. Conventional
 sequential computing can be described by a stream process known as \gls{sisd}.
 The stream processing paradigm on which GPU programming is based is known as \gls{simt}
- \cite{advancedtopics}.  The idea behind the \gls{simt} paradigm is to over load
- $p$ processors with $t \gg p$ tasks by assigning every processor a \gls{simd} lane
- that executes in lock step.  In adopting this computational paradigm, one can mask
- the computational latency of an individual thread, by switching contexts while
- data dependencies for other tasks are being fetched and
- completing further computations on threads from a separate collection of threads called a warp.  In this way,
- data fetching becomes easier to predict, based on the width of a lane, and more
- data can be processed per \gls{RAM} read.   This masking of latency therefore increases
- the overall throughput of the process \cite{advancedtopics}.
+\cite{advancedtopics}.  The idea behind the \gls{simt} paradigm is to overload
+$p$ processors with $t \gg p$ tasks by assigning every processor a \gls{simd} lane, or
+grouping of available computational resources
+that executes in lock step.  In adopting this computational paradigm, one can mask
+the computational latency of an individual thread, by switching contexts while
+data dependencies for other tasks are being fetched and
+completing further computations on threads from a separate collection of threads called a warp.  In this way,
+data fetching becomes easier to predict, based on the width of a lane, and more
+data can be processed per \gls{RAM} read.   This masking of latency therefore increases
+the overall throughput of the process \cite{advancedtopics}.
 
 
 \subsection{GPU Hardware}
 When looking to implement efficient numerical code, it is important to understand
  the underlying hardware, in order to exploit architectural intricacies for performance gains.
  To this end, the following passages will be a deep dive into into the history of
- computer architecture and subsequently the design of NVIDA \Glspl{GPU}.
+ computer architecture and subsequently the design of NVIDA \glspl{GPU}.
 \par
 Modern computing architecture was first proposed by John Von Neumann in 1945 \cite{vonNeumann}.
-This architecture is composed of three separate sections: the \Gls{CPU}, memory, and \Gls{I/O}.
-Modern \Glspl{CPU} are comprised of \Glspl{ALU} which consist of electrical circuits
+This architecture is composed of three separate sections: the \gls{CPU}, memory, and \gls{I/O}.
+Modern \glspl{CPU} are comprised of \glspl{ALU} which consist of electrical circuits
 performing basic mathematical operations, such as addition, subtraction, multiplication and division,
 registers, which store the data used for computation by the ALU and cache, which is a more modern development to improve data locality.
 \par
-By design, \Glspl{CPU} are constructed
+By design, \glspl{CPU} are constructed
 to handle general purpose computing workloads.
-An \Gls{ALU} completes computational
+An \gls{ALU} completes computational
 tasks on an individual datum. By the nature of this
 generalized strategy, upcoming computation steps and which data are therefore required,
-is unknown to the \Gls{ALU}. If the ALU does not have the data necessary for a computation,
+is unknown to the \gls{ALU}. If the ALU does not have the data necessary for a computation,
 it is forced to wait for the data to be fetched from memory, which can greatly increase computation time.
 \par
-Transfer times from \Gls{RAM}
+Transfer times from \gls{RAM}
 are orders of magnitude greater than the computation clock frequency of
 a CPU.  This is due to the relatively large physical separation between the CPU and memory,
  the communication overhead needed to fetch the data, and
-the nature of \Gls{DRAM}, which electrically refreshes data values at a designated rate.
-These problems together are referred to as the Von Neumann Bottleneck\cite{Backus}.
+the nature of \gls{DRAM}, which electrically refreshes data values at a designated rate.
+These problems together are referred to as the Von Neumann Bottleneck \cite{Backus}.
 It is important therefore, to develop algorithms and strategies that  predict which data will be required by upcoming operations.
 A main focus of modern CPU computation strategies is to always ensure that the data
-necessary for a computation is at hand, ready to be used, when requested by the \Gls{ALU}.
+necessary for a computation is at hand, ready to be used, when requested by the \gls{ALU}.
 The limited number of registers on the ALU meant another, more local storage mechanism
 was required.
 \par
-Cache is a bank of \Gls{SRAM}
+Cache is a bank of \gls{SRAM}
 that is etched on the same silicon wafer as the CPU itself.  This physical locality,
-along with the higher read and write speeds compared to \Gls{DRAM}, lessen the transfer
+along with the higher read and write speeds compared to \gls{DRAM}, lessen the transfer
 time of data to the registers, and therefore increase the effective ability of the
- \Gls{ALU} to complete computations. Current caching strategies load data into
+ \gls{ALU} to complete computations. Current caching strategies load data into
  the cache that is either saved near data that is required (data locality based strategy)
  or holds data in the cache that has been used recently (temporal locality strategies).
  The goal of both strategies is to load more data directly from cache, and reduce
@@ -610,12 +616,12 @@ Due to the greater production cost of on-chip cache, its size is limited, and
 much research has been dedicated to optimizing cache load strategies of modern CPUs.
 \par
 
-It is important to grasp the strengths and weaknesses of modern \Glspl{CPU} to
-recognize the computational benefits of \Glspl{GPU}
-for modern computations problems.  As the name suggests, \Glspl{GPU} were originally developed
-as dedicated computational units for 3D graphics\cite{Sanders}.  They are housed on the same
-communication bus as the \Gls{CPU} and memory, and assigned image computational work,
-to lessen the load of the \Gls{CPU}.
+It is important to grasp the strengths and weaknesses of modern \glspl{CPU} to
+recognize the computational benefits of \glspl{GPU}
+for modern computations problems.  As the name suggests, \glspl{GPU} were originally developed
+as dedicated computational units for 3D graphics \cite{Sanders}.  They are housed on the same
+communication bus as the \gls{CPU} and memory, and assigned image computational work,
+to lessen the load of the \gls{CPU}.
 The GPU is specifically designed to handle workloads on large data sets. Traditionally these
 data sets were individual color values for digital images, and the workload as
 the transformation of image data to modulate the output on a digital screen.
@@ -638,7 +644,7 @@ The GPU hardware architecture and terminology of said architecture varies from
 vendor to vendor.  For the sake of uniformity, this document will adopt the
 terminology employed by the manufacturer, NVIDIA.  To begin, in the following passages the CPU
 will occasionally be referred to as the \textbf{host} while the GPU will be referenced as \textbf{device}.
-These are standard terminologies in GPU programing. GPUs are comprised of four major components:
+These are standard terminologies in GPU programing \cite{Wilt}. GPUs are comprised of four major components:
 \begin{description}
   \item[Host interface] moderates communications between the host and the device.
   Commands are dispatched to the necessary hardware, and synchronization between
@@ -654,14 +660,14 @@ These are standard terminologies in GPU programing. GPUs are comprised of four m
   and \underline{G}raphics \underline{P}rocessing \underline{C}lusters are an assembly
   of \Glspl{SM} along with cache for computation.
   \item[\Glspl{SM}] a collection of \Glspl{ALU} or ''CUDA cores''
-\end{description}\cite{Wilt}
+\end{description}
 
 \subsubsection{Streaming Multiprocessors}
 Each GPC contains a cluster of SM's.  The number of SM's per cluster varies by
 model of GPU. SM's are comprised of a collection of CUDA-cores.  Some examples
  can be found in table below.
 \begin{table}[htb!]
-\caption{"collection of NVIDIA \Glspl{GPU} technical specifications"}
+\caption{collection of NVIDIA \Glspl{GPU} technical specifications}
 \begin{center}\label{hardwareTable}
 \begin{tabu} to 0.9\textwidth { | X[l] | X[c] | X[c] | X[c]| X[c]| X[c]| X[r] | }
 
@@ -744,13 +750,13 @@ and facilitates communication between the \Gls{GPU} and the rest of the computer
 \subsection{Compilation and Execution}
 
 
-CUDA programs are written in CUDA flavor C++.  The CUDA flavored of C++
+CUDA programs are written in CUDA flavored C++.  The CUDA flavored of C++
 can be compiled via a compiler driver tool called nvcc, which can compile, link and execute CUDA code.  This process occurs
  in three main steps.
  \begin{enumerate}
 
 \item First,
-files containing CUDA pragmas are assigned the .cu ending format, and split upon
+files containing CUDA pragmas are assigned the .cu ending, and split upon
 compilation into device and host sections.
 \item Second, these files are subsequently
 compiled separately into to host and device machine code respectively.
@@ -760,16 +766,16 @@ compiled separately into to host and device machine code respectively.
 Device machine code, is referred to as \hyphenation{mi-cro-code} \textit{microcode},
 which is compiled for a specific device model's architecture. In order to be able
 to execute the same executable
-on multiple \Glspl{GPU} and to allow backwards compatibility of CUDA features, CUDA code is
-first compiled into \Gls{PTX}, a pseudo-assembly language.  \Gls{PTX} is then
+on multiple \glspl{GPU} and to allow backwards compatibility of CUDA features, CUDA code is
+first compiled into \Gls{PTX}, a pseudo-assembly language.  \gls{PTX} is then
 further compiled in to device microcode and written into a CUDA binary file called .cubin.
 This can either happen offline, at compile time,
 or online, at runtime, in a \gls{jit} fashion.  By default, both
 the microcode for the local device present at compilation and the generalized
 \gls{PTX} compilates are added to the to the executable file.
 This way, should the executable be run on a different device, the \gls{PTX} can
-be recompiled appropriately with \Gls{jit} compilation, and executed on the a
-desired device\cite{Wilt}.
+be recompiled appropriately with \gls{jit} compilation, and executed on the a
+desired device \cite{Wilt}.
 
 \subsection{Programming CUDA}
 
@@ -785,10 +791,11 @@ more extensive resources are recommended \cite[etc.]{Wilt,Sanders,driver}.
 \subsubsection{Blocks, Threads and Grids}\label{btg}
 %TODO: insert diagram of threads blocks and grids
 The two main contexts of parallelism in CUDA are CUDA blocks and CUDA threads.
-Threads can be thought of as a sequence of operation commands for an individual registers, with an assortment of computational
-functionality.  Threads should are completely independent from one another,
-and only synchronized through explicit call to synchronization functions called via the \textit{\_\_syncthreads()} command. Threads, like
-registers, can only work on one datum at a time, but are all executed simultaneously.
+Threads can be thought of as a sequence of operation commands for an individual
+registers, with an assortment of computational functionality.  Threads should
+are completely independent from one another, and only synchronized through
+explicit call to synchronization functions called via the \incpp{__syncthreads()}
+command. Threads, like registers, can only work on one datum at a time, but are all executed simultaneously.
 Threads are, in turn, organized into blocks, and a collection of blocks comprises a grid.
 Blocks are an abstraction of a process on an SM.  If a block is smaller than
 the computational capacity of an SM, then tasks from multiple blocks can be computed
@@ -800,15 +807,15 @@ threads and blocks can be described by an abstraction of a hardware feature, alt
 consider hardware contexts and software separately from one another, as to reduce the number
 of false assumptions.
 \par
-For ease of programming, the current thread or block ID can be retrieved using
- \incpp{threadIdx.{x,y,z}} and \incpp{BlockIdx.{x,y,z}}. As can be deduced via the nomenclature,
- these variables are multi-dimensional, a feature that can be advantageous in some
- applications such as computer vision, but is not a necessity in other applications
+For improved programming aesthetic and usability, the current thread or block ID can be retrieved using
+\incpp{threadIdx.{x,y,z}} and \incpp{BlockIdx.{x,y,z}}. As can be deduced via the nomenclature,
+these variables are multi-dimensional, a feature that can be advantageous in some
+applications such as computer vision, but is not a necessity in other applications
 where the problem does not map to a 2D or 3D euclidian space. Further variables,
 for the dimension of the grid and block are also available. %TODO: Create table as on page 213
 The number of threads and blocks assigned to a problem is relatively arbitrary and can
 be designated by the developer before hand, or dynamically.  There are however limits
-to this flexibly that are described in the CUDA documentation\cite{bestpractices}.
+to this flexibly that are described in the CUDA documentation \cite{bestpractices}.
   Also, minor performance
 repercussions could be experienced, if the dimensionality of the framework is poorly
 chosen.
@@ -823,7 +830,7 @@ CUDA kernels are executed on every data in an array in an \gls{simt} fashion.
 %TODO: vector addition example
 
 The angle brackets in front of the kernel call identify the function as a kernel,
-and allow syntax  identification during compilation of a program.  Depending on
+and allow syntax extraction during compilation of a program.  Depending on
 whether a device kernel is to be called from the host or internally from the device,
 kernels can be labeled with the pragma \incpp{__global__} or \incpp{__device__}  respectively.
 Kernels declared \incpp{__global__} can be called from both the host and device, while \incpp{__device__}
@@ -833,10 +840,11 @@ The identifier \incpp{__host__} allow for kernels to be called from and run on t
 The parameters in the triple angle brackets are, from left to right, grid size or number of blocks,
 block size or number of threads, size of shared memory, and stream ID.  While grid and block size,
 are required values, the size of shared memory can also be statically allocated from within
-a kernel (more on shared memory in \ref{sssec:memories}).  Dynamic allocation though requires the kernel to be called parameterized with
+a kernel (more on shared memory in Sub-Section \ref{sssec:memories}).
+  Dynamic allocation though requires the kernel to be called parameterized with
 the size, and the value to be initialization from within the kernel function.  The stream
 parameter also is set to main stream by default, but must be set by the user when
-working with multiple streams (more on streams in: \ref{sssec:streams}).
+working with multiple streams (more on streams in Sub-Section \ref{sssec:streams}).
 %shared vs. global memory
 \subsubsection{Memories}\label{sssec:memories}
 GPU memory does not benefit from features such as virtual
@@ -845,14 +853,14 @@ address space completely separate from the host address space, where every addre
 In many cases, memory consists of a dedicated chip on the device that is controlled
 by the memory controller.  This memory must be managed by the user when programming in CUDA.
 \par
-Not all device memories are created equal.  Similarly to \Glspl{CPU},
+Not all device memories are created equal.  Similarly to \glspl{CPU},
 different memories have varying strengths and weaknesses.  By preallocating memory for a variable,
 that is either read only, or read and written often, one can greatly increase the
-performance of ones program\cite{Wilt}.   %TODO: CUDA attempts to avoid lazy allocation--> performance gains.
+performance of ones program \cite{Wilt}.   %TODO: CUDA attempts to avoid lazy allocation--> performance gains.
 There are four main types of CUDA memories.
 \begin{description}
   \item [Global memory] Memory on the Device with bandwidth of up to 100 Gb/sec.
-  Global memory is allocated dynamically by the user via cudaMalloc() and cudaFree() functions.
+  Global memory is allocated dynamically by the user via \incpp{cudaMalloc()} and \incpp{cudaFree()} functions.
   Dynamic allocation is normally performed in host code, due to large performance shortfall
   when implemented in a kernel call.
   \item [Constant memory] optimizes for read only memory on device for higher
@@ -862,7 +870,7 @@ There are four main types of CUDA memories.
    texture access pattern controller.  Texture memory allows performance benefits
    for uncoelessed variable access, which would normal lead to large performance
    degradation with normal global memory.
-  \item [Shared memory] User managed cache located on every \Gls{SM}.  Shared memory access
+  \item [Shared memory] User managed cache located on every \gls{SM}.  Shared memory access
   normally benefits from a 10x speed increase over global memory access, while it remains
   10x slower than register reads \cite{Wilt}.  These performance gains are dependent
   on the shared memory read strategy.  In oder to avoid block conflicts, and therefore
@@ -886,7 +894,7 @@ CUDA Streams enable the coarsest level of concurrency in the CUDA API.  Streams
 a different set of streams can be executed in parallel. Memory transfers and
 kernels can be assigned separate streams in order to create a workflow pipeline and increase
 the overlap between data transfers and data computation. This is made possible by the
-independent Copy engine as mentioned in \ref{ssec:gpu_architecture}.  Furthermore,
+independent Copy engine as mentioned in Sub-Section \ref{ssec:gpu_architecture}.  Furthermore,
 on systems with more than one \Gls{GPU}, streams can allow both data transfers and
 kernels to be excited concurrently on separate \Glspl{GPU}, leading to even greater
 performance.
